@@ -33,7 +33,18 @@
     lib = api;
     flakeModules.aspects = ./modules/aspects.nix;
     homeConfigurations.${profile.identity.username} = home;
-    checks.${system}.home = home.activationPackage;
+    checks.${system} = {
+      home = home.activationPackage;
+      profile-command =
+        pkgs.runCommand "foundation-profile-command" {
+          nativeBuildInputs = with pkgs; [bash coreutils];
+        } ''
+          bash ${./tests/profile-command.sh} \
+            ${pkgs.writeText "install-packages.sh" home.config.home.activation.installPackages.data} \
+            ${pkgs.lib.escapeShellArg home.config.home.profileDirectory}
+          touch "$out"
+        '';
+    };
     packages.${system} = {
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
       home-profile-catalog = pkgs.writeText "home-profile-catalog.json" (builtins.toJSON api.homeCatalog);

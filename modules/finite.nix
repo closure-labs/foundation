@@ -91,7 +91,7 @@ in
               FINITE_ROLES = lib.concatStringsSep "," canonicalRoles;
             };
           };
-          imports = foundationModules;
+          imports = [./compat/nix-profile-command.nix] ++ foundationModules;
           programs = {
             nh.homeFlake = "path:${vars.identity.homeDirectory}/.config/home-manager";
             zsh.shellAliases.finite-configure = "${configure}/bin/finite-configure";

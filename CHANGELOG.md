@@ -6,6 +6,12 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-16
+
+- Use `nix profile add` during Home Manager activation when supported, retaining compatibility with older Nix and legacy profiles.
+- Preserve the flake-built package set and upstream activation ordering without changing dependency pins.
+- Allow an explicit per-command build memory budget while retaining the 3 GiB default and job, core and swap limits.
+
 ## [0.2.0] - 2026-10-16
 
 - Export a reusable Home Manager constructor, canonical catalog and offline consumer template.
@@ -43,5 +49,7 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/closure-labs/foundation/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/closure-labs/foundation/releases/tag/v0.2.0
 [0.1.0]: https://github.com/closure-labs/foundation/releases/tag/v0.1.0
