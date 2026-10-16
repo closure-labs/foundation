@@ -1,0 +1,93 @@
+{
+  "files": {
+    "modules/finite.nix": [
+      "4bc94021c89ef3cdfb611bd03615d2978c4864fab799adc348054a88fad3b11f",
+      "f0b8ab773d0d1ac9b09431ab712701940f17297ad0a2e4f16a6ca73ec3708216"
+    ],
+    "modules/finite-configure": [
+      "fe1c01d94cfdc932081a0388e0adc2711f4270f8b3d7f49f251cb0bba3107dcf"
+    ],
+    "modules/finite-home-apply": [
+      "86024efdd79c220fb467e8267f56fcd2840f48b69d3101f92736fd7b014375a4",
+      "9dc808481b5b1a9bed1e40e595ba48e7cdeeee1e4f0f502a4fde3d82de9ca682"
+    ],
+    "modules/finite-brew-migration-status": [
+      "955ec739d2df1e0ee0e48baa23c37c0b105261be9104274c60c372469834b9c3"
+    ],
+    "modules/finite-brew-bootstrap": [
+      "eab562f5ec673781199310be27ec58b7fc2a105e19cf5dd95b07b1499a7fa160"
+    ],
+    "modules/aspects/base/brew-packages.json": [
+      "4f85a4b74b55cd0c53526adc9dda8a4ab8e4f0bd7290722cc4585fb057c6aebc"
+    ],
+    "modules/aspects/base/home.nix": [
+      "8b6d74e45e9b79d61dc4a228f2896ebed1d1b98beb2ac1b16cfa22a889503112"
+    ],
+    "modules/aspects/hardware/dell-xps-9350-intel/dell-xps-9350-panel-policy": [
+      "b17a412ea182b5271884febb25af70e9dc3b9789c1cca4b4d5340bbe1df761ba"
+    ],
+    "modules/aspects/hardware/dell-xps-9350-intel/dell-ipu7.conf": [
+      "881b3090478671cbdcd2ff5f322858db5dc92afe3ec62bd38c600caca694b128"
+    ],
+    "modules/aspects/hardware/dell-xps-9350-intel/home.nix": [
+      "27121544738a43619914a0e6f4636048ffb280c98ed3ab2232c920a7a429cd45"
+    ],
+    "modules/aspects/hardware/generic-x86_64/home.nix": [
+      "d494f0ee586634a93dc2adc11bba878e43369514a858e2bf39ec3c5f4cc481e3"
+    ],
+    "modules/aspects/hardware/dell-xps-9350-intel/rootfs/usr/share/finite/dell-xps-9350-panel.conf": [
+      "47b48e39be41c35307e0532b32d141c8fabdeb33be51d6996008bbff398957a4"
+    ],
+    "modules/aspects/roles/developer/home.nix": [
+      "828f7deeb808aa34f0e2c5bcbb6abc72591d979062a04c5cf73760569f0cbc4a"
+    ],
+    "modules/aspects/roles/executive/home.nix": [
+      "cfe27d1b2d1b230b01458ad09ff775b1afdb22177dfa5ea8c89f172927347a91"
+    ],
+    "modules/aspects/roles/it/home.nix": [
+      "944a531bc59cb04346f1efe4d01df774a13cd1731c3eafd8c691435c55060153"
+    ],
+    "modules/aspects/roles/sales/home.nix": [
+      "340fd52cc848578462655d152ea1287ebed3bff5f9dafde4206293da8f898184"
+    ],
+    "modules/aspects/roles/support/home.nix": [
+      "0cb72088e118b3b741df13bea1bf6d38c3abb705cb3a46446d396836893592b6"
+    ],
+    "modules/aspects/roles/trainer/home.nix": [
+      "4487e5588f7902b4923eca21e469d6e72886ce5f60908113f6c594a38d12293b"
+    ],
+    "modules/aspects/capabilities/devops/home.nix": [
+      "61f4d9e11d39082ab2096bca3966f97e973ea8376c64e50355dd0e183adf6356"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/ghostty/config.ghostty": [
+      "a106f27a803c3204b50d9877c3511e80fc76d16374b331f951b00a12ac745039"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/.zshenv": [
+      "5571f42628db3319b9b872a450c9fbbf26e25519059b0d1af461d302add092ad"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/.zshrc": [
+      "228de6b687d73af047c430b68d75f40342ba834ad9f9606f006e1b7313d65069"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/LICENSE": [
+      "495687b622414e731505b3e0b5730951369311efacee8847b94a1c7bdbdef5ab"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/aliases.zsh": [
+      "3a64dcb1e30d2c2ee6bab51aa9113d3f828875bcec9f198fb0d9ecf841d25505"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/bindings.zsh": [
+      "abe4e75c4ae9d1aa6367aafa6c2422f0ed4503249e1d7366f6b527e6ec0d838d"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/fzf.zsh": [
+      "86a88c189a7e6149bbb007c39a4d528806fee5643820868a17e0b9e30b760da6"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/prompt.zsh": [
+      "d1a1f35cd29eeb79a326f9ecbe387f86b4ce2e15d2e8ce8b84eb735d0cd58683"
+    ],
+    "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/starship.toml": [
+      "b692021e5200969dce33abc6613287f8f256d8eae22f0839bec2ff1c142d6dfd"
+    ]
+  },
+  "outputs": [
+    "c1a0ff2c1e2e55c134baaa01746fa41a86591ef9b9ade607a873ebf92319d503"
+  ]
+}

@@ -14,7 +14,7 @@ nix flake check --no-update-lock-file --print-build-logs "${build_flags[@]}" pat
 # Evaluate selectable modules too: the shipped profile has no roles enabled.
 staged=$(mktemp -d)
 trap 'rm -rf -- "$staged"' EXIT
-cp -a flake.nix flake.lock profile.json finite-template.json customize.nix modules "$staged/"
+cp -a flake.nix flake.lock profile.json finite-template.json customize.nix modules lib scripts VERSION foundation.json legacy-managed.json "$staged/"
 for foundation in bluefin bluefin-dx; do
   jq --arg foundation "$foundation" \
     '.foundation = $foundation | .hardware = "dell-xps-9350-intel" |

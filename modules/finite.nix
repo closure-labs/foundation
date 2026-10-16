@@ -2,14 +2,17 @@
   den,
   inputs,
   lib,
+  foundationProfile ? builtins.fromJSON (builtins.readFile ../profile.json),
+  foundationModules ? [../customize.nix ./local.nix],
   ...
 }: let
   # The version-controlled profile selects the account, roles and packages.
-  vars = builtins.fromJSON (builtins.readFile ../profile.json);
+  vars = foundationProfile;
   system = "x86_64-linux";
-  roleOrder = ["developer" "sales" "trainer" "support" "executive" "it"];
-  packageOrder = ["hack-font" "herdr" "jj" "opencode" "uv"];
-  hardwareNames = ["generic-x86_64" "dell-xps-9350-intel"];
+  catalog = import ../lib/catalog.nix;
+  roleOrder = catalog.roleNames;
+  packageOrder = catalog.packageNames;
+  hardwareNames = catalog.homeHardwareNames;
   canonicalRoles = builtins.filter (role: builtins.elem role vars.roles) roleOrder;
   canonicalPackages = builtins.filter (package: builtins.elem package vars.packages) packageOrder;
   validProfile =
@@ -35,11 +38,11 @@
     inherit (pkgs) opencode uv;
   };
   selectedPackages = map (name: optionalPackages.${name}) canonicalPackages;
-  homeApply = pkgs.writeShellApplication {
-    name = "finite-home-apply";
-    runtimeInputs = with pkgs; [coreutils getent jq];
-    text = builtins.readFile ./finite-home-apply;
+  applications = import ../lib/applications.nix {
+    inherit pkgs;
+    source = ../.;
   };
+  homeApply = applications.homeApply;
   configure = pkgs.writeShellApplication {
     name = "finite-configure";
     runtimeInputs = with pkgs; [coreutils jq zenity homeApply];
@@ -49,6 +52,7 @@ in
   if !validProfile
   then throw "The local Finite profile is invalid or is not canonically ordered."
   else {
+    imports = [./aspects.nix];
     den.homes.${system}.${vars.identity.username} = {
       userName = vars.identity.username;
       inherit pkgs;
@@ -79,7 +83,7 @@ in
           home = {
             username = lib.mkForce vars.identity.username;
             homeDirectory = lib.mkForce vars.identity.homeDirectory;
-            packages = [configure homeApply] ++ selectedPackages;
+            packages = [configure homeApply applications.homeUpdate applications.homeMigrate applications.appStatus] ++ selectedPackages;
             sessionVariables = {
               FINITE_FOUNDATION = vars.foundation;
               FINITE_HARDWARE = vars.hardware;
@@ -87,34 +91,11 @@ in
               FINITE_ROLES = lib.concatStringsSep "," canonicalRoles;
             };
           };
-          imports = [../customize.nix ./local.nix];
+          imports = foundationModules;
           programs = {
             nh.homeFlake = "path:${vars.identity.homeDirectory}/.config/home-manager";
             zsh.shellAliases.finite-configure = "${configure}/bin/finite-configure";
           };
-        };
-      };
-
-      features = {
-        base.homeManager.imports = [./aspects/base/home.nix];
-        capabilities.devops.homeManager.imports = [./aspects/capabilities/devops/home.nix];
-        roles = {
-          developer = {
-            includes = [den.aspects.features.capabilities.devops];
-            homeManager.imports = [./aspects/roles/developer/home.nix];
-          };
-          sales.homeManager.imports = [./aspects/roles/sales/home.nix];
-          trainer.homeManager.imports = [./aspects/roles/trainer/home.nix];
-          support = {
-            includes = [den.aspects.features.capabilities.devops];
-            homeManager.imports = [./aspects/roles/support/home.nix];
-          };
-          executive.homeManager.imports = [./aspects/roles/executive/home.nix];
-          it.homeManager.imports = [./aspects/roles/it/home.nix];
-        };
-        hardware = {
-          generic-x86_64.homeManager.imports = [./aspects/hardware/generic-x86_64/home.nix];
-          dell-xps-9350-intel.homeManager.imports = [./aspects/hardware/dell-xps-9350-intel/home.nix];
         };
       };
     };

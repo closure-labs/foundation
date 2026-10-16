@@ -23,5 +23,6 @@ PY
 
 bash tests/brew-providers.sh
 bash tests/dell-panel-policy.sh
-bash tests/home-apply.sh
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_home.py
+for aspect in tests/aspects-*.sh; do bash "$aspect"; done
 printf 'Foundation checks passed\n'
