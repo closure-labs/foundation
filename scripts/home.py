@@ -18,9 +18,10 @@ from pathlib import Path
 
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
+RELEASE_CHANNEL = "latest-release"
 CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "home-manager", "determinate", "nix-flatpak"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
-REFERENCE = re.compile(r'^(\s*foundation\.url = ")github:closure-labs/foundation/([a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
+REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
 
 def run(command, **kwargs):
@@ -63,23 +64,28 @@ def validate_metadata(info):
         raise ValueError("Foundation source content hash is missing or invalid")
 
 
-def consumer_lock(lock, info):
+def foundation_reference(reference):
+    key = "rev" if re.fullmatch(r"[a-f0-9]{40}", reference) else "ref"
+    return {"type": "github", "owner": "closure-labs", "repo": "foundation", key: reference}
+
+
+def consumer_lock(lock, info, reference=RELEASE_CHANNEL):
     """Re-root a release's committed graph; follows paths belong to its old root."""
     validate_metadata(info)
     old_root = lock["root"]
     names = {name: "foundation" if name == old_root else "foundation-" + name for name in lock["nodes"]}
-    def reference(ref):
+    def rebase_reference(ref):
         return ["foundation", *ref] if isinstance(ref, list) else names[ref]
     nodes = {}
     for name, node in lock["nodes"].items():
         node = copy.deepcopy(node)
         if "inputs" in node:
-            node["inputs"] = {key: reference(ref) for key, ref in node["inputs"].items()}
+            node["inputs"] = {key: rebase_reference(ref) for key, ref in node["inputs"].items()}
         nodes[names[name]] = node
     nodes["foundation"].update({
         "locked": {"type": "github", "owner": "closure-labs", "repo": "foundation",
                    **{key: info[key] for key in ("rev", "narHash", "lastModified") if key in info}},
-        "original": {"type": "github", "owner": "closure-labs", "repo": "foundation", "rev": info["rev"]},
+        "original": foundation_reference(reference),
     })
     nodes["root"] = {"inputs": {"foundation": "foundation"}}
     return {"version": 7, "root": "root", "nodes": nodes}
@@ -137,7 +143,7 @@ def migrate_input_declarations(inputs):
     return extras
 
 
-def consumer_flake(info, extras=None):
+def consumer_flake(info, extras=None, reference=RELEASE_CHANNEL):
     extra_text = "\n".join("    " + json.dumps(k) + " = " + nix_value(v) + ";" for k, v in (extras or {}).items())
     return '''{
   # Foundation owns the shared modules; this flake and your personal modules are yours.
@@ -155,7 +161,7 @@ EXTRAS
     };
   };
 }
-'''.replace("REVISION", info["rev"]).replace("EXTRAS", extra_text)
+'''.replace("REVISION", reference).replace("EXTRAS", extra_text)
 
 
 def make_template(source, info, output, lock=None, extras=None):
@@ -360,18 +366,22 @@ def release_data(tag):
 
 
 def installed_info(root):
-    if (root / "foundation.json").exists():
-        installed = read_json(root / "foundation.json")
-    else:
-        # A consumer created by nix flake new gains its exact provenance from its lock.
-        lock = read_json(root / "flake.lock")
-        reference = lock["nodes"][lock["root"]]["inputs"]["foundation"]
-        source = lock["nodes"][reference]["locked"]
-        if source.get("owner") != "closure-labs" or source.get("repo") != "foundation":
-            raise ValueError("Personal Foundation input points to another repository")
+    # nh/nix can update the lock without rewriting our cached provenance file.
+    # Always identify the selected source from the consumer lock first.
+    lock = read_json(root / "flake.lock")
+    reference = lock["nodes"][lock["root"]]["inputs"]["foundation"]
+    source = lock["nodes"][reference]["locked"]
+    if source.get("type") != "github" or source.get("owner") != "closure-labs" or source.get("repo") != "foundation":
+        raise ValueError("Personal Foundation input points to another repository")
+    provenance = {key: source[key] for key in ("rev", "narHash", "lastModified") if key in source}
+    # Validate the revision before constructing a reference from it.
+    if not re.fullmatch(r"[a-f0-9]{40}", provenance.get("rev") or ""):
+        raise ValueError("Foundation lock must contain an immutable Git commit")
+    installed = read_json(root / "foundation.json") if (root / "foundation.json").exists() else {}
+    if any(installed.get(key) != value for key, value in provenance.items()):
         expression = 'let f = builtins.getFlake ' + json.dumps(f"github:{REPOSITORY}/{source['rev']}") + '; in builtins.fromJSON (builtins.readFile (f.outPath + "/foundation.json"))'
-        installed = {**json.loads(capture(["nix", "eval", "--json", "--expr", expression])),
-                     **{key: source[key] for key in ("rev", "narHash", "lastModified") if key in source}}
+        installed = json.loads(capture(["nix", "eval", "--json", "--expr", expression]))
+    installed = {**installed, **provenance}
     validate_metadata(installed)
     return installed
 
@@ -401,8 +411,9 @@ def update(root, check=False):
             copy_configuration(root, stage)
             text = (stage / "flake.nix").read_text()
             matches = list(REFERENCE.finditer(text))
-            if len(matches) != 1 or matches[0][2] not in (installed["rev"], "v" + installed["version"]):
+            if len(matches) != 1 or matches[0][2] not in (RELEASE_CHANNEL, installed["rev"], "v" + installed["version"]):
                 raise ValueError("The Foundation input was customized; update it manually")
+            tracking = matches[0][2] == RELEASE_CHANNEL
             text = REFERENCE.sub(lambda m: m[1] + f"github:{REPOSITORY}/{info['rev']}" + m[3], text)
             (stage / "flake.nix").write_text(text)
             # Nix updates this input closure only, retaining personal input pins.
@@ -412,6 +423,14 @@ def update(root, check=False):
             selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]["locked"]
             if selected["rev"] != info["rev"] or selected["narHash"] != info["narHash"]:
                 raise ValueError("Resolved Foundation source differs from the reviewed release")
+            if tracking:
+                # Resolve/build the reviewed immutable release, retaining the channel
+                # declaration for the next nh update. Both locked graphs are identical.
+                (stage / "flake.nix").write_text(REFERENCE.sub(
+                    lambda m: m[1] + f"github:{REPOSITORY}/{RELEASE_CHANNEL}" + m[3], text))
+                reference = new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]
+                new_lock["nodes"][reference]["original"] = foundation_reference(RELEASE_CHANNEL)
+                write_json(stage / "flake.lock", new_lock)
             write_json(stage / "foundation.json", info)
             write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             activation = build(stage)
@@ -504,7 +523,7 @@ def apply(root, roles=None, packages=None, check=False):
         with tempfile.TemporaryDirectory(prefix=".foundation-apply-", dir=root.parent) as temp:
             stage = Path(temp) / "home-manager"
             copy_configuration(root, stage)
-            if importing and not (stage / "foundation.json").exists():
+            if importing:
                 info = installed_info(root)
                 write_json(stage / "foundation.json", info)
                 write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})

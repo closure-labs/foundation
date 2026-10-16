@@ -1,0 +1,35 @@
+name: Advance latest release
+
+on:
+  release:
+    types: [published, released]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: latest-release
+  cancel-in-progress: false
+
+jobs:
+  advance:
+    if: >-
+      github.repository == 'closure-labs/foundation' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (!github.event.release.draft && !github.event.release.prerelease))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      checks: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Advance only to a published, validated stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release-channel.py

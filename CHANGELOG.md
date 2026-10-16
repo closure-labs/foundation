@@ -6,6 +6,13 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-16
+
+- Track published stable Foundation releases through the `latest-release` branch, keeping exact source and dependency pins in `flake.lock`.
+- Advance the release branch only after publication, metadata validation and successful CI, with a manual recovery workflow.
+- Support `nh home switch -u` in personal consumers and read the locked source when cached provenance is stale.
+- Preserve release-channel declarations during staged updates and retain support for existing fixed-commit consumers.
+
 ## [0.2.1] - 2026-10-16
 
 - Use `nix profile add` during Home Manager activation when supported, retaining compatibility with older Nix and legacy profiles.
@@ -49,7 +56,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/closure-labs/foundation/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/closure-labs/foundation/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/closure-labs/foundation/releases/tag/v0.2.0
 [0.1.0]: https://github.com/closure-labs/foundation/releases/tag/v0.1.0

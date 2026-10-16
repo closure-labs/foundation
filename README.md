@@ -15,7 +15,7 @@ and a graphical session for Flatpak and the role selector.
 ## Personal configurations
 
 Finite provisions a small personal flake at `~/.config/home-manager` importing a
-released Foundation commit. Foundation owns the shared modules and dependency
+published Foundation release through `latest-release`. Foundation owns the shared modules and dependency
 pins; you own `profile.json`, `customize.nix`, and `modules/local.nix`.
 
 The constructor is also available to other consumers:
@@ -34,6 +34,23 @@ hardware, and any combination of the roles and optional packages in
 `home.stateVersion` unchanged when updating.
 
 ## Updates and migration
+
+New personal flakes track `github:closure-labs/foundation/latest-release`.
+This branch advances only to published stable releases with passing CI, never
+unreleased `main` commits. `flake.lock` still records the exact commit and source
+hash, so switching without an update keeps the same version.
+
+`nh home switch -u` updates the lock to the latest release and activates it.
+It updates all flake inputs; use `nh home switch -U foundation` to update only
+Foundation. Keep workstation-specific sources pinned in your personal modules.
+These direct NH commands use NH's build and activation path; Foundation's staged
+updater below additionally provisions shared Brew tools and backs up consumer files.
+
+To opt an existing consumer into release tracking, change only its Foundation URL
+in `flake.nix` to `github:closure-labs/foundation/latest-release`, then update the
+Foundation input. Existing fixed-commit consumers remain supported.
+Foundation commands read the selected version from `flake.lock` even when an NH
+update leaves the cached `foundation.json` at an older version.
 
 `finite-home-update --check` reports published releases. `finite-home-update`
 stages a new release, builds with a 3 GiB memory limit, provisions required shared
