@@ -18,3 +18,6 @@ standalone checkouts.
 
 Repository-specific changes add build checks and documentation and exclude VCS
 metadata and generated results when staging a configuration for application.
+
+The v0.2.0 consumer API also moves Finite's canonical Home Manager catalog and
+profile helper into Foundation. Image profiles and OS provisioning stay in Finite.

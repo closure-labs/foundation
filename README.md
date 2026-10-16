@@ -12,83 +12,66 @@ This configuration targets **x86_64 Linux with Bluefin or Bluefin DX**. It expec
 Homebrew at `/home/linuxbrew/.linuxbrew`, a working Nix installation with flakes,
 and a graphical session for Flatpak and the role selector.
 
-## Configure your account
+## Personal configurations
 
-Edit [profile.json](profile.json) before building or activating. The initial
-`finite` account is a placeholder; set `identity.username` and
-`identity.homeDirectory` to your account's actual login name and home directory.
-Keep `schema` at `2`.
+Finite provisions a small personal flake at `~/.config/home-manager` importing a
+released Foundation commit. Foundation owns the shared modules and dependency
+pins; you own `profile.json`, `customize.nix`, and `modules/local.nix`.
 
-| Field | Choices, in canonical order |
-| --- | --- |
-| `foundation` | `bluefin` or `bluefin-dx` |
-| `hardware` | `generic-x86_64` or `dell-xps-9350-intel` |
-| `roles` | `developer`, `sales`, `trainer`, `support`, `executive`, `it` |
-| `packages` | `hack-font`, `herdr`, `jj`, `opencode`, `uv` |
-
-Roles and optional packages may be empty or combined without duplicates. Keep
-each list in the order above. Both foundations use the same Home Manager base;
-this selection records the host foundation and does not change the OS image.
-
-Add personal settings to [customize.nix](customize.nix), for example:
+The constructor is also available to other consumers:
 
 ```nix
-{pkgs, ...}: {
-  home.packages = [pkgs.jq];
-  services.flatpak.packages = ["org.gimp.GIMP"];
+inputs.foundation.lib.mkHomeConfiguration {
+  profile = builtins.fromJSON (builtins.readFile ./profile.json);
+  modules = [./customize.nix ./modules/local.nix];
+  extraInputs = builtins.removeAttrs inputs ["self" "foundation"];
 }
 ```
 
-[modules/local.nix](modules/local.nix) is another imported module. Both receive
-`inputs`, so custom inputs can be declared in `flake.nix` and used in either
-module. Keep `home.stateVersion` at its existing value when updating dependencies.
+Use schema 2 profiles with Bluefin or Bluefin DX, generic or Dell XPS 9350 Intel
+hardware, and any combination of the roles and optional packages in
+`lib.catalog`. Account identity must match the desktop user. Keep
+`home.stateVersion` unchanged when updating.
 
-## Build and apply
+## Updates and migration
 
-From this checkout, build without activating or changing dependency pins:
+`finite-home-update --check` reports published releases. `finite-home-update`
+stages a new release, builds with a 3 GiB memory limit, provisions required shared
+Homebrew tools, backs up the configuration and activates the generation. Finite
+also includes this step in explicit `ujust update` runs. Background checks only
+notify. Root execution is rejected.
 
-```bash
-nix build --no-update-lock-file \
-  ".#homeConfigurations.$(id -un).activationPackage"
-```
+Personal inputs and modules remain local. Release metadata and `flake.lock` pin
+the exact source and dependency closure. Unsupported compatibility versions or
+failed builds leave the current configuration in place. An activation failure
+restores the configuration and attempts the previous generation's activation;
+external Homebrew and Flatpak side effects are not transactional.
 
-The exported name comes from `profile.json`; it must match your account.
-Building does not install the shared Homebrew tools or activate Home Manager.
+`finite-home-migrate --check` builds a migration without installing it.
+`finite-home-migrate` adopts Foundation's tested dependency pins while preserving
+the profile, personal modules and additional inputs. Modified upstream modules,
+custom output functions, Git checkouts and symlink roots require manual migration.
+Backups remain next to the configuration as `home-manager.previous.*`.
 
-For the existing `nh` and `finite-configure` commands to find this repository,
-place it at `~/.config/home-manager` or link it there. If that path already
-exists, move it to a backup location before creating the link. From the checkout:
+`finite-configure` selects roles and optional packages; `finite-home-apply` builds
+and applies those profile changes using the same transaction. `nh home build`
+and `nh home switch` remain available for direct use.
 
-```bash
-mkdir -p ~/.config
-ln -s "$PWD" ~/.config/home-manager
-```
+Keep private Git-backed Espanso declarations in personal modules; see
+[the snapshot workflow](docs/ESPANSO.md). Foundation defaults contain no private
+sources or workstation matchfiles.
 
-After reviewing your profile and customizations, provision the shared Homebrew
-tools and activate the configuration:
+## Standalone checkout
 
-```bash
-bash modules/finite-home-apply --roles "$(jq -r '.roles | join(",")' profile.json)"
-```
+The repository root still exports `homeConfigurations` from its own profile and
+personal modules. Set `profile.json` to your account, build before activation,
+and use the checkout's `modules/finite-home-apply` helper to provision shared Brew
+tools and activate. Standalone maintainers update their Git checkout explicitly;
+release-update commands target importing personal flakes.
 
-This builds a staged configuration using the committed lock pins, installs any
-missing shared Homebrew tools, then activates the generation. Add `--check` to
-build the staged profile without provisioning Homebrew or activating it.
-After the first activation, `nh home build` and `nh home switch` use this flake.
-`finite-configure` opens the role and optional-package selectors. Profile changes
-made by the selector are written to this checkout; review them with `jj diff`.
-
-The base includes desktop apps, user Flatpaks and Homebrew provider checks.
-Activation starts user services and can install Flatpaks. The Dell hardware
-module includes its display and PipeWire camera settings. The Support role's
-Espanso Wayland backend needs host keyboard-device access configured by the
-administrator. For Nix graphical apps on non-NixOS, the Home Manager-provided
-`non-nixos-gpu-setup` helper may also need to be run as the host administrator.
-
-Keep Foundation as the owner of this checkout. Until Finite's initializer adopts this
-repository, it can refresh generated modules at `~/.config/home-manager` if run
-against it. The initial release prepares that adoption; it does not change the
-Finite image or its initializer.
+The Support role's Espanso backend requires administrator-managed keyboard access.
+On non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper after first
+activation as described by Home Manager. Foundation never grants keyboard access.
 
 ## Maintain the repository
 

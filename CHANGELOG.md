@@ -6,6 +6,14 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-16
+
+- Export a reusable Home Manager constructor, canonical catalog and offline consumer template.
+- Keep personal profiles and modules separate from the Foundation source dependency.
+- Add staged migration, bounded builds, release updates, backups and activation rollback.
+- Supply profile, apply and release-notification commands from Foundation.
+- Preserve workstation-specific Git snapshots in personal modules; no personal sources are defaults.
+
 ## [0.1.0] - 2026-10-16
 
 ### Added

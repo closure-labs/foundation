@@ -22,18 +22,34 @@
   outputs = inputs: let
     system = "x86_64-linux";
     pkgs = inputs.nixpkgs.legacyPackages.${system};
-    flake = (inputs.nixpkgs.lib.evalModules {
-      specialArgs = {inherit inputs;};
-      modules = [
-        inputs.den.flakeModule
-        ./modules/finite.nix
-      ];
-    }).config.flake;
-  in
-    flake // {
-      checks.x86_64-linux = builtins.mapAttrs (_: home: home.activationPackage) flake.homeConfigurations;
-      devShells.${system}.ci = pkgs.mkShellNoCC {
-        packages = with pkgs; [bash jq python3 actionlint];
-      };
+    api = import ./lib {inherit inputs;};
+    profile = builtins.fromJSON (builtins.readFile ./profile.json);
+    home = api.mkHomeConfiguration {
+      inherit profile;
+      modules = [./customize.nix ./modules/local.nix];
     };
+    applications = api.mkApplications {inherit pkgs;};
+  in {
+    lib = api;
+    flakeModules.aspects = ./modules/aspects.nix;
+    homeConfigurations.${profile.identity.username} = home;
+    checks.${system}.home = home.activationPackage;
+    packages.${system} = {
+      home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
+      home-profile-catalog = pkgs.writeText "home-profile-catalog.json" (builtins.toJSON api.homeCatalog);
+      home-profile = applications.homeProfile;
+      home-init = applications.homeInit;
+      home-bootstrap = applications.homeBootstrap;
+      home-update = applications.homeUpdate;
+      home-migrate = applications.homeMigrate;
+      app-status = applications.appStatus;
+    };
+    templates.default = {
+      path = ./templates/default;
+      description = "Personal Home Manager flake importing Foundation";
+    };
+    devShells.${system}.ci = pkgs.mkShellNoCC {
+      packages = with pkgs; [bash jq python3 actionlint];
+    };
+  };
 }

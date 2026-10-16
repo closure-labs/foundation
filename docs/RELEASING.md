@@ -18,7 +18,7 @@ setup, then record and push the intended initial change:
 ```bash
 jj status
 jj diff
-jj describe -m "Prepare Foundation v0.1.0"
+jj describe -m "Prepare Foundation v0.2.0"
 jj bookmark set main -r @
 jj git push --remote origin --bookmark main
 ```
@@ -59,7 +59,7 @@ review and passing CI.
    on the resulting `main` commit. Record any manual host validation in the PR.
    A build does not activate a profile or validate physical Dell hardware.
 
-For the first release, `VERSION` is already `0.1.0` and its changelog section is
+For the first release, `VERSION` is already `0.2.0` and its changelog section is
 prepared. Confirm the release date if publication occurs after 2026-10-16.
 
 ## Tag and review the draft
@@ -71,8 +71,8 @@ jj git fetch --remote origin
 jj log -r 'main@origin'
 jj git export
 release_commit=$(jj log -r 'main@origin' --no-graph -T commit_id)
-git tag -a v0.1.0 "$release_commit" -m "Foundation v0.1.0"
-git push origin refs/tags/v0.1.0
+git tag -a v0.2.0 "$release_commit" -m "Foundation v0.2.0"
+git push origin refs/tags/v0.2.0
 ```
 
 Confirm `release_commit` is the reviewed, green `main` commit. This checkout uses
@@ -82,7 +82,7 @@ but `jj git push` pushes bookmarks; the explicit Git tag push is used here.
 Do not move a released tag.
 
 The tag push starts the release workflow. To retry, run the **Prepare release** workflow
-manually with the existing tag, such as `v0.1.0`. Confirm the run checked the
+manually with the existing tag, such as `v0.2.0`. Confirm the run checked the
 expected commit, all required checks passed, release notes match the changelog,
 and the source archive and checksum assets are attached. Download the assets
 and verify them using `sha256sum -c` from the same directory.
