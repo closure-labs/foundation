@@ -82,9 +82,9 @@ jobs:
         run: |
           if gh release view "$TAG" --json isDraft > "$RUNNER_TEMP/existing-release.json"; then
             jq -e '.isDraft == true' "$RUNNER_TEMP/existing-release.json"
-            gh release edit "$TAG" --title "Finito $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release edit "$TAG" --title "Foundation $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
             gh release upload "$TAG" "$RUNNER_TEMP/release-assets/"* --clobber
           else
             gh release create "$TAG" "$RUNNER_TEMP/release-assets/"* \
-              --verify-tag --draft --title "Finito $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
+              --verify-tag --draft --title "Foundation $TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi

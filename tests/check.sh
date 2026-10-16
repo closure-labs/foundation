@@ -24,4 +24,4 @@ PY
 bash tests/brew-providers.sh
 bash tests/dell-panel-policy.sh
 bash tests/home-apply.sh
-printf 'Finito checks passed\n'
+printf 'Foundation checks passed\n'

@@ -1,9 +1,9 @@
-# Finito
+# Foundation
 
 A Foundation for reproducible Linux workstations, intended to be
 [Finite](ORIGIN.md)'s default Nix Home Manager flake. No psychohistory required.
 
-Finito is a standalone, source-controlled flake extracted from Finite. The
+Foundation is a standalone, source-controlled flake extracted from Finite. The
 modules, assets, helper scripts and dependency lock live in this repository.
 It does not import or require a Finite checkout. The existing `finite-*` command
 names and configuration paths are retained.
@@ -85,7 +85,7 @@ Espanso Wayland backend needs host keyboard-device access configured by the
 administrator. For Nix graphical apps on non-NixOS, the Home Manager-provided
 `non-nixos-gpu-setup` helper may also need to be run as the host administrator.
 
-Keep Finito as the owner of this checkout. Until Finite's initializer adopts this
+Keep Foundation as the owner of this checkout. Until Finite's initializer adopts this
 repository, it can refresh generated modules at `~/.config/home-manager` if run
 against it. The initial release prepares that adoption; it does not change the
 Finite image or its initializer.

@@ -1,6 +1,6 @@
 # Changelog
 
-User-facing changes to Finito are recorded here. Version numbers follow
+User-facing changes to Foundation are recorded here. Version numbers follow
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); during the `0.x`
 series, minor releases may change configuration interfaces.
 

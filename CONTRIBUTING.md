@@ -1,10 +1,10 @@
-# Contributing to Finito
+# Contributing to Foundation
 
 Open an issue for substantial behavior or dependency changes before investing
 in an implementation. Keep changes focused and describe their effect on users.
 For vulnerabilities, follow [SECURITY.md](SECURITY.md).
 
-Finito is intended to provide Finite's default Home Manager flake and also
+Foundation is intended to provide Finite's default Home Manager flake and also
 supports standalone use. Read [README.md](README.md) for the supported host and
 account setup. Preserve
 profile schema compatibility, canonical role/package ordering, runtime

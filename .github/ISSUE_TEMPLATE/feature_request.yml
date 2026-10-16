@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose a focused improvement to Finito.
+description: Propose a focused improvement to Foundation.
 body:
   - type: textarea
     id: problem

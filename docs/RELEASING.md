@@ -1,4 +1,4 @@
-# Releasing Finito
+# Releasing Foundation
 
 `VERSION` contains the version without a `v` prefix. Git tags use `vMAJOR.MINOR.PATCH`.
 The release workflow validates the tag against `VERSION` and `CHANGELOG.md`,
@@ -6,7 +6,7 @@ checks that it belongs to `main`, runs CI at that exact commit, and prepares a
 draft release with a source archive and SHA-256 checksums. A maintainer reviews
 and publishes the draft separately.
 
-Finito is intended to be Finite's default Home Manager flake, with standalone
+Foundation is intended to be Finite's default Home Manager flake, with standalone
 use also supported. Publishing here and adopting the release in Finite are
 separate changes.
 
@@ -18,7 +18,7 @@ setup, then record and push the intended initial change:
 ```bash
 jj status
 jj diff
-jj describe -m "Prepare Finito v0.1.0"
+jj describe -m "Prepare Foundation v0.1.0"
 jj bookmark set main -r @
 jj git push --remote origin --bookmark main
 ```
@@ -71,7 +71,7 @@ jj git fetch --remote origin
 jj log -r 'main@origin'
 jj git export
 release_commit=$(jj log -r 'main@origin' --no-graph -T commit_id)
-git tag -a v0.1.0 "$release_commit" -m "Finito v0.1.0"
+git tag -a v0.1.0 "$release_commit" -m "Foundation v0.1.0"
 git push origin refs/tags/v0.1.0
 ```
 
@@ -95,7 +95,7 @@ already been shared. The workflow never publishes automatically.
 
 In a separate reviewed change to Finite, pin its default Home Manager source to
 the released commit, refresh the relevant lock/configuration, and verify that
-the default profile builds and its initializer consumes Finito correctly.
+the default profile builds and its initializer consumes Foundation correctly.
 Check the retained `finite-*` commands and configuration paths, including any
 initializer that refreshes `~/.config/home-manager`. Test activation on a
 suitable host before rolling out the new default. This repository's release

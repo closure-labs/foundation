@@ -8,7 +8,7 @@ export XDG_CONFIG_HOME="$test_root/config"
 export FINITE_HOME_FLAKE_ROOT="$test_root/checkout"
 export FINITE_NIX_COMMAND="$test_root/nix"
 export FINITE_BREW_BOOTSTRAP_COMMAND="$test_root/brew-bootstrap"
-export FINITO_TEST_ROOT="$test_root"
+export FOUNDATION_TEST_ROOT="$test_root"
 mkdir -p "$XDG_CONFIG_HOME" "$FINITE_HOME_FLAKE_ROOT" "$test_root/activation"
 cp -a flake.nix flake.lock finite-template.json profile.json customize.nix modules "$FINITE_HOME_FLAKE_ROOT/"
 mkdir -p "$FINITE_HOME_FLAKE_ROOT"/{.git,.jj,.direnv,result}
@@ -39,20 +39,20 @@ done
 cmp "$FINITE_HOME_FLAKE_ROOT/personal.txt" "$staged/personal.txt"
 cmp "$FINITE_HOME_FLAKE_ROOT/flake.lock" "$staged/flake.lock"
 test -f "$staged/modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/.zshrc"
-cp "$staged/profile.json" "$FINITO_TEST_ROOT/built-profile.json"
-[[ "${FINITO_TEST_BUILD_FAIL:-false}" == false ]]
-printf '%s\n' "$FINITO_TEST_ROOT/activation"
+cp "$staged/profile.json" "$FOUNDATION_TEST_ROOT/built-profile.json"
+[[ "${FOUNDATION_TEST_BUILD_FAIL:-false}" == false ]]
+printf '%s\n' "$FOUNDATION_TEST_ROOT/activation"
 EOF
 } >"$FINITE_NIX_COMMAND"
 {
   printf '#!%s\n' "$BASH"
   # shellcheck disable=SC2016
-  printf 'touch "$FINITO_TEST_ROOT/activated"\n'
+  printf 'touch "$FOUNDATION_TEST_ROOT/activated"\n'
 } >"$test_root/activation/activate"
 cat >"$FINITE_BREW_BOOTSTRAP_COMMAND" <<'EOF'
 set -euo pipefail
-[[ "${FINITO_TEST_BREW_FAIL:-false}" == false ]]
-touch "$FINITO_TEST_ROOT/brew-provisioned"
+[[ "${FOUNDATION_TEST_BREW_FAIL:-false}" == false ]]
+touch "$FOUNDATION_TEST_ROOT/brew-provisioned"
 EOF
 chmod +x "$FINITE_NIX_COMMAND" "$test_root/activation/activate"
 apply="$repo/modules/finite-home-apply"
@@ -64,7 +64,7 @@ test ! -e "$test_root/activated"
 test ! -e "$test_root/brew-provisioned"
 
 for failure in build brew; do
-  if env "FINITO_TEST_${failure^^}_FAIL=true" bash "$apply" --roles it >/dev/null 2>&1; then
+  if env "FOUNDATION_TEST_${failure^^}_FAIL=true" bash "$apply" --roles it >/dev/null 2>&1; then
     echo "Failed $failure was accepted" >&2
     exit 1
   fi

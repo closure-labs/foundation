@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem with Finito.
+description: Report a reproducible problem with Foundation.
 body:
   - type: markdown
     attributes:

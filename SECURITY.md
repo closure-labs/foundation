@@ -16,7 +16,7 @@ security settings. If the private reporting form is unavailable, open an issue
 requesting a private contact without including vulnerability details. Response
 and fix timelines depend on maintainer availability.
 
-Finito manages user applications and services. Review profile changes, helper
+Foundation manages user applications and services. Review profile changes, helper
 scripts and dependency updates before activation. A successful build verifies
 the configuration can be built; it does not establish that activation is
 appropriate for every host.

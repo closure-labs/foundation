@@ -7,7 +7,7 @@ The complete template, including hidden Zsh assets and `flake.lock`, was copied
 to this repository's root. The Homebrew provider and Dell panel-policy fixture
 tests were copied from Finite's `tests/home/` and adjusted for the new layout.
 
-Finito owns future changes independently. Its flake has no input referencing
+Foundation owns future changes independently. Its flake has no input referencing
 Finite and no dependency on the source checkout. Runtime `finite-*` names,
 profile schemas, the template compatibility marker and `home.stateVersion` are
 preserved. The bundled Zsh assets retain their original license file.
