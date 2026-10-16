@@ -1,0 +1,11 @@
+Finito — Home Manager foundation for Finite
+Copyright 2026 Closure Labs contributors
+
+This repository was extracted from Finite. See ORIGIN.md for provenance.
+
+The bundled Zsh configuration under
+modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/
+includes work Copyright (c) 2026 Radley Sidwell-Lewis, distributed under
+the MIT License. Its original LICENSE is retained in that directory.
+
+Dependency packages retain their respective licenses.

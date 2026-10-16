@@ -1,0 +1,49 @@
+name: Update Nix dependencies
+
+on:
+  schedule:
+    - cron: '23 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-nix-dependencies
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3.22.2
+      - uses: DeterminateSystems/magic-nix-cache-action@565684385bcd71bad329742eefe8d12f2e765b39 # v13
+      - name: Refresh dependency pins
+        run: nix flake update
+      - name: Validate the proposed dependency pins
+        run: |
+          nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
+          bash tests/nix-check.sh
+      - name: Open a reviewed dependency update
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: flake.lock
+          branch: automation/flake-lock
+          delete-branch: true
+          commit-message: 'chore(deps): update Nix flake inputs'
+          title: 'chore(deps): update Nix flake inputs'
+          body: |
+            Refreshes flake.lock after fixture checks, workflow lint, default-profile
+            build, and selectable-profile evaluation pass with the new pins.
+
+            Review the input revisions and approve any GitHub-required workflow
+            runs before merging. This workflow never merges its own PR.

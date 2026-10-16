@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible problem with Finito.
+body:
+  - type: markdown
+    attributes:
+      value: For security vulnerabilities, use the private reporting link instead. Redact credentials and personal data from logs.
+  - type: input
+    id: revision
+    attributes:
+      label: Version or commit
+      description: Include the release tag or commit ID.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Host and profile
+      description: Bluefin variant, architecture, hardware, selected roles/packages, and Nix version.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the exact command and relevant configuration changes.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      render: text
