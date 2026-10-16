@@ -41,6 +41,10 @@ Homebrew tools, backs up the configuration and activates the generation. Finite
 also includes this step in explicit `ujust update` runs. Background checks only
 notify. Root execution is rejected.
 
+Set an explicit build budget when a larger profile needs it, for example
+`FOUNDATION_BUILD_MEMORY_MAX=5G finite-home-update`. This keeps the one-job,
+one-core and 512 MiB swap limits; the default remains 3 GiB.
+
 Personal inputs and modules remain local. Release metadata and `flake.lock` pin
 the exact source and dependency closure. Unsupported compatibility versions or
 failed builds leave the current configuration in place. An activation failure
@@ -56,6 +60,11 @@ Backups remain next to the configuration as `home-manager.previous.*`.
 `finite-configure` selects roles and optional packages; `finite-home-apply` builds
 and applies those profile changes using the same transaction. `nh home build`
 and `nh home switch` remain available for direct use.
+
+The flake and its lock determine the Home Manager package set. Activation adds
+that already-built set to the user Nix profile, which exposes its commands on
+`PATH`; this step does not select new package versions. Foundation uses
+`nix profile add` when available, with compatibility for older Nix.
 
 Keep private Git-backed Espanso declarations in personal modules; see
 [the snapshot workflow](docs/ESPANSO.md). Foundation defaults contain no private
@@ -106,7 +115,7 @@ bash tests/nix-check.sh
 
 The required status is **CI gate**. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 contribution checks and [docs/RELEASING.md](docs/RELEASING.md) for repository
-protection setup and the v0.1.0 release checklist. Version tags prepare a draft
+protection setup and the release checklist. Version tags prepare a draft
 GitHub release after CI passes. Weekly workflows propose reviewed Nix lock and
 GitHub Actions updates.
 

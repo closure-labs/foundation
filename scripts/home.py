@@ -234,10 +234,13 @@ def catalog_data():
 
 
 def build(stage):
+    memory_max = os.environ.get("FOUNDATION_BUILD_MEMORY_MAX", "3G")
+    if not re.fullmatch(r"[1-9][0-9]*[MG]", memory_max):
+        raise ValueError("FOUNDATION_BUILD_MEMORY_MAX must be a positive M or G budget, such as 5G")
     profile = read_json(stage / "profile.json")
     validate_profile(profile, catalog_data())
     installable = f"path:{stage}#homeConfigurations.{profile['identity']['username']}.activationPackage"
-    command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=3G", "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
+    command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
     paths = capture(command).splitlines()
     if len(paths) != 1 or not Path(paths[0], "activate").is_file():

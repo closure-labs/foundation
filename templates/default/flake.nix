@@ -1,5 +1,5 @@
 {
-  inputs.foundation.url = "github:closure-labs/foundation/v0.2.0";
+  inputs.foundation.url = "github:closure-labs/foundation/v0.2.1";
   outputs = inputs: let
     profile = builtins.fromJSON (builtins.readFile ./profile.json);
   in {

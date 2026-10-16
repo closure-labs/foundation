@@ -129,6 +129,22 @@ class ConsumerTests(unittest.TestCase):
                 home.update(self.root)
         self.assertEqual(home.tree_digest(self.root), digest)
 
+    def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
+        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_profile"), patch.object(home, "catalog_data", return_value={}), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+            self.assertEqual(home.build(self.root), self.activation)
+        command = capture.call_args.args[0]
+        self.assertIn("MemoryMax=5G", command)
+        self.assertIn("MemorySwapMax=512M", command)
+        self.assertEqual(command[command.index("--max-jobs") + 1], "1")
+        self.assertEqual(command[command.index("--cores") + 1], "1")
+
+    def test_invalid_build_budget_fails_before_evaluation(self):
+        for budget in ("0G", "infinity", "-1G", "5G; anything"):
+            with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX=budget), patch.object(home, "capture") as capture:
+                with self.assertRaisesRegex(ValueError, "positive M or G budget"):
+                    home.build(self.root)
+                capture.assert_not_called()
+
     def test_check_does_not_build_or_write(self):
         digest = home.tree_digest(self.root)
         candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
