@@ -70,6 +70,59 @@ class ConsumerTests(unittest.TestCase):
         self.assertIn('"flake" = false;', text)
         self.assertEqual(len(home.REFERENCE.findall(text)), 1)
 
+    def test_templates_track_channel_with_an_immutable_lock(self):
+        text = (self.root / "flake.nix").read_text()
+        lock = home.read_json(self.root / "flake.lock")
+        self.assertIn("/latest-release", text)
+        self.assertEqual(lock["nodes"]["foundation"]["original"]["ref"], "latest-release")
+        self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], INFO["rev"])
+        self.assertEqual(len(home.REFERENCE.findall((ROOT / "templates/default/flake.nix").read_text())), 1)
+
+    def test_nh_lock_update_overrides_stale_cached_provenance_without_writes(self):
+        candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
+        home.write_json(self.root / "flake.lock", home.consumer_lock(LOCK, candidate))
+        before = home.tree_digest(self.root)
+        with patch.object(home, "capture", return_value=json.dumps({"schema": 1, "compatibility": 1, "version": "0.3.0"})) as capture:
+            self.assertEqual(home.installed_info(self.root), candidate)
+        self.assertIn(candidate["rev"], capture.call_args.args[0][-1])
+        self.assertEqual(home.tree_digest(self.root), before)
+
+    def test_lock_repository_cannot_be_hidden_by_cached_provenance(self):
+        lock = home.read_json(self.root / "flake.lock")
+        lock["nodes"]["foundation"]["locked"]["repo"] = "other"
+        home.write_json(self.root / "flake.lock", lock)
+        with self.assertRaisesRegex(ValueError, "another repository"):
+            home.installed_info(self.root)
+
+    def test_channel_update_builds_exact_release_and_preserves_personal_files(self):
+        self.check_successful_update(True)
+
+    def test_fixed_commit_update_remains_fixed(self):
+        self.check_successful_update(False)
+
+    def check_successful_update(self, tracking):
+        if not tracking:
+            (self.root / "flake.nix").write_text(home.consumer_flake(INFO, reference=INFO["rev"]))
+            home.write_json(self.root / "flake.lock", home.consumer_lock(LOCK, INFO, reference=INFO["rev"]))
+        candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
+        before = {name: (self.root / name).read_bytes() for name in ("profile.json", "customize.nix", "modules/local.nix")}
+        def lock_update(command, **kwargs):
+            stage = Path(command[-1].removeprefix("path:"))
+            self.assertIn(candidate["rev"], (stage / "flake.nix").read_text())
+            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate, reference=candidate["rev"]))
+        def build(stage):
+            lock = home.read_json(stage / "flake.lock")
+            reference = "latest-release" if tracking else candidate["rev"]
+            self.assertIn(reference, (stage / "flake.nix").read_text())
+            self.assertEqual(lock["nodes"]["foundation"]["original"], home.foundation_reference(reference))
+            self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], candidate["rev"])
+            for name, contents in before.items():
+                self.assertEqual((stage / name).read_bytes(), contents)
+            return self.activation
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", side_effect=build), patch.object(home, "provision_brew"), patch.object(home, "commit_stage") as commit:
+            home.update(self.root)
+            commit.assert_called_once()
+
     def test_migration_rebases_personal_follows_without_changing_sources(self):
         original = {"nixpkgs": {"url": "core"}, "personal": {
             "url": "github:example/personal/commit",

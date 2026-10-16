@@ -91,6 +91,19 @@ Publish the reviewed draft from GitHub Releases when ready. If validation fails,
 fix the preparation change and use a new version/tag when the existing tag has
 already been shared. The workflow never publishes automatically.
 
+Publication triggers **Advance latest release**. It selects the highest published
+stable semantic version, checks the tag's metadata, ancestry on `main`, and a
+successful **CI gate** at that exact commit, then advances `latest-release` without
+force-pushing. Drafts, prereleases and unreleased `main` commits never enter this
+channel. Late publication events cannot roll it back. Confirm the branch matches
+the published tag before announcing the release.
+
+For initial setup or recovery, run **Advance latest release** manually on `main`.
+It rechecks published releases and CI rather than trusting an event's tag. The
+script also supports `python3 scripts/release-channel.py --check` for a read-only
+preview in a fetched checkout authenticated with `gh`. Never move versioned tags;
+`latest-release` is the moving branch, and consumer locks preserve exact revisions.
+
 ## Adopt the release in Finite
 
 In a separate reviewed change to Finite, pin its default Home Manager source to
