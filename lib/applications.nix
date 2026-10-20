@@ -22,6 +22,7 @@
       version = pkgs.lib.removeSuffix "\n" (builtins.readFile ../VERSION);
     }));
 in {
+  profileCatalog = homeCatalog;
   homeProfile = import ./profile.nix {
     inherit pkgs;
     catalog = homeCatalog;

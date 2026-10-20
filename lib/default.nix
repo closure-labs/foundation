@@ -2,6 +2,7 @@
   inherit (inputs.nixpkgs) lib;
   version = lib.removeSuffix "\n" (builtins.readFile ../VERSION);
   catalog = import ./catalog.nix;
+  normalizeProfile = import ./normalize-profile.nix {inherit catalog;};
   sourceInfo = {
     inherit version;
     compatibility = 1;
@@ -24,7 +25,8 @@
       sourceInfo = releaseInfo;
     };
 in {
-  inherit catalog homeCatalog sourceInfo mkApplications;
+  inherit catalog homeCatalog sourceInfo mkApplications normalizeProfile;
+  inherit (homeCatalog) profileCapabilities;
   mkHomeCatalog = {domainCatalog ? catalog}: import ./home-catalog.nix {inherit domainCatalog lib version;};
   compatibility = 1;
   mkHomeConfiguration = {
@@ -32,16 +34,17 @@ in {
     modules ? [],
     extraInputs ? {},
   }: let
+    normalized = normalizeProfile profile;
     evaluated = lib.evalModules {
       specialArgs = {
         inputs = inputs // extraInputs;
-        foundationProfile = profile;
+        foundationProfile = normalized;
         foundationModules = modules;
       };
       modules = [inputs.den.flakeModule ../modules/finite.nix];
     };
   in
-    evaluated.config.flake.homeConfigurations.${profile.identity.username};
+    evaluated.config.flake.homeConfigurations.${normalized.identity.username};
   mkConsumerTemplate = {
     pkgs,
     releaseInfo ? sourceInfo,

@@ -1,6 +1,7 @@
 {
   config,
   finiteHomeAssets,
+  lib,
   pkgs,
   ...
 }: let
@@ -25,6 +26,9 @@ in {
     opentofu
     packer
   ];
+
+  # Terminal multiplexers inherit SHELL even when Ghostty starts Zsh directly.
+  home.sessionVariables.SHELL = lib.mkDefault "${config.programs.zsh.package}/bin/zsh";
 
   programs.zsh = {
     enable = true;
@@ -55,7 +59,13 @@ in {
     ];
     syntaxHighlighting.enable = true;
     # The common base sets Brew precedence. Home Manager owns Zsh integrations.
-    initContent = builtins.readFile (finiteHomeAssets.devops + "/zsh/.zshrc");
+    initContent = lib.mkMerge [
+      (lib.mkBefore ''
+        # Refresh inherited login-session values in every interactive shell.
+        export SHELL="${config.programs.zsh.package}/bin/zsh"
+      '')
+      (builtins.readFile (finiteHomeAssets.devops + "/zsh/.zshrc"))
+    ];
   };
 
   programs.fzf = {

@@ -6,6 +6,14 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Expose profile capabilities in the catalog, library and a read-only initializer query; reject staged profile/catalog formats the running helper or selected Foundation cannot read.
+- Validate staged profiles with the locked Foundation revision's normalization rules and catalog. Preserve schema-2 selections, reject unsupported initialization schemas, and prevent staged profile writes from modifying live symlink targets.
+- Update Den to the reviewed October revision and align gen with its tested CI pin, preserving unrelated package sources and current profile composition.
+- Classify the six existing work roles as Professional and display their classification in the selector, using catalog-driven role and package lists while preserving application sets and schema 2 profiles. Register Personal as a peer category without adding applications.
+- Select Herdr from a separately locked `nixpkgs-unstable` input so terminal fixes can be updated without moving shared desktop dependencies.
+- Export the managed Zsh executable to terminal multiplexers, including sessions whose account login shell is Bash.
+- Keep desktop data search paths stable across user service manager reloads while retaining Flatpak exports.
+
 ## [0.2.2] - 2026-10-16
 
 - Track published stable Foundation releases through the `latest-release` branch, keeping exact source and dependency pins in `flake.lock`.

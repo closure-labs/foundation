@@ -1,4 +1,16 @@
 let
+  classifications = [
+    {
+      name = "professional";
+      label = "Professional";
+      order = 10;
+    }
+    {
+      name = "personal";
+      label = "Personal";
+      order = 20;
+    }
+  ];
   foundations = [
     {
       name = "bluefin";
@@ -33,36 +45,42 @@ let
     {
       name = "developer";
       label = "Developer";
+      classification = "professional";
       order = 10;
       homeCompatible = false;
     }
     {
       name = "sales";
       label = "Sales";
+      classification = "professional";
       order = 20;
       homeCompatible = true;
     }
     {
       name = "trainer";
       label = "Trainer";
+      classification = "professional";
       order = 30;
       homeCompatible = true;
     }
     {
       name = "support";
       label = "Support";
+      classification = "professional";
       order = 40;
       homeCompatible = true;
     }
     {
       name = "executive";
       label = "Executive";
+      classification = "professional";
       order = 50;
       homeCompatible = false;
     }
     {
       name = "it";
       label = "IT";
+      classification = "professional";
       order = 60;
       homeCompatible = false;
     }
@@ -110,11 +128,13 @@ let
     );
   homeHardware = builtins.filter (entry: entry.homeManager) hardware;
 in {
-  inherit foundations hardware packages roles;
+  inherit classifications foundations hardware packages roles;
+  classificationsByName = toAttrs classifications;
   foundationsByName = toAttrs foundations;
   hardwareByName = toAttrs hardware;
   packagesByName = toAttrs packages;
   rolesByName = toAttrs roles;
+  classificationNames = names classifications;
   foundationNames = names foundations;
   templateNames = map (foundation: foundation.template) foundations;
   homeHardwareNames = names homeHardware;

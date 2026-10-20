@@ -6,11 +6,13 @@
   inputs = {
     den.url = "github:denful/den";
     # Match the repository's tested hub and deduplicate its sibling libraries.
-    gen.url = "github:sini/gen/0004f3c9dfd5634f47ee72575e56c54883450bcf";
+    gen.url = "github:sini/gen/6427d42770e3b1c283b8caf2929ed622e551ebb9";
     gen.inputs.nixpkgs.follows = "nixpkgs";
     devenv.url = "github:cachix/devenv/v2.2.2";
     nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1";
     nixpkgs-weekly.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
+    # Keep Herdr fixes independent of the shared desktop package pins.
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     home-manager = {
       url = "https://flakehub.com/f/nix-community/home-manager/0.2605";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -78,6 +78,24 @@ Backups remain next to the configuration as `home-manager.previous.*`.
 and applies those profile changes using the same transaction. `nh home build`
 and `nh home switch` remain available for direct use.
 
+Staged builds validate and order selections using the locked Foundation
+revision's `lib.normalizeProfile` API. Older releases use their own catalog with
+a schema-2 compatibility validator. Account and running-image checks still run
+locally. Initialization explicitly converts schema 1 to schema 2 and rejects
+unsupported versions; it does not overwrite a newer schema version.
+`finite-home-init --capabilities` reports the executing helper's supported
+initialization, normalization and catalog schemas without accessing a consumer.
+The catalog and `lib.profileCapabilities` expose the selected source's support;
+staging requires both sides to understand the input. Current writers emit schema 2.
+
+Developer, Sales, Trainer, Support, Executive, and IT are classified as
+**Professional** in the selector and catalog. They remain individually
+selectable with their existing applications. **Personal** is registered as a
+peer category for future profiles; it currently adds no roles or applications.
+These categories do not change schema 2 profiles or the Bluefin/DX image choice.
+See the [Personal profile proposals](docs/PERSONAL-PROFILES.md) for Family,
+Media, Creative and Gaming compositions and optional applications.
+
 The flake and its lock determine the Home Manager package set. Activation adds
 that already-built set to the user Nix profile, which exposes its commands on
 `PATH`; this step does not select new package versions. Foundation uses
@@ -101,6 +119,13 @@ activation as described by Home Manager. Foundation never grants keyboard access
 
 ## Maintain the repository
 
+See the [profile architecture and workstation review](docs/PROFILE-ARCHITECTURE.md)
+for the proposed professional/personal profile composition, recent Den findings,
+hardware boundaries, and staged migration plan. This is a design document;
+the schema 2 configuration described above remains the implemented interface.
+The [refactor implementation plan](docs/plans/PLAN-profile-refactor.md) records
+the implemented classification slice and the later application/hardware work.
+
 Use `jj status`, `jj diff` and `jj describe` to review and record changes. This
 repository has its own `flake.lock`; update dependencies intentionally:
 
@@ -122,7 +147,8 @@ bash tests/check.sh
 CI runs those fixtures, workflow lint, release metadata checks, and
 `nix flake check`, which builds the configured Home Manager activation package.
 It also evaluates all roles and optional packages with Dell hardware on both
-foundations. CI never activates a configuration. Run the full checks on a host
+foundations and checks locked legacy, bridge and candidate validation targets.
+CI never activates a configuration. Run the full checks on a host
 with enough memory and disk space for the desktop package set:
 
 ```bash

@@ -19,7 +19,7 @@ from pathlib import Path
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
 RELEASE_CHANNEL = "latest-release"
-CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "home-manager", "determinate", "nix-flatpak"}
+CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
 REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
@@ -40,12 +40,47 @@ def write_json(path, value):
     Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
 
 
+def write_staged_profile(stage, profile):
+    # Replace the directory entry so a copied symlink cannot write into live data.
+    with tempfile.NamedTemporaryFile(prefix=".profile-", dir=stage, delete=False) as stream:
+        temporary = Path(stream.name)
+    try:
+        write_json(temporary, profile)
+        temporary.replace(stage / "profile.json")
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def config_root():
     return Path(os.environ.get("FINITE_HOME_FLAKE_PATH", str(Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "home-manager")))
 
 
 def source_root():
     return Path(os.environ.get("FINITE_FOUNDATION_SOURCE", Path(__file__).resolve().parents[1]))
+
+
+def validate_capabilities(value):
+    fields = ("initializeSchemas", "normalizeSchemas", "catalogSchemas")
+    if (not isinstance(value, dict) or type(value.get("schema")) is not int or value["schema"] != 1
+            or any(not isinstance(value.get(field), list) or not value[field]
+                   or any(type(item) is not int or item < 1 for item in value[field])
+                   or len(set(value[field])) != len(value[field]) for field in fields)
+            or type(value.get("writeSchema")) is not int
+            or value["writeSchema"] not in value["initializeSchemas"]
+            or value["writeSchema"] not in value["normalizeSchemas"]):
+        raise ValueError("Invalid Foundation profile capabilities")
+    return value
+
+
+def profile_capabilities():
+    # Describe the running helper, never a source selected through environment.
+    return validate_capabilities(read_json(Path(__file__).resolve().parents[1] / "lib/profile-capabilities.json"))
+
+
+def require_helper_schema(profile, field="normalizeSchemas"):
+    if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
+            or profile["schema"] not in profile_capabilities()[field]):
+        raise ValueError("The installed Foundation helper does not support this profile schema")
 
 
 def version(value):
@@ -209,18 +244,30 @@ def copy_configuration(source, target):
 
 
 def validate_profile(profile, catalog):
-    if profile.get("schema") != 2:
+    """Schema-2 fallback for selected releases without a Nix normalizer."""
+    if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] != 2:
         raise ValueError("Unsupported profile schema; migrate a schema-1 profile with the existing initializer first")
     for field, choices in (("roles", catalog["roles"]), ("packages", catalog["packages"])):
         requested = profile.get(field)
-        if not isinstance(requested, list) or len(set(requested)) != len(requested) or any(x not in choices for x in requested):
+        if (not isinstance(requested, list) or any(not isinstance(x, str) or x not in choices for x in requested)
+                or len(set(requested)) != len(requested)):
             raise ValueError(f"Invalid or duplicate {field}")
-        profile[field] = sorted(requested, key=lambda x: choices[x]["order"])
-    if profile.get("foundation") not in catalog["foundations"] or profile.get("hardware") not in catalog["hardware"]:
+        profile[field] = sorted(requested, key=lambda x: (choices[x]["order"], x))
+    if any(not isinstance(profile.get(field), str) or profile[field] not in catalog[choices]
+           for field, choices in (("foundation", "foundations"), ("hardware", "hardware"))):
         raise ValueError("Unsupported host foundation or hardware")
     identity = profile.get("identity", {})
-    if not re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?", identity.get("username", "")) or not identity.get("homeDirectory", "").startswith("/"):
+    if (not isinstance(identity, dict) or not isinstance(identity.get("username"), str)
+            or not re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?", identity["username"])
+            or not isinstance(identity.get("homeDirectory"), str)
+            or not re.fullmatch(r"/.+", identity["homeDirectory"])):
         raise ValueError("Invalid account identity")
+    return profile
+
+
+def validate_runtime_profile(profile, catalog):
+    """Account and running-image checks belong to the invoking machine."""
+    identity = profile["identity"]
     import pwd
     if identity["username"] != pwd.getpwuid(os.getuid()).pw_name or Path(identity["homeDirectory"]).resolve() != Path.home().resolve():
         raise ValueError("Profile identity must match the invoking desktop user")
@@ -231,20 +278,47 @@ def validate_profile(profile, catalog):
             raise ValueError("Profile is incompatible with the running Finite image")
 
 
-def catalog_data():
-    path = os.environ.get("FINITE_FOUNDATION_CATALOG")
-    if path:
-        return read_json(path)
-    raw = json.loads(capture(["nix", "eval", "--json", "--file", str(source_root() / "lib/catalog.nix")]))
-    return {name: {item["name"]: item for item in raw[name]} for name in ("roles", "packages", "hardware", "foundations")}
+def validate_staged_profile(stage):
+    # Read the profile from the same staged flake as its locked Foundation.
+    # Fallback is capability-based: target validation failures must propagate.
+    submitted = read_json(stage / "profile.json")
+    require_helper_schema(submitted)
+    expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
+      target = root.inputs.foundation or root;
+      submitted = builtins.fromJSON (builtins.readFile (root.outPath + "/profile.json"));
+      hasNormalizer = target.lib ? normalizeProfile;
+      hasCapabilities = target.lib ? profileCapabilities;
+    in {
+      inherit hasNormalizer;
+      catalog = target.lib.homeCatalog;
+      profile = if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
+        then throw "Selected Foundation does not support this profile schema"
+        else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
+    } // (if hasCapabilities then { capabilities = target.lib.profileCapabilities; } else {})'''
+    data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+    profile = data["profile"]
+    if (type(data["catalog"].get("schema")) is not int
+            or data["catalog"]["schema"] not in profile_capabilities()["catalogSchemas"]):
+        raise ValueError("The installed Foundation helper does not support this catalog schema")
+    if "capabilities" in data:
+        capabilities = validate_capabilities(data["capabilities"])
+        if submitted["schema"] not in capabilities["normalizeSchemas"] or data["catalog"]["schema"] not in capabilities["catalogSchemas"]:
+            raise ValueError("Selected Foundation capabilities do not support this profile or catalog schema")
+    require_helper_schema(profile)
+    if not data["hasNormalizer"]:
+        profile = validate_profile(profile, data["catalog"])
+    validate_runtime_profile(profile, data["catalog"])
+    return profile
 
 
 def build(stage):
     memory_max = os.environ.get("FOUNDATION_BUILD_MEMORY_MAX", "3G")
     if not re.fullmatch(r"[1-9][0-9]*[MG]", memory_max):
         raise ValueError("FOUNDATION_BUILD_MEMORY_MAX must be a positive M or G budget, such as 5G")
-    profile = read_json(stage / "profile.json")
-    validate_profile(profile, catalog_data())
+    submitted = read_json(stage / "profile.json")
+    profile = validate_staged_profile(stage)
+    if profile != submitted:
+        write_staged_profile(stage, profile)
     installable = f"path:{stage}#homeConfigurations.{profile['identity']['username']}.activationPackage"
     command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
@@ -493,20 +567,25 @@ def initialize(root, profile_path, check=False):
     metadata = os.environ.get("FINITE_FOUNDATION_METADATA")
     info = read_json(metadata) if metadata else {}
     profile = json.loads(capture(["yq", "-o=json", ".", str(profile_path)]))
+    if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] not in (1, 2):
+        raise ValueError("Unsupported profile schema; initialization accepts schema 1 or 2")
     import pwd
     account = pwd.getpwuid(os.getuid())
     supplied = profile.get("identity", {})
+    if not isinstance(supplied, dict):
+        raise ValueError("Invalid provisioned identity")
     identity = {"username": account.pw_name, "homeDirectory": account.pw_dir}
-    if any(value and value != identity.get(key) for key, value in supplied.items()):
+    if any(supplied.get(key) and supplied[key] != value for key, value in identity.items()):
         raise ValueError("Provisioned identity differs from the current account")
-    profile.update(schema=2, identity=identity)
-    profile.setdefault("packages", [])
+    if profile["schema"] == 1:
+        profile["schema"] = 2
+        profile.setdefault("packages", [])
+    profile["identity"] = {**supplied, **identity}
     with locked(root):
         with tempfile.TemporaryDirectory(prefix=".foundation-init-", dir=root.parent) as temp:
             stage = Path(temp) / "home-manager"
             make_template(source_root(), info, stage)
-            validate_profile(profile, catalog_data())
-            write_json(stage / "profile.json", profile)
+            write_staged_profile(stage, profile)
             activation = build(stage)
             if not check:
                 provision_brew(stage)
@@ -531,8 +610,7 @@ def apply(root, roles=None, packages=None, check=False):
             for field, value in (("roles", roles), ("packages", packages)):
                 if value is not None:
                     profile[field] = value.split(",") if value else []
-            validate_profile(profile, catalog_data())
-            write_json(stage / "profile.json", profile)
+            write_staged_profile(stage, profile)
             activation = build(stage)
             if not check:
                 provision_brew(stage)
@@ -572,7 +650,9 @@ def main():
         item = sub.add_parser(command)
         item.add_argument("--check", action="store_true")
         if command == "init":
-            item.add_argument("--profile", required=True, type=Path)
+            selection = item.add_mutually_exclusive_group(required=True)
+            selection.add_argument("--profile", type=Path)
+            selection.add_argument("--capabilities", action="store_true")
         if command == "apply":
             item.add_argument("--roles")
             item.add_argument("--packages")
@@ -584,6 +664,9 @@ def main():
         item.add_argument("--" + field, required=True, type=Path)
     args = parser.parse_args()
     try:
+        if args.command == "init" and args.capabilities:
+            print(json.dumps(profile_capabilities(), sort_keys=True))
+            return 0
         if args.command == "template":
             make_template(args.source, read_json(args.metadata), args.output)
             return 0

@@ -1,6 +1,26 @@
 set -euo pipefail
 
 current="${FINITE_HOME_PROFILE_PATH:-$HOME/.config/home-manager/profile.json}"
+catalog="${FINITE_FOUNDATION_CATALOG:-}"
+if [[ -z "$catalog" || ! -r "$catalog" ]]; then
+  echo 'The Foundation profile catalog is unavailable.' >&2
+  exit 1
+fi
+if ! jq -e '
+  (.roles | type == "object") and
+  (.packages | type == "object") and
+  ((.classifications // {}) | type == "object") and
+  all(.roles[];
+    (.label | type == "string") and (.order | type == "number") and
+    (.classification == null or (.classification | type == "string"))) and
+  all(.packages[];
+    (.label | type == "string") and (.description | type == "string") and
+    (.order | type == "number")) and
+  all((.classifications // {})[]; .label | type == "string")
+' "$catalog" >/dev/null; then
+  echo 'The Foundation profile catalog is invalid.' >&2
+  exit 1
+fi
 if [[ ! -r "$current" ]]; then
   zenity --error \
     --title='Finite configuration' \
@@ -8,38 +28,43 @@ if [[ ! -r "$current" ]]; then
   exit 1
 fi
 
-rows=()
-for entry in \
-  developer:Developer sales:Sales trainer:Trainer support:Support executive:Executive it:IT; do
-  role="${entry%%:*}"
-  label="${entry#*:}"
-  checked=FALSE
-  if jq -e --arg role "$role" '.roles | index($role) != null' "$current" >/dev/null; then
-    checked=TRUE
-  fi
-  rows+=("$checked" "$label" "$role")
-done
+# Prepare both dialogs before opening either one, so invalid input cannot
+# silently produce an empty checklist or partially advance the selector.
+if ! role_rows=$(jq -ce --slurpfile profile "$current" '
+  . as $catalog |
+  [.roles | to_entries | sort_by(.value.order)[] |
+    .key as $id | .value as $role |
+    [
+      (if ($profile[0].roles | index($id)) != null then "TRUE" else "FALSE" end),
+      ($catalog.classifications[($role.classification // "")].label // ""),
+      $role.label,
+      $id
+    ]
+  ] | flatten
+' "$catalog") || ! package_rows=$(jq -ce --slurpfile profile "$current" '
+  [.packages | to_entries | sort_by(.value.order)[] |
+    .key as $id | .value as $package |
+    [
+      (if (($profile[0].packages // []) | index($id)) != null then "TRUE" else "FALSE" end),
+      $package.label,
+      $package.description,
+      $id
+    ]
+  ] | flatten
+' "$catalog"); then
+  echo 'Unable to read the Foundation profile catalog or current profile.' >&2
+  exit 1
+fi
+
+mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$role_rows")
 
 roles=$(zenity --list --checklist \
   --title='Configure Finite' \
   --text='Select any roles to compose in this Home Manager configuration.' \
-  --column='Use' --column='Role' --column='id' \
-  --hide-column=3 --print-column=3 --separator=, "${rows[@]}") || exit 0
+  --column='Use' --column='Classification' --column='Role' --column='id' \
+  --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
 
-rows=()
-while IFS='|' read -r package label description; do
-  checked=FALSE
-  if jq -e --arg package "$package" '(.packages // []) | index($package) != null' "$current" >/dev/null; then
-    checked=TRUE
-  fi
-  rows+=("$checked" "$label" "$description" "$package")
-done <<'EOF'
-hack-font|Hack Nerd Font|Hack font patched with Nerd Fonts glyphs
-herdr|Herdr|Terminal process manager
-jj|Jujutsu|Jujutsu version-control system (jj)
-opencode|OpenCode|Open-source coding agent
-uv|uv|Python package and project manager
-EOF
+mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$package_rows")
 
 packages=$(zenity --list --checklist \
   --title='Configure Finite packages' \

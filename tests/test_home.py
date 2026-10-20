@@ -124,14 +124,16 @@ class ConsumerTests(unittest.TestCase):
             commit.assert_called_once()
 
     def test_migration_rebases_personal_follows_without_changing_sources(self):
-        original = {"nixpkgs": {"url": "core"}, "personal": {
+        original = {"nixpkgs": {"url": "core"}, "nixpkgs-unstable": {"url": "unstable"}, "personal": {
             "url": "github:example/personal/commit",
             "inputs": {"nixpkgs": {"follows": "nixpkgs"}},
-        }, "alias": {"follows": "nixpkgs-weekly"}}
+        }, "alias": {"follows": "nixpkgs-weekly"}, "unstable-alias": {"follows": "nixpkgs-unstable"}}
         extras = home.migrate_input_declarations(original)
         self.assertNotIn("nixpkgs", extras)
+        self.assertNotIn("nixpkgs-unstable", extras)
         self.assertEqual(extras["personal"]["inputs"]["nixpkgs"]["follows"], "foundation/nixpkgs")
         self.assertEqual(extras["alias"]["follows"], "foundation/nixpkgs-weekly")
+        self.assertEqual(extras["unstable-alias"]["follows"], "foundation/nixpkgs-unstable")
         self.assertEqual(original["personal"]["inputs"]["nixpkgs"]["follows"], "nixpkgs")
         self.assertEqual(extras["personal"]["url"], original["personal"]["url"])
 
@@ -183,7 +185,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
-        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_profile"), patch.object(home, "catalog_data", return_value={}), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
             self.assertEqual(home.build(self.root), self.activation)
         command = capture.call_args.args[0]
         self.assertIn("MemoryMax=5G", command)
