@@ -6,6 +6,7 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Add an isolated schema-3 composition draft and migration preview: smaller role defaults, four Personal roles, optional capabilities, Nixpkgs/nixGL preference and verified Flathub exceptions. Production readers, writers and schema-2 application sets remain unchanged.
 - Expose profile capabilities in the catalog, library and a read-only initializer query; reject staged profile/catalog formats the running helper or selected Foundation cannot read.
 - Validate staged profiles with the locked Foundation revision's normalization rules and catalog. Preserve schema-2 selections, reject unsupported initialization schemas, and prevent staged profile writes from modifying live symlink targets.
 - Update Den to the reviewed October revision and align gen with its tested CI pin, preserving unrelated package sources and current profile composition.

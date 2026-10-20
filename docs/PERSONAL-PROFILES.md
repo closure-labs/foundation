@@ -7,6 +7,9 @@ sets stay intact while the reader/migration bridge is developed.
 Recommend four independently composable roles under **Personal**, with a small
 default set and larger tools selected explicitly. The user confirmed lightweight
 defaults, with larger applications and launchers optional.
+The exact ownership and format are now an
+[executable schema-3 draft](architecture/ARCH-profile-schema3.md); production
+writers still emit schema 2.
 
 | Role | Purpose and proposed core | Optional additions |
 | --- | --- | --- |
@@ -30,10 +33,11 @@ recording tools without selecting an entire Personal role, for example.
 - Keep reusable office, mail, file-sync, playback, image-editing, recording and
   launcher capabilities separate from role names. Include capabilities by
   explicit aspect reference and deduplicate shared selections.
-- Prefer each app's existing provider. Keep existing Nix and Flatpak choices
-  during extraction rather than combining a provider migration with an app split.
-  Evaluate Flatpak for new desktop apps/launchers in keeping with Bluefin's
-  application model; verify individual manifests before adding declarations.
+- Prefer graphical Nixpkgs applications with nixGL where appropriate. Official
+  or verified Flathub distributions are permitted exceptions. Keep schema-2
+  providers unchanged; preview provider changes explicitly for migration to the
+  new format. The draft uses Nix for proposed creative tools and launchers,
+  with verified Flathub exceptions where no matching Nix package exists.
 - Treat server URLs, accounts, sync folders and credentials as user configuration.
   No role starts a media/cloud server, chooses sync roots, downloads games, or
   connects accounts implicitly.
@@ -68,7 +72,7 @@ Checked 2026-10-20:
   Epic, GOG and Amazon libraries; [Lutris](https://lutris.net/) covers broader
   game-library and compatibility workflows. [GNOME Chess](https://help.gnome.org/gnome-chess/index.html)
   supports local games against another person or an installed chess engine.
-- Optional creative application manifests:
-  [Kdenlive](https://flathub.org/en/apps/org.kde.kdenlive),
-  [Blender](https://flathub.org/en/apps/org.blender.Blender),
-  [OBS Studio](https://flathub.org/en/apps/com.obsproject.Studio).
+- Optional creative projects: [Kdenlive](https://kdenlive.org/),
+  [Blender](https://www.blender.org/), [OBS Studio](https://obsproject.com/).
+  The draft selects their Nixpkgs packages; the locked provider fixture checks
+  availability. GUI and engine launches remain rollout checks.

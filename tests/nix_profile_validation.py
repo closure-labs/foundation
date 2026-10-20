@@ -121,6 +121,12 @@ def main():
             assert actual["roles"] == ["developer", "it"]
             print("Foundation public normalization export passed", flush=True)
 
+            expression = 'import ' + str(ROOT / "tests/draft-providers.nix") + ' { foundation = builtins.getFlake '
+            expression += home.nix_value("path:" + str(ROOT)) + '; }'
+            providers = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+            assert providers and all(app["available"] for app in providers.values()), providers
+            print(f"All {len(providers)} draft Nix providers exist in the locked inputs (no builds)", flush=True)
+
 
 if __name__ == "__main__":
     main()

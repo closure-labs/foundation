@@ -1,7 +1,9 @@
 # Home Manager profile refactor implementation plan
 
 Status: classification, Den/gen and normalization slices implemented and
-validated, together with F1a reader readiness. Personal application proposals are
+validated, together with F1a reader readiness. A1 now has an isolated executable
+[schema-3 application contract](../architecture/ARCH-profile-schema3.md),
+resolver and migration preview. Personal application proposals are
 recorded in [PERSONAL-PROFILES](../PERSONAL-PROFILES.md).
 User decision: **classify first, split applications later**. Firmware has been
 updated manually and is outside this plan's critical path.
@@ -122,7 +124,7 @@ by the earlier research document.
 | N1 Validation bridge | Before any new writer: implement pure Nix structural normalization and resolve it/catalog data from the staged, locked Foundation revision. Keep account/image checks in Python. Remove unconditional schema downgrading in initialization; retain schema-2 writers. | Old helper/source, bridge helper/source and candidate target combinations are tested; valid order normalizes consistently, unknowns/duplicates fail; staging cannot use a stale caller catalog. |
 | F1a Reader readiness | Coordinate current schema-1/2 first-login, seed/cloud-init, CLI and typed catalog projection; add explicit capability checks across running helper, selected Foundation, and provisioning code. | Fresh-login, seeded and existing-consumer fixtures preserve supplied data, reject unsupported input without replacement, and retain schema-2 writers. |
 | A1 Application contract | After F1a: use the confirmed lightweight Personal direction and proposed Family/Media/Creative/Gaming roles; finalize per-app ownership, schema-3 selection/migration interface and preview additions/removals. Existing work-role selection implies Professional without its sibling roles. | The format and app membership contracts are defined; schema 2 retains its legacy declaration set; every current app is accounted for, including Chromium/camera controls. |
-| F1b Future-format readers | After A1 defines the exact format: implement and test dual readers across Foundation helpers and Finite first-login/provisioning. Advertise only support implemented by the executing code. | Old/new inputs are accepted by the reader bridge while default writers remain schema 2; incompatible helper/source combinations fail before writing. |
+| F1b Future-format readers | After A1: implement production dual normalization/composition, configured Nix GUI recipes and nixGL Mesa wrappers with the alternate generic GPU backend disabled only for schema 3. Coordinate Foundation helpers and Finite first-login/provisioning. Advertise only implemented support. | Old/new inputs are accepted while default writers remain schema 2; incompatible helper/source pairs fail before writing. Evaluate all draft apps and old-profile parity; verify physical GUI/backend behavior before migration rollout. |
 | A2 Writers and migration | After A1/F1b: implement selector/CLI migration and enable schema-3 writing only with verified reader/helper support. Keep source and profile rollback separate. | Both categories compose; update/build/activation and recovery fixtures pass for old and migrated consumers; unmanaged Flatpaks stay preserved; no silent schema rewrite. |
 | H1 Host composition | After D1 and the normalization bridge: add form-factor, CPU, integrated/discrete GPU and model selections; retain legacy hardware IDs/env/module adapters. Serialize shared-file edits with A1/A2. | Laptop/desktop and Intel/AMD/mixed-GPU evaluation passes; Dell panel/camera behavior preserved; no desktop-only home receives laptop power units; no Bluefin-owned drivers/PAM/services are installed by Home Manager. |
 | U1 Update hardening | Independent Finite task: retain OS → Flatpak → Brew → Foundation; move root rejection before upstream execution; establish a supported failure-propagation integration. Do not parse upstream recipe bodies as an assumed stable API. | Failure-injection fixtures prove each failed prerequisite prevents Foundation activation, intentional Brew skips work, and the staged updater's backup/resource/recovery behavior remains. |
@@ -131,12 +133,11 @@ Text dependency map: `P4 -> D1`; `P4 -> N1 -> F1a -> A1 -> F1b -> A2`;
 `D1 + N1 -> H1`; `U1` is independent. Implementation is still sequential where
 files overlap. Do not bundle U1 or new power policies into the classification PR.
 
-Plan the later schema-3/catalog-4 exact interface only at A1, after current reader
-readiness is proven. Actual future-format readers follow that contract at F1b,
-before A2 enables new writers. This splits the previous F1 requirement so that
-readers are not implemented before their data format is defined.
-The earlier JSON example is a candidate, not an instruction
-to change public data in P1. No arbitrary support lifetime or release
+A1 defines schema 3 with existing role/account/hardware fields plus explicit
+capabilities; classifications and effective capabilities are derived. It does
+not require catalog schema 4 for additive metadata. Actual future-format readers
+follow at F1b before A2 enables new writers. The earlier research JSON example
+is superseded by the A1 contract. No arbitrary support lifetime or release
 compatibility bump is established by this document.
 
 N1 is implemented: `lib.normalizeProfile` owns schema-2 structure/order, and
@@ -152,8 +153,14 @@ A1/F1b precede Personal application and writer enablement at A2.
 F1a is implemented and validated across the running helper, staged source and
 Finite adapters. See the [reader readiness report](../qa-reports/QA-finite-reader-readiness.md).
 Finite changes are isolated in jj change `pvuoruok`, workspace
-`/tmp/finite-profile-readers`; its existing Foundation pin is unchanged. A1 is
-the next contract stage; F1b must precede any new-format writer at A2.
+`/tmp/finite-profile-readers`; its existing Foundation pin is unchanged. A1
+accounts for every existing application, provides declaration/provider diffs,
+and follows the confirmed optional Chromium/camera-aware controls and
+Nixpkgs/nixGL preference. Its draft API does not change production capability
+advertising or catalogs. F1b is the next implementation stage and must precede
+any new-format writer at A2.
+See the [A1 validation report](../qa-reports/QA-profile-application-contract.md)
+for the inventory, provider, draft isolation and compatibility evidence.
 
 ## Risks, deferred choices, and handoff
 
@@ -164,7 +171,8 @@ the next contract stage; F1b must precede any new-format writer at A2.
   derivation. Compare declared composition and selected behaviors, not a demand
   for identical whole derivation hashes.
 - **Legacy app removal:** Personal and Professional are not yet a complete
-  partition. A1 must explicitly decide each moved app, not infer intent from names.
+  partition. A1 records each app's ownership; A2 must present concrete declaration
+  and provider changes, preserve unmanaged Flatpaks/data and support rollback.
 - **New profile recovery:** dual readers must ship before writers; test old
   controller catalogs and manually locked consumers, not just the newest checkout.
 - **Hardware scope:** preserve existing native lid/power behavior initially.
@@ -174,8 +182,10 @@ the next contract stage; F1b must precede any new-format writer at A2.
 
 Resolved product decisions: all six work roles are Professional; classify before
 splitting applications; preserve current application sets; firmware maintenance
-is already handled. No user answer is outstanding for P0–P4. Later A1 app
-membership and any custom docking behavior require their own concrete proposal.
+is already handled. The user also confirmed lightweight Personal defaults,
+optional Chromium, camera-aware controls, and graphical Nixpkgs/nixGL preference
+with official/verified Flathub exceptions. No answer is outstanding for A1;
+custom docking behavior requires a concrete predicate and physical tests.
 
 The user requested implementation after reviewing this architecture/plan.
 Before release, require code review plus compatibility/parity evidence and

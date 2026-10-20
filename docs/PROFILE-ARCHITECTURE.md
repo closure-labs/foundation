@@ -5,6 +5,10 @@ reported that firmware has been updated manually. Follow the
 [current architecture](architecture/ARCH-profile-refactor.md) and
 [implementation plan](plans/PLAN-profile-refactor.md). They supersede this
 review's original rollout order and immediate schema/application changes.
+The [A1 schema-3 contract](architecture/ARCH-profile-schema3.md) supersedes the
+candidate JSON and application/provider decisions below: retain the hardware
+string, derive classifications, and add explicit capabilities rather than a
+second persisted `profiles` selection.
 
 Reviewed 2026-10-20. This document completes the architecture review and defines
 the subsequent implementation. Proposed schemas and compositions below are not

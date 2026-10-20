@@ -1,7 +1,9 @@
 # Profile refactor architecture
 
-Status: classification slice implemented; later composition stages remain
-proposed. Classification-first sequencing confirmed by the user on 2026-10-20.
+Status: classification, dependency/normalization and reader-readiness slices
+implemented. The [A1 schema-3 contract](ARCH-profile-schema3.md) is an isolated
+executable draft; production composition/readers and writers follow at F1b/A2.
+Classification-first sequencing confirmed by the user on 2026-10-20.
 This document and the
 [implementation plan](../plans/PLAN-profile-refactor.md) supersede the rollout
 order and immediate schema changes in the earlier

@@ -1,0 +1,11 @@
+{
+  "checkedDate": "2026-10-20",
+  "source": "Flathub public appstream API; verification metadata, not download counts",
+  "applications": {
+    "com.github.tchx84.Flatseal": {"verified": true, "method": "login_provider", "publisher": "tchx84", "evidence": "https://flathub.org/api/v2/appstream/com.github.tchx84.Flatseal"},
+    "app.drey.Damask": {"verified": true, "method": "website", "publisher": "drey.app", "evidence": "https://flathub.org/api/v2/appstream/app.drey.Damask"},
+    "io.github.pleromix.IceBox": {"verified": true, "method": "login_provider", "publisher": "pleromix", "evidence": "https://flathub.org/api/v2/appstream/io.github.pleromix.IceBox"},
+    "io.github.zaedus.spider": {"verified": true, "method": "login_provider", "publisher": "zaedus", "evidence": "https://flathub.org/api/v2/appstream/io.github.zaedus.spider"},
+    "io.github.totoshko88.RustConn": {"verified": true, "method": "login_provider", "publisher": "totoshko88", "evidence": "https://flathub.org/api/v2/appstream/io.github.totoshko88.RustConn"}
+  }
+}

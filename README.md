@@ -88,6 +88,12 @@ initialization, normalization and catalog schemas without accessing a consumer.
 The catalog and `lib.profileCapabilities` expose the selected source's support;
 staging requires both sides to understand the input. Current writers emit schema 2.
 
+The [schema-3 composition draft](docs/architecture/ARCH-profile-schema3.md)
+defines smaller Professional/Personal defaults, optional capabilities, a
+Nixpkgs/nixGL provider preference, and a read-only migration preview through
+`lib.profileDrafts`. It is isolated from production readers and activation;
+existing profiles retain their current applications and providers.
+
 Developer, Sales, Trainer, Support, Executive, and IT are classified as
 **Professional** in the selector and catalog. They remain individually
 selectable with their existing applications. **Personal** is registered as a

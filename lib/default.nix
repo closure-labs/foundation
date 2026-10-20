@@ -27,6 +27,7 @@
 in {
   inherit catalog homeCatalog sourceInfo mkApplications normalizeProfile;
   inherit (homeCatalog) profileCapabilities;
+  profileDrafts = import ./profile-drafts {inherit catalog;};
   mkHomeCatalog = {domainCatalog ? catalog}: import ./home-catalog.nix {inherit domainCatalog lib version;};
   compatibility = 1;
   mkHomeConfiguration = {
