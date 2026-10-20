@@ -30,10 +30,10 @@
     inherit system;
     config.allowUnfree = true;
   };
-  weekly = inputs.nixpkgs-weekly.legacyPackages.${system};
+  unstable = inputs.nixpkgs-unstable.legacyPackages.${system};
   optionalPackages = {
     "hack-font" = pkgs.nerd-fonts.hack;
-    inherit (weekly) herdr;
+    inherit (unstable) herdr;
     jj = pkgs.jujutsu;
     inherit (pkgs) opencode uv;
   };

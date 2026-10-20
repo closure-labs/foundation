@@ -6,6 +6,10 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Select Herdr from a separately locked `nixpkgs-unstable` input so terminal fixes can be updated without moving shared desktop dependencies.
+- Export the managed Zsh executable to terminal multiplexers, including sessions whose account login shell is Bash.
+- Keep desktop data search paths stable across user service manager reloads while retaining Flatpak exports.
+
 ## [0.2.2] - 2026-10-16
 
 - Track published stable Foundation releases through the `latest-release` branch, keeping exact source and dependency pins in `flake.lock`.

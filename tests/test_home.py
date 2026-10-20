@@ -124,14 +124,16 @@ class ConsumerTests(unittest.TestCase):
             commit.assert_called_once()
 
     def test_migration_rebases_personal_follows_without_changing_sources(self):
-        original = {"nixpkgs": {"url": "core"}, "personal": {
+        original = {"nixpkgs": {"url": "core"}, "nixpkgs-unstable": {"url": "unstable"}, "personal": {
             "url": "github:example/personal/commit",
             "inputs": {"nixpkgs": {"follows": "nixpkgs"}},
-        }, "alias": {"follows": "nixpkgs-weekly"}}
+        }, "alias": {"follows": "nixpkgs-weekly"}, "unstable-alias": {"follows": "nixpkgs-unstable"}}
         extras = home.migrate_input_declarations(original)
         self.assertNotIn("nixpkgs", extras)
+        self.assertNotIn("nixpkgs-unstable", extras)
         self.assertEqual(extras["personal"]["inputs"]["nixpkgs"]["follows"], "foundation/nixpkgs")
         self.assertEqual(extras["alias"]["follows"], "foundation/nixpkgs-weekly")
+        self.assertEqual(extras["unstable-alias"]["follows"], "foundation/nixpkgs-unstable")
         self.assertEqual(original["personal"]["inputs"]["nixpkgs"]["follows"], "nixpkgs")
         self.assertEqual(extras["personal"]["url"], original["personal"]["url"])
 
