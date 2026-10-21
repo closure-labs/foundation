@@ -303,14 +303,15 @@ explicit gen revision to the selected Den CI lock. Do not run that maintainer
 script from `ujust update`.
 
 The installed Bluefin recipe lacks strict shell failure handling, so its final
-success status does not prove every earlier step succeeded. In the Finite
-follow-up, invoke that script body with Bash `-e` while retaining its own
-ownership checks and ordering; reject root before invoking the upstream recipe.
-Add fixtures proving OS, Flatpak, or Brew failures prevent Foundation activation,
-and proving successful/intentional Brew skips reach Foundation. Keep delegation
-so upstream changes are inherited; do not duplicate the full recipe in Foundation.
-Pin the extraction to a single shebang-script recipe and fail clearly if its
-format changes. The custom wrapper must return nonzero on Foundation failure.
+success status does not prove every earlier step succeeded. U1 now stages a
+Finite adapter that rejects root first and delegates through Just with a scoped
+Bash startup hook enabling `errexit`. It retains upstream ordering and conditional
+ownership/discovery behavior, clears the hook before nested tools and verifies
+a private startup marker before Foundation. Production does not parse or extract
+recipe bodies. Real-Just fixtures cover actual update-command failures, skips,
+nested tools, cleanup and Foundation failure. Conditional probe errors retain
+upstream semantics, and the current Bash recipe must be requalified on image
+changes. See the [U1 integration report](qa-reports/QA-update-integration.md).
 
 ### NH decision
 
