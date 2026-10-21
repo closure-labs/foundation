@@ -6,21 +6,18 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
-- Identify the represented profile format in schema-specific catalogs, allowing provisioning writers to distinguish an existing schema-2 reader view from a source's preferred schema-3 writer.
+## [0.3.0] - 2026-10-21
 
-- Generate new schema-3 profiles in JSON or YAML with Professional/Personal roles, optional capabilities and independent host selections. Default templates and catalogs now use schema 3; generation validates bundled rules without fetching inputs, building or changing a consumer. Existing profiles retain their format.
-
-- Accept explicitly pinned local Git Foundation inputs for workstation editing. Verify metadata from the locked source and report manual pin maintenance without checking or replacing it with a published release.
-
-- Compose schema-3 hosts from independent machine, Intel/AMD CPU/GPU and model aspects, with camera-aware controls and laptop-only preferences. Focus conversion on the current Dell workstation.
-
-- Add a locked-source capability editor and explicit schema-2-to-3 conversion with application/provider previews, stale-preview protection, build-only checks and existing backup/recovery. Keep default generators on schema 2, preserve application data/unmanaged Flatpaks, and restore symlink entries after failed activation.
-- Read and compose explicitly supplied schema-3 profiles with lightweight Professional/Personal roles, optional capabilities and nixGL-wrapped graphical Nixpkgs apps. Preserve schema-2 composition and default writers; expose schema-aware catalogs and reject incomplete selector editing, silent schema changes and legacy personal nixGL input collisions.
-- Add an isolated schema-3 composition draft and migration preview: smaller role defaults, four Personal roles, optional capabilities, Nixpkgs/nixGL preference and verified Flathub exceptions. Production readers, writers and schema-2 application sets remain unchanged.
-- Expose profile capabilities in the catalog, library and a read-only initializer query; reject staged profile/catalog formats the running helper or selected Foundation cannot read.
-- Validate staged profiles with the locked Foundation revision's normalization rules and catalog. Preserve schema-2 selections, reject unsupported initialization schemas, and prevent staged profile writes from modifying live symlink targets.
+- Generate new schema-3 profiles in JSON or YAML with six Professional roles and four lightweight Personal roles: Family, Media, Creative and Gaming. Optional capabilities select larger applications without enabling an entire role.
+- Default new templates and catalogs to schema 3. Existing schema-2 profiles retain their applications, providers and graphics backend; conversion remains explicit.
+- Make newly copied personal profile and module files editable when generated from an immutable source, preserving existing personal files and permissions.
+- Prefer graphical Nixpkgs applications wrapped with nixGL Mesa for schema 3, retaining verified Flathub exceptions where a matching Nix package is unavailable. Clean icon build files that otherwise collide in wrapped desktop packages.
+- Compose laptop/desktop hosts independently from Intel/AMD CPU, integrated/discrete GPU and model aspects, with camera-aware controls and laptop-only preferences. Bluefin continues to own drivers, firmware, authentication and power/lid policy.
+- Edit roles, packages and capabilities through the locked Foundation revision. Explicit schema-2-to-3 conversion previews application/provider changes, binds approval to the reviewed state, preserves unmanaged Flatpaks and data, and retains build-only checks, backup and activation recovery.
+- Share pure Nix profile validation across composition, generation and staged writes. Reject duplicate/unknown selections, unsupported reader/writer combinations, silent format changes and conflicting legacy personal nixGL inputs; preserve symlink entries during failed operations.
+- Expose format-specific catalogs, host choices and initializer/editor capabilities. Explicit schema-2 reader views identify their format independently of the source's preferred writer.
+- Accept explicitly pinned local Git Foundation inputs for workstation editing, verify locked-source metadata, and report manual pin maintenance without replacing them with published releases.
 - Update Den to the reviewed October revision and align gen with its tested CI pin, preserving unrelated package sources and current profile composition.
-- Classify the six existing work roles as Professional and display their classification in the selector, using catalog-driven role and package lists while preserving application sets and schema 2 profiles. Register Personal as a peer category without adding applications.
 - Select Herdr from a separately locked `nixpkgs-unstable` input so terminal fixes can be updated without moving shared desktop dependencies.
 - Export the managed Zsh executable to terminal multiplexers, including sessions whose account login shell is Bash.
 - Keep desktop data search paths stable across user service manager reloads while retaining Flatpak exports.
@@ -75,7 +72,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/closure-labs/foundation/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/closure-labs/foundation/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/closure-labs/foundation/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/closure-labs/foundation/releases/tag/v0.2.0

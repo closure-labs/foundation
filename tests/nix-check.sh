@@ -19,6 +19,7 @@ nix flake check --no-update-lock-file --print-build-logs "${build_flags[@]}" pat
 staged=$(mktemp -d)
 trap 'rm -rf -- "$staged"' EXIT
 cp -a flake.nix flake.lock profile.json finite-template.json customize.nix modules lib scripts VERSION foundation.json legacy-managed.json "$staged/"
+chmod u+w "$staged/profile.json"
 for schema in 2 3; do
   for foundation in bluefin bluefin-dx; do
     jq --arg foundation "$foundation" --argjson schema "$schema" \

@@ -230,8 +230,11 @@ def make_template(source, info, output, lock=None, extras=None):
     # Keep this compatibility marker for callers that identify generated configurations.
     write_json(output / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
     for relative in ("profile.json", "customize.nix", "modules/local.nix"):
-        if not (output / relative).exists():
-            shutil.copy2(source / relative, output / relative)
+        destination = output / relative
+        if not destination.exists() and not destination.is_symlink():
+            shutil.copy2(source / relative, destination)
+            # Store sources are read-only; personal configuration must be editable.
+            destination.chmod(destination.stat().st_mode | 0o200)
 
 
 def tree_digest(root):

@@ -84,6 +84,44 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], INFO["rev"])
         self.assertEqual(len(home.REFERENCE.findall((ROOT / "templates/default/flake.nix").read_text())), 1)
 
+    def test_template_copies_are_editable_without_changing_sources_or_existing_files(self):
+        source = self.base / "read-only-source"
+        (source / "modules").mkdir(parents=True)
+        relatives = ("profile.json", "customize.nix", "modules/local.nix")
+        for relative in relatives:
+            path = source / relative
+            path.write_text("original\n")
+            path.chmod(0o444)
+        output = self.base / "editable-template"
+        home.make_template(source, INFO, output, LOCK)
+        for relative in relatives:
+            with self.subTest(relative=relative):
+                destination = output / relative
+                self.assertEqual(destination.stat().st_mode & 0o777, 0o644)
+                destination.write_text("personal\n")
+                destination.chmod(0o440)
+        home.make_template(source, INFO, output, LOCK)
+        for relative in relatives:
+            with self.subTest(relative=relative):
+                self.assertEqual((source / relative).read_text(), "original\n")
+                self.assertEqual((source / relative).stat().st_mode & 0o777, 0o444)
+                self.assertEqual((output / relative).read_text(), "personal\n")
+                self.assertEqual((output / relative).stat().st_mode & 0o777, 0o440)
+
+    def test_templates_preserve_dangling_personal_symlinks(self):
+        for relative in ("profile.json", "customize.nix", "modules/local.nix"):
+            destination = self.root / relative
+            destination.unlink()
+            destination.symlink_to(self.base / (destination.name + ".personal"))
+        home.make_template(ROOT, INFO, self.root, LOCK)
+        for relative in ("profile.json", "customize.nix", "modules/local.nix"):
+            destination = self.root / relative
+            target = self.base / (destination.name + ".personal")
+            with self.subTest(relative=relative):
+                self.assertTrue(destination.is_symlink())
+                self.assertEqual(destination.readlink(), target)
+                self.assertFalse(target.exists())
+
     def test_nh_lock_update_overrides_stale_cached_provenance_without_writes(self):
         candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
         home.write_json(self.root / "flake.lock", home.consumer_lock(LOCK, candidate))
