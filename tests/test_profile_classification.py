@@ -122,13 +122,26 @@ class SelectorTests(unittest.TestCase):
             mock.write_text(f"#!{sys.executable}\n" + '''import json, os, sys
 from pathlib import Path
 name = Path(sys.argv[0]).name
+if name == "finite-home-apply" and "--editor-context" in sys.argv:
+    value = json.loads(Path(os.environ["FINITE_HOME_PROFILE_PATH"]).read_text())
+    catalog = json.loads(Path(os.environ["FINITE_FOUNDATION_CATALOG"]).read_text())
+    print(json.dumps({"schema": 1, "profile": value, "catalog": catalog, "canMigrate": True}))
+    sys.exit(0)
 with Path(os.environ["SELECTOR_LOG"]).open("a") as stream:
     stream.write(json.dumps([name, *sys.argv[1:]]) + "\\n")
 if name == "zenity":
-    stage = "packages" if "--title=Configure Finite packages" in sys.argv else "roles"
+    stage = ("packages" if "--title=Configure Finite packages" in sys.argv else
+             "capabilities" if "--title=Additional capabilities" in sys.argv else
+             "review" if "--text-info" in sys.argv else "roles")
     if os.environ.get("SELECTOR_CANCEL") == stage:
         sys.exit(1)
-    print(os.environ.get("SELECTOR_PACKAGES", "jj,uv") if stage == "packages" else os.environ.get("SELECTOR_ROLES", "developer,support"))
+    if stage != "review":
+        print(os.environ.get("SELECTOR_PACKAGES", "jj,uv") if stage == "packages" else
+              os.environ.get("SELECTOR_CAPABILITIES", "recording") if stage == "capabilities" else
+              os.environ.get("SELECTOR_ROLES", "developer,support"))
+elif "--preview" in sys.argv:
+    print(json.dumps({"schema": 1, "preview": {"status": "preview", "activationAllowed": False},
+                      "summary": "Review app and provider changes. Existing Flatpaks and data are kept.", "approvalToken": "a" * 64}))
 else:
     sys.exit(int(os.environ.get("SELECTOR_APPLY_STATUS", "0")))
 ''')
@@ -137,9 +150,9 @@ else:
                         FINITE_HOME_PROFILE_PATH=str(self.profile),
                         FINITE_FOUNDATION_CATALOG=str(self.catalog_path), SELECTOR_LOG=str(self.log))
 
-    def run_selector(self, **overrides):
+    def run_selector(self, *arguments, **overrides):
         before = self.profile.read_bytes()
-        result = subprocess.run(["bash", str(ROOT / "modules/finite-configure")],
+        result = subprocess.run(["bash", str(ROOT / "modules/finite-configure"), *arguments],
                                 env={**self.env, **overrides}, text=True, capture_output=True)
         self.assertEqual(self.profile.read_bytes(), before)
         events = [json.loads(x) for x in self.log.read_text().splitlines()] if self.log.exists() else []
@@ -219,14 +232,56 @@ else:
                 self.assertEqual(events, [])
                 self.assertIn("catalog", result.stderr.lower())
 
-    def test_schema_three_is_preserved_and_refused_before_incomplete_editing(self):
+    def test_schema_three_requires_a_capability_catalog_before_any_dialog(self):
         value = {"schema": 3, "roles": ["family", "developer"], "packages": ["jj"],
                  "capabilities": ["recording"], "custom": {"retain": True}}
         self.profile.write_text(json.dumps(value))
         result, events = self.run_selector()
         self.assertEqual(result.returncode, 2)
         self.assertEqual(events, [])
-        self.assertIn("schema-3 editing", result.stderr)
+        self.assertIn("capability catalog", result.stderr)
+
+    def schema_three(self, source_schema=3):
+        contract = f'(import {ROOT}/lib/profile-drafts {{catalog = domain;}}).contract'
+        catalog = evaluate(f'''let c = {contract}; in (project (domain // {{
+          rolesByName = c.roles; roleNames = builtins.attrNames c.roles;
+        }})) // {{ profileSchema = 3; capabilities = c.capabilities; }}''')
+        self.catalog_path.write_text(json.dumps(catalog))
+        self.profile.write_text(json.dumps({"schema": source_schema, "roles": ["family"] if source_schema == 3 else ["developer"],
+                                           "packages": ["uv"], **({"capabilities": ["recording"]} if source_schema == 3 else {})}))
+
+    def test_schema_three_checks_only_explicit_capabilities_and_reviews_exact_selections(self):
+        self.schema_three()
+        result, events = self.run_selector(SELECTOR_ROLES="family,creative", SELECTOR_CAPABILITIES="recording,notes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        dialog = events[2]
+        rows = dialog[dialog.index("FALSE"):]
+        checked = dict(zip(rows[3::4], rows[0::4]))
+        self.assertEqual(checked["office"], "FALSE")
+        self.assertEqual(checked["essentials"], "FALSE")
+        self.assertEqual(checked["recording"], "TRUE")
+        preview, review, applied = events[3:]
+        expected = ["finite-home-apply", "--roles", "family,creative", "--packages", "jj,uv", "--capabilities", "recording,notes"]
+        self.assertEqual(preview, expected + ["--preview"])
+        self.assertIn("--text-info", review)
+        self.assertEqual(applied, expected + ["--approve-preview", "a" * 64])
+        self.assertIn("Personal", events[0])
+
+    def test_cancellation_at_every_schema_three_dialog_never_applies(self):
+        self.schema_three()
+        for stage in ("roles", "packages", "capabilities", "review"):
+            self.log.unlink(missing_ok=True)
+            result, events = self.run_selector(SELECTOR_CANCEL=stage)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(any(event[0] == "finite-home-apply" and "--preview" not in event for event in events))
+
+    def test_conversion_is_only_requested_explicitly(self):
+        self.schema_three(source_schema=2)
+        result, events = self.run_selector("--migrate-profile", SELECTOR_ROLES="family")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [event for event in events if event[0] == "finite-home-apply"]
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all("--migrate-profile" in event for event in calls))
 
 
 if __name__ == "__main__":

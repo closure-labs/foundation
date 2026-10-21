@@ -236,7 +236,9 @@ class StagedValidationTests(unittest.TestCase):
         before = home.tree_digest(root)
         def check_stage(stage):
             self.assertEqual(home.read_json(stage / "profile.json"), {**value, "roles": ["media"], "packages": []})
-        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "provision_brew") as brew:
+        change = {"profile": value, "roles": ["media"], "packages": []}
+        preview = evaluate(f'(import {ROOT}/lib/profile-changes.nix {{catalog = domain;}}) {home.nix_value(change)}')
+        with patch.object(home, "prepare_profile_change", return_value={"preview": preview}), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "provision_brew") as brew:
             home.apply(root, roles="media", packages="", check=True)
             build.assert_called_once()
             brew.assert_not_called()

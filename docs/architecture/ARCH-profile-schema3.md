@@ -1,10 +1,11 @@
 # Schema-3 application composition contract
 
-Status: F1b reader/composition bridge implemented, 2026-10-20. The public
+Status: F1b reader/composition bridge and A2 editor/conversion implemented,
+2026-10-20. The public
 normalizer and constructor accept explicitly supplied schema 3, backed by the
 [composition resolver](../../lib/profile-drafts/default.nix) and
 [application module](../../modules/aspects/profile-composition.nix). Default
-writers/catalogs stay schema 2; no existing profile is converted. Follow
+generators/catalogs stay schema 2; conversion is explicitly reviewed. Follow
 [the staged plan](../plans/PLAN-profile-refactor.md) for rollout.
 
 ## Why a schema change helps
@@ -171,8 +172,9 @@ classes, capabilities, app identities, provider-qualified declarations and the
 graphics policy for schema 3. The retained `lib.profileDrafts.resolveLegacy`
 models strictly schema-2 declarations.
 `previewMigration { profile; roles ? null; capabilities ? []; }` compares them
-under `lib.profileDrafts` without writing or activating. Migration preview
-remains a draft API until the editor/migration stage.
+under `lib.profileDrafts` without writing or activating. The controller/editor
+uses the versioned `lib.profileChanges` API described in
+[ARCH-profile-editor](ARCH-profile-editor.md).
 
 Evaluate a preview from the repository root:
 
@@ -195,8 +197,9 @@ the original value and no candidate; even `[]` or `null` is never repurposed.
 Removing a Flatpak declaration may leave it installed under existing unmanaged
 preservation; preview lists those declarations. No unmanaged uninstall, app-data
 deletion or automatic transfer between Flatpak and native storage is permitted.
-A2 needs app-specific transfer and desktop/MIME handling where appropriate,
-particularly browsers, mail, Joplin and game clients. Review concrete provider
+A2 preserves original app data and documents manual export/import, account sync
+and desktop/MIME checks, particularly for browsers, mail, Joplin and game clients.
+Review concrete provider
 changes before activating migration; the user's provider preference authorizes
 implementation of this design.
 
@@ -213,11 +216,12 @@ undoes external provider effects.
   wrappers; helpers, selector read paths and Finite readers accept schema 3
   while generators still emit schema 2. Capability advertising follows actual
   support and rejects incompatible helper/source pairs.
-- **A2:** negotiated schema-3 selection/writing, explicit migration and recovery.
-  Only then expose Personal choices through the default generator catalog/selector.
+- **A2, implemented:** negotiated schema-3 editing/writing, explicit conversion,
+  exact reviewed-preview binding and symlink-preserving recovery. The schema-3
+  editor exposes Personal roles; default generators remain schema 2.
 
 The bridge advertises initialize schemas 1/2/3 and normalize schemas 2/3 with
-write schema 2. Schema 3 requires an explicit selected-source capability
+default write schema 2 and explicit `editSchemas = [2, 3]`. Schema 3 requires an explicit selected-source capability
 descriptor; historical descriptor absence cannot imply support. Normalization
 cannot change a submitted schema. Initialization preserves supplied capabilities,
 custom fields and schema 3, while schema 1 retains its explicit conversion to 2.
@@ -225,7 +229,8 @@ custom fields and schema 3, while schema 1 retains its explicit conversion to 2.
 `homeCatalogForSchema 2` equals the default six-role `homeCatalog`.
 `homeCatalogForSchema 3` adds Personal roles and capabilities only for readers
 requesting that format. Catalog schema remains 3 and compatibility remains 1.
-`finite-configure` refuses schema 3 before opening dialogs; it cannot discard
-capability selections through its older checklist. Legacy input adoption rejects
+`finite-configure` edits schema 3 only when the running helper and locked target
+support the editor API; older targets require an input update first. Capability
+checkboxes reflect explicit selections, with defaults still derived. Legacy input adoption rejects
 a personal `nixGL` name collision before filtering or rebasing its pin/followers.
 Hardware schema refactoring remains separate.

@@ -15,7 +15,8 @@ requested the first slice after the architecture and plan were presented.
 | profile-finite-readers | F1a existing reader readiness | Complete | Current schema-1/2 dispatch preserves supplied data; typed classification and actual-helper/selected-source capability checks implemented. CI68, Finite16+4, full Foundation build, old/new-source Finite checks, 32-case parity and QA/security review passed. Finite edits isolated in jj change `pvuoruok`, workspace `/tmp/finite-profile-readers`. |
 | profile-application-contract | A1 Personal format/application contract | Complete | Isolated schema-3 resolver/preview, full legacy app inventory and Nixpkgs/nixGL policy with verified exceptions. CI81, 13 focused tests, all 53 locked Nix providers, full no-build Nix checks, exact existing catalog/runtime-source parity and architect/QA/security review pass. jj change `tqkozxwn`. |
 | profile-future-readers | F1b future-format readers | Complete | CI90, full Nix build/checks, eight actual schema3 compositions, real nixGL synthetic launch, exact32legacy parity, old/new-source Finite contracts, constructor/adapter proofs and architect/QA/security review pass. Default writers stay2. Foundation jj `zlorynyq`; Finite fixtures `pqkymstk`. |
-| profile-writers-migration | A2 capability editor and migration | Not started | Negotiate schema3 writer support, implement complete capability selection and explicit migration/recovery; retain schema2 and unmanaged Flatpak/data preservation. |
+| profile-writers-migration | A2 capability editor and migration | Complete | Versioned pinned-target preview/editor APIs, explicit conversion approval, capability selection and symlink-preserving recovery implemented. CI115/full Nix checks, locked-target editing and immutable-source Finite home contracts pass; default generators remain schema2. jj `uvtpxqsw`. |
+| profile-host-composition | H1 form factor and hardware aspects | Not started | Next: separate laptop/desktop, Intel/AMD CPU and integrated/discrete GPU selections while preserving legacy hardware IDs and Bluefin ownership. Retain native lid behavior until a docking predicate and physical validation are available. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release | Publication/activation | Not started | Separate release action after code review and validation; no automatic deployment. |
 
@@ -23,4 +24,6 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [plan](../docs/plans/PLAN-profile-refactor.md),
 [A1 contract](../docs/architecture/ARCH-profile-schema3.md),
 [A1 validation](../docs/qa-reports/QA-profile-application-contract.md),
-[F1b validation](../docs/qa-reports/QA-schema3-readers.md).
+[F1b validation](../docs/qa-reports/QA-schema3-readers.md),
+[A2 editor](../docs/architecture/ARCH-profile-editor.md),
+[A2 validation](../docs/qa-reports/QA-profile-editor.md).

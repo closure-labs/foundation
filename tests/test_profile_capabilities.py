@@ -21,6 +21,7 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(capabilities["initializeSchemas"], [1, 2, 3])
         self.assertEqual(capabilities["normalizeSchemas"], [2, 3])
         self.assertEqual(capabilities["writeSchema"], 2)
+        self.assertEqual(capabilities["editSchemas"], [2, 3])
         self.assertEqual(capabilities["catalogSchemas"], [3])
 
     def test_read_only_cli_query_ignores_source_and_profile_overrides(self):
@@ -37,7 +38,8 @@ class CapabilityTests(unittest.TestCase):
         valid = home.profile_capabilities()
         for value in (None, {}, {**valid, "schema": True}, {**valid, "writeSchema": 4},
                       {**valid, "normalizeSchemas": [True]}, {**valid, "initializeSchemas": [1, 1]},
-                      {**valid, "catalogSchemas": "3"}):
+                      {**valid, "catalogSchemas": "3"},
+                      *({**valid, "editSchemas": item} for item in (None, [], [True], [2, 2], [4]))):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "capabilit"):
                 home.validate_capabilities(value)
 

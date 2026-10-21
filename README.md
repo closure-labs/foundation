@@ -97,19 +97,29 @@ profiles keep their current applications, providers and graphics backend.
 
 `lib.homeCatalogForSchema 3` exposes the ten-role/capability catalog;
 `lib.homeCatalog` remains the six-role catalog for schema-2 generators.
-`lib.resolveProfile` resolves schema-3 composition. The read-only migration
-preview remains under `lib.profileDrafts` and never authorizes activation.
-Default generation still writes schema 2, and `finite-configure` refuses schema-3
-editing until the capability editor/migration stage is implemented. No profile
-is converted automatically. Validate physical graphics/app behavior before
+`lib.resolveProfile` resolves schema-3 composition. `lib.profileChanges` provides
+the versioned change-preview API; the older draft preview remains available.
+`finite-configure` edits schema 3 with Personal roles and additional capabilities.
+Use `finite-configure --migrate-profile` to explicitly review conversion from
+schema 2. Default generation still writes schema 2; no profile is converted
+automatically. Validate physical graphics/app behavior before
 migrating a workstation. Legacy configurations with a personal input named
 `nixGL` require manual migration to preserve its pin and followers.
+
+For the CLI, run `finite-home-apply --migrate-profile --preview` with the desired
+`--roles`, `--packages` and `--capabilities`, then repeat those selections with
+`--approve-preview TOKEN` from the review. `--check` builds without installing.
+On an existing schema-3 profile, omitted capabilities are preserved and
+`--capabilities ''` clears explicit additions. The editor uses the consumer's
+locked catalog and requires editing support in both the helper and selected
+Foundation. See the [editor and recovery contract](docs/architecture/ARCH-profile-editor.md).
 
 Developer, Sales, Trainer, Support, Executive, and IT are classified as
 **Professional** in the selector and catalog. They remain individually
 selectable with their existing applications. **Personal** is registered as a
 peer category, with Family, Media, Creative and Gaming available to explicitly
-supplied schema-3 profiles. The default selector retains six Professional roles.
+supplied or explicitly converted schema-3 profiles. Schema-2 editing retains six
+Professional roles.
 These categories do not change schema-2 profiles or the Bluefin/DX image choice.
 See the [Personal profiles](docs/PERSONAL-PROFILES.md) for Family,
 Media, Creative and Gaming compositions and optional applications.

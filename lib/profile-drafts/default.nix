@@ -107,6 +107,7 @@ in {
   previewMigration = {
     profile,
     roles ? null,
+    packages ? null,
     capabilities ? [],
   }: let
     old = resolveLegacy profile;
@@ -120,6 +121,10 @@ in {
           if roles == null
           then old.profile.roles
           else roles;
+        packages =
+          if packages == null
+          then old.profile.packages
+          else packages;
       };
     next = resolve candidate;
     common = builtins.filter (id: builtins.elem id next.applicationIds) old.applicationIds;

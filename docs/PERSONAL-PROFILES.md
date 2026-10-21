@@ -1,14 +1,15 @@
-# Proposed Personal profiles
+# Personal profiles
 
-These roles are implemented for explicitly supplied schema-3 profiles. Default
-generators and the selector remain schema 2 until the migration/editor stage.
+These roles are implemented for schema-3 profiles. Use
+`finite-configure --migrate-profile` to review an explicit conversion; ordinary
+`finite-configure` edits the existing format. Default generators remain schema 2.
 Existing schema-2 application sets stay intact; this change installs nothing on
 the running workstation.
 
 Recommend four independently composable roles under **Personal**, with a small
 default set and larger tools selected explicitly. The user confirmed lightweight
 defaults, with larger applications and launchers optional.
-The exact ownership and format are now an
+The exact ownership and format follow the
 [schema-3 composition contract](architecture/ARCH-profile-schema3.md); default
 writers still emit schema 2.
 
@@ -48,8 +49,8 @@ recording tools without selecting an entire Personal role, for example.
 - Enable selectable roles only when they deliver meaningful behavior and the
   installed helper, selected Foundation and provisioning entry points support
   them. Keep the old application closure for schema 2, and preview changes on
-  explicit migration. The default selector exposes Personal roles at A2's
-  migration/editor stage.
+  explicit migration. The schema-3 selector exposes Personal roles and additional
+  capabilities using the locked Foundation's catalog.
 
 Recommended combinations: Family + Media for a household laptop; Creative +
 Media for a hobby workstation; Gaming + Media for an entertainment desktop;

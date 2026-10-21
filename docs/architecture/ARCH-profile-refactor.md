@@ -2,8 +2,8 @@
 
 Status: classification, dependency/normalization and reader-readiness slices
 implemented. The [schema-3 contract](ARCH-profile-schema3.md) now has F1b dual
-readers/composition and actual nixGL wrappers. Default writers remain schema 2;
-editor/migration enablement follows at A2.
+readers/composition and actual nixGL wrappers. A2 adds negotiated capability
+editing and explicit reviewed conversion; default generators remain schema 2.
 Classification-first sequencing confirmed by the user on 2026-10-20.
 This document and the
 [implementation plan](../plans/PLAN-profile-refactor.md) supersede the rollout
@@ -123,7 +123,8 @@ support with the locked target's descriptor; explicit malformed metadata fails.
 Descriptor absence identifies a legacy target, not evidence for a future format.
 First-login similarly limits helpers without the query to historical schema 1/2.
 F1b extends the manifest to initialize schemas 1/2/3 and normalize schemas 2/3,
-keeping write schema 2. Actual composition and selected-source catalog support
+keeping write schema 2. A2 adds `editSchemas = [2, 3]` and a versioned change API.
+Actual composition and selected-source catalog support
 are implemented alongside that advertising; schema 3 requires an explicit target
 descriptor and normalization cannot change the submitted version.
 

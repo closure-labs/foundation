@@ -30,6 +30,10 @@ in {
   inherit (homeCatalog) profileCapabilities;
   profileDrafts = profileComposition;
   resolveProfile = profileComposition.resolve;
+  profileChanges = {
+    schema = 1;
+    preview = import ./profile-changes.nix {inherit catalog;};
+  };
   homeCatalogForSchema = schema:
     if schema == 2
     then homeCatalog

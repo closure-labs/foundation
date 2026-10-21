@@ -6,7 +6,8 @@ validated, together with F1a reader readiness. A1 now has an isolated executable
 resolver and migration preview. Personal application proposals are
 recorded in [PERSONAL-PROFILES](../PERSONAL-PROFILES.md).
 F1b implements actual schema-3 readers/composition and nixGL wrappers; default
-writers remain schema 2 pending A2's complete capability editor and migration.
+generators remain schema 2. A2 now implements negotiated capability editing,
+explicit conversion previews/approval and recovery.
 User decision: **classify first, split applications later**. Firmware has been
 updated manually and is outside this plan's critical path.
 
@@ -161,23 +162,28 @@ and follows the confirmed optional Chromium/camera-aware controls and
 Nixpkgs/nixGL preference. Its draft API does not change production capability
 advertising or catalogs. F1b now advertises actual schema-3 reading/composition,
 provides a schema-aware ten-role catalog, and retains the six-role default
-catalog for schema-2 writers. A2 is the next implementation stage.
+catalog for schema-2 writers. A2 now provides the complete additional-capability
+dialog and explicit conversion flow; H1 host composition is the next stage.
 See the [A1 validation report](../qa-reports/QA-profile-application-contract.md)
 for the inventory, provider, draft isolation and compatibility evidence.
 The [F1b validation report](../qa-reports/QA-schema3-readers.md) records actual
 composition, wrapper launch paths, capability negotiation and legacy parity.
+See the [A2 editor contract](../architecture/ARCH-profile-editor.md) and
+[validation report](../qa-reports/QA-profile-editor.md) for locked-source editing,
+preview binding and recovery.
 
 ## Risks, deferred choices, and handoff
 
-- **Catalog consumers:** additive fields still need a compatibility test;
-  Finite's typed role projection currently drops unknown fields. Extend its
-  options/projection together when consuming classification there.
+- **Catalog consumers:** Finite's typed classification projection and locked
+  source negotiation are implemented and tested. Keep those contracts aligned
+  when adding future catalog fields or editing APIs.
 - **False parity failures:** new selector store paths can change the activation
   derivation. Compare declared composition and selected behaviors, not a demand
   for identical whole derivation hashes.
-- **Legacy app removal:** Personal and Professional are not yet a complete
-  partition. A1 records each app's ownership; A2 must present concrete declaration
-  and provider changes, preserve unmanaged Flatpaks/data and support rollback.
+- **Legacy app removal:** A1 records each app's ownership; A2 presents concrete
+  declaration and provider changes, preserves unmanaged Flatpaks/data and supports
+  source/profile rollback. Physical application-data transfer remains a separate
+  rollout check.
 - **New profile recovery:** dual readers must ship before writers; test old
   controller catalogs and manually locked consumers, not just the newest checkout.
 - **Hardware scope:** preserve existing native lid/power behavior initially.
