@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+import urllib.parse
 from pathlib import Path
 
 REPOSITORY = "closure-labs/foundation"
@@ -523,7 +524,7 @@ def provision_brew(stage):
         run(["bash", str(bootstrap)], env=env)
 
 
-def commit_stage(root, stage, original, activation, replace_tree=False, expected_profile_hash=None):
+def commit_stage(root, stage, original, activation, replace_tree=False, expected_profile_hash=None, replace_customization=False):
     if (tree_digest(root) if root.exists() else None) != original:
         raise ValueError("Configuration changed during the build; nothing installed")
     if expected_profile_hash is not None and profile_hash(root) != expected_profile_hash:
@@ -533,6 +534,10 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
     backup = root.with_name(root.name + ".previous." + stamp)
     consumer = root.exists() and not replace_tree
     committed_files = ("flake.nix", "flake.lock", "foundation.json", "finite-template.json", "profile.json")
+    # An explicitly reviewed workstation conversion can include its GUI bindings.
+    # Ordinary updates and role edits leave this user-owned module untouched.
+    if replace_customization:
+        committed_files += ("customize.nix",)
     if consumer:
         # Keep personal Git metadata and the configuration directory in place.
         copy_configuration(root, backup)
@@ -609,18 +614,51 @@ def release_data(tag):
     return info, data["lock"]
 
 
+def local_foundation_source(source):
+    if source.get("type") != "git" or not isinstance(source.get("url"), str):
+        return False
+    url = urllib.parse.urlsplit(source["url"])
+    return (url.scheme == "file" and not url.netloc and url.path.startswith("/")
+            and not url.query and not url.fragment)
+
+
+def foundation_source(root):
+    lock = read_json(root / "flake.lock")
+    reference = lock["nodes"][lock["root"]]["inputs"]["foundation"]
+    node = lock["nodes"][reference]
+    source = node["locked"]
+    published = (source.get("type") == "github" and source.get("owner") == "closure-labs"
+                 and source.get("repo") == "foundation")
+    if not published and not local_foundation_source(source):
+        raise ValueError("Personal Foundation input points to another repository or unsupported source")
+    if local_foundation_source(source) and node.get("original", {}).get("rev") != source.get("rev"):
+        raise ValueError("Local Foundation input must explicitly pin its locked Git revision")
+    return source
+
+
 def installed_info(root):
     # nh/nix can update the lock without rewriting our cached provenance file.
     # Always identify the selected source from the consumer lock first.
-    lock = read_json(root / "flake.lock")
-    reference = lock["nodes"][lock["root"]]["inputs"]["foundation"]
-    source = lock["nodes"][reference]["locked"]
-    if source.get("type") != "github" or source.get("owner") != "closure-labs" or source.get("repo") != "foundation":
-        raise ValueError("Personal Foundation input points to another repository")
+    source = foundation_source(root)
     provenance = {key: source[key] for key in ("rev", "narHash", "lastModified") if key in source}
     # Validate the revision before constructing a reference from it.
     if not re.fullmatch(r"[a-f0-9]{40}", provenance.get("rev") or ""):
         raise ValueError("Foundation lock must contain an immutable Git commit")
+    if local_foundation_source(source):
+        if not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", provenance.get("narHash") or ""):
+            raise ValueError("Local Foundation lock must contain a content hash")
+        expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(root.resolve())) + ''';
+          target = root.inputs.foundation;
+        in {
+          metadata = builtins.fromJSON (builtins.readFile (target.outPath + "/foundation.json"));
+          rev = target.rev; narHash = target.narHash; lastModified = target.lastModified or 0;
+        }'''
+        selected = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+        if any(selected.get(key) != value for key, value in provenance.items()):
+            raise ValueError("Selected local Foundation differs from its locked source")
+        installed = {**selected["metadata"], **{key: selected[key] for key in ("rev", "narHash", "lastModified")}}
+        validate_metadata(installed)
+        return installed
     installed = read_json(root / "foundation.json") if (root / "foundation.json").exists() else {}
     if any(installed.get(key) != value for key, value in provenance.items()):
         expression = 'let f = builtins.getFlake ' + json.dumps(f"github:{REPOSITORY}/{source['rev']}") + '; in builtins.fromJSON (builtins.readFile (f.outPath + "/foundation.json"))'
@@ -632,6 +670,8 @@ def installed_info(root):
 
 def available(root):
     installed = installed_info(root)
+    if local_foundation_source(foundation_source(root)):
+        return installed, None, None
     releases = published_releases()
     candidates = [tag for number, tag in releases if number > version(installed["version"])]
     if not candidates:
@@ -644,7 +684,11 @@ def update(root, check=False):
     with locked(root):
         installed, info, lock = available(root)
         if info is None:
-            print(f"Foundation {installed['version']} is current")
+            if local_foundation_source(foundation_source(root)):
+                print(f"Foundation {installed['version']} is pinned to a local checkout ({installed['rev'][:12]}). "
+                      "Advance the foundation input explicitly, then run finite-home-apply. No published-release update applied.")
+            else:
+                print(f"Foundation {installed['version']} is current")
             return
         print(f"Foundation {installed['version']} -> {info['version']}")
         if check:
@@ -819,6 +863,11 @@ def status(root, machine=False, notify=False, review=False):
     result = {"migration_required": False, "installed_version": installed["version"], "installed_rev": installed["rev"],
               "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None}
     text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']}\nRun ujust update or finite-home-update to build and apply it." if candidate else "No newer published Foundation release is available.")
+    if local_foundation_source(foundation_source(root)):
+        result.update(source="local-git", update_policy="manual-pin")
+        text = (f"Installed Foundation: {installed['version']} ({installed['rev'][:12]})\n"
+                "Pinned local checkout. Advance the foundation input explicitly, then run finite-home-apply. "
+                "Published releases were not checked.")
     print(json.dumps(result) if machine else text)
     if notify and candidate:
         state = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "foundation"

@@ -57,8 +57,8 @@
     spider = flatpak "io.github.zaedus.spider";
     impression = nix "nixpkgs" "impression" true;
     mission-center = nix "nixpkgs" "mission-center" true;
-    gearlever = nix "nixpkgs" "gearlever" true;
-    smile = nix "nixpkgs" "smile" true;
+    gearlever = nix "nixpkgs" "gearlever" true // {removeIconBuildFiles = true;};
+    smile = nix "nixpkgs" "smile" true // {removeIconBuildFiles = true;};
     joplin = nix "nixpkgs" "joplin-desktop" true;
     chromium = nix "nixpkgs" "chromium" true;
     refine = nix "nixpkgs" "refine" true;

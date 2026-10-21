@@ -146,6 +146,13 @@ and use the checkout's `modules/finite-home-apply` helper to provision shared Br
 tools and activate. Standalone maintainers update their Git checkout explicitly;
 release-update commands target importing personal flakes.
 
+A personal flake can pin this local jj checkout with a
+`git+file:///absolute/path/to/foundation?rev=FULL_COMMIT` Foundation input.
+The declaration and lock must select the same immutable commit. Editing uses
+that locked source; update/status report manual pin maintenance and skip
+published releases. Advance the input explicitly, then run `finite-home-apply`.
+No helper changes jj history or advances a local pin automatically.
+
 The Support role's Espanso backend requires administrator-managed keyboard access.
 For schema 2 on non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper
 after first activation as described by Home Manager. Schema 3 uses nixGL Mesa

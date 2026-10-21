@@ -30,7 +30,14 @@
         else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.input};
       expected =
         if app.graphical
-        then c.lib.nixGL.wrap raw
+        then
+          if app.removeIconBuildFiles or false
+          then
+            import ../lib/without-icon-build-files.nix {
+              pkgs = home.pkgs;
+              package = c.lib.nixGL.wrap raw;
+            }
+          else c.lib.nixGL.wrap raw
         else raw;
     in {
       installedOnce = builtins.length (builtins.filter (path: path == expected.outPath) installed) == 1;

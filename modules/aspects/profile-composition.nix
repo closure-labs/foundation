@@ -21,9 +21,17 @@
       if (app.recipe or null) == "finite-ghostty"
       then import ../../lib/ghostty-package.nix {inherit pkgs;}
       else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.input};
+    wrapped = config.lib.nixGL.wrap package;
   in
     if app.graphical
-    then config.lib.nixGL.wrap package
+    then
+      if app.removeIconBuildFiles or false
+      then
+        import ../../lib/without-icon-build-files.nix {
+          inherit pkgs;
+          package = wrapped;
+        }
+      else wrapped
     else package;
   nixIds = builtins.filter (name: plan.applications.${name}.provider == "nix" && name != "firefox") plan.applicationIds;
   flatpakIds = builtins.filter (name: plan.applications.${name}.provider == "flatpak") plan.applicationIds;

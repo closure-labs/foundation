@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Accept explicitly pinned local Git Foundation inputs for workstation editing. Verify metadata from the locked source and report manual pin maintenance without checking or replacing it with a published release.
+
 - Compose schema-3 hosts from independent machine, Intel/AMD CPU/GPU and model aspects, with camera-aware controls and laptop-only preferences. Focus conversion on the current Dell workstation.
 
 - Add a locked-source capability editor and explicit schema-2-to-3 conversion with application/provider previews, stale-preview protection, build-only checks and existing backup/recovery. Keep default generators on schema 2, preserve application data/unmanaged Flatpaks, and restore symlink entries after failed activation.

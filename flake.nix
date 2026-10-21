@@ -51,6 +51,7 @@
           touch "$out"
         '';
       nixgl-wrapper = import ./tests/nixgl-wrapper.nix {foundation = inputs.self;};
+      desktop-icons = import ./tests/icon-packages.nix {foundation = inputs.self;};
     };
     packages.${system} = {
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
