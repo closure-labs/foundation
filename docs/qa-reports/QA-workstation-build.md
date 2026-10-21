@@ -3,6 +3,9 @@
 Date: 2026-10-20. Code is preserved in jj change `rkxnuwlv`, immutable commit
 `7eed78af934634b253a84e7bbaba758234d870b2`, after H1 change `ommsszxm`.
 This report records a completed build and preflight, without a live switch.
+The subsequently approved [workstation activation](QA-workstation-activation.md)
+completed on 2026-10-21; the unchanged-live-state observations below describe
+the pre-switch build phase.
 
 ## Build result
 

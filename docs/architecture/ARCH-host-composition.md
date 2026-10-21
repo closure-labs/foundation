@@ -92,8 +92,9 @@ conversion, preserving its data rather than silently giving it a new meaning.
 The [workstation candidate](../../examples/workstations/dale-xps-9350.json)
 records the observed Dell laptop, Intel integrated graphics, camera and
 fingerprint reader. It keeps all six existing Professional roles and explicitly
-retains applications that are no longer shared defaults. It is a candidate,
-not an activated configuration. See the
+retains applications that are no longer shared defaults. Its normalized copy
+was [activated on this workstation](../qa-reports/QA-workstation-activation.md)
+after the full build and user approval. See the
 [single-workstation conversion plan](../plans/PLAN-workstation-conversion.md).
 
 ## Acceptance

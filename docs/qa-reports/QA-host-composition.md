@@ -61,8 +61,9 @@ not establish runtime graphics or activation success.
 The original H1 evaluation did not establish a successful workstation build.
 The follow-up report records the completed build, local-source helper support
 and icon collision fix. This work did not garbage-collect existing generations.
-The candidate is not activated;
-graphics/media, camera capture, docking/suspend and application-data checks
+At H1 completion the candidate was not activated; the later
+[approved switch](QA-workstation-activation.md) is documented separately.
+Broader graphics/media, camera capture, docking/suspend and application-data checks
 remain physical-session acceptance work.
 
 Evidence and original source snapshot:

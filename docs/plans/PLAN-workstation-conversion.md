@@ -56,9 +56,10 @@ The candidate is staged at
 Foundation snapshot `7eed78af934634b253a84e7bbaba758234d870b2`. Personal Devenv's
 13-node input closure and the unstable input are unchanged. Local modules/assets
 are byte-identical; staged graphical bindings have been adapted as above.
-The full activation-package build and built-command/launcher checks now pass
-after the user freed disk space. Existing generations and the live configuration
-remain intact. The previous capacity limit and initial evaluation are recorded
+The full activation-package build and built-command/launcher checks passed
+after the user freed disk space. The user then approved the live switch, which
+completed on 2026-10-21. The original configuration and generation are retained
+for recovery. The previous capacity limit and initial evaluation are recorded
 in the [H1 validation report](../qa-reports/QA-host-composition.md); completed
 build evidence is in the [workstation build report](../qa-reports/QA-workstation-build.md).
 The merged audit also confirms nine graphical packages wrapped once and the
@@ -69,5 +70,8 @@ This local source is manually pinned: update/status skip published releases and
 explain that its Foundation input must be advanced explicitly. The proposed
 switch includes the reviewed `customize.nix` changes in the existing backup and
 rollback transaction, preserving personal repository metadata and local modules.
-The exact candidate, active-generation guard and switch command are prepared;
-live activation is pending approval.
+The verified candidate is now active. Post-switch checks confirm live helpers,
+profile/cache consistency, healthy user services, selected Flatpaks and Intel
+OpenGL acceleration through nixGL. See the
+[activation report](../qa-reports/QA-workstation-activation.md) for the exact
+backup and remaining hands-on camera, docking and fingerprint checks.
