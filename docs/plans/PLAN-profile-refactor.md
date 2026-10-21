@@ -5,6 +5,8 @@ validated, together with F1a reader readiness. A1 now has an isolated executable
 [schema-3 application contract](../architecture/ARCH-profile-schema3.md),
 resolver and migration preview. Personal application proposals are
 recorded in [PERSONAL-PROFILES](../PERSONAL-PROFILES.md).
+F1b implements actual schema-3 readers/composition and nixGL wrappers; default
+writers remain schema 2 pending A2's complete capability editor and migration.
 User decision: **classify first, split applications later**. Firmware has been
 updated manually and is outside this plan's critical path.
 
@@ -157,10 +159,13 @@ Finite changes are isolated in jj change `pvuoruok`, workspace
 accounts for every existing application, provides declaration/provider diffs,
 and follows the confirmed optional Chromium/camera-aware controls and
 Nixpkgs/nixGL preference. Its draft API does not change production capability
-advertising or catalogs. F1b is the next implementation stage and must precede
-any new-format writer at A2.
+advertising or catalogs. F1b now advertises actual schema-3 reading/composition,
+provides a schema-aware ten-role catalog, and retains the six-role default
+catalog for schema-2 writers. A2 is the next implementation stage.
 See the [A1 validation report](../qa-reports/QA-profile-application-contract.md)
 for the inventory, provider, draft isolation and compatibility evidence.
+The [F1b validation report](../qa-reports/QA-schema3-readers.md) records actual
+composition, wrapper launch paths, capability negotiation and legacy parity.
 
 ## Risks, deferred choices, and handoff
 

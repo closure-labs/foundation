@@ -41,7 +41,7 @@ class NormalizationTests(unittest.TestCase):
 
     def test_malformed_or_unsupported_profiles_fail_clearly(self):
         cases = [None, [], {}, *({**profile(), **change} for change in (
-            {"schema": 1}, {"schema": 3}, {"schema": True}, {"schema": 2.0}, {"roles": "it"},
+            {"schema": 1}, {"schema": 4}, {"schema": True}, {"schema": 2.0}, {"roles": "it"},
             {"roles": [["it"]]}, {"roles": ["it", "it"]}, {"roles": ["missing"]},
             {"packages": [None]}, {"packages": ["uv", "uv"]}, {"packages": ["missing"]},
             {"foundation": []}, {"hardware": "missing"}, {"identity": None},
@@ -170,16 +170,20 @@ class StagedValidationTests(unittest.TestCase):
         self.assertEqual(home.read_json(self.stage / "profile.json"), normalized)
 
     def test_initialize_only_migrates_schema_one(self):
-        for schema in (1, 2):
+        for schema in (1, 2, 3):
             value = {**self.value, "schema": schema, "extra": "keep"}
             value["identity"] = {**value["identity"], "extra": "keep identity"}
+            if schema == 3:
+                value["capabilities"] = ["recording"]
             if schema == 1:
                 del value["packages"]
             def build(stage):
                 actual = home.read_json(stage / "profile.json")
-                self.assertEqual(actual["schema"], 2)
+                self.assertEqual(actual["schema"], 2 if schema == 1 else schema)
                 self.assertEqual(actual["extra"], "keep")
                 self.assertEqual(actual["identity"]["extra"], "keep identity")
+                if schema == 3:
+                    self.assertEqual(actual["capabilities"], ["recording"])
                 self.assertEqual(actual["packages"], [] if schema == 1 else self.value["packages"])
             metadata = self.base / "metadata.json"
             home.write_json(metadata, INFO)
@@ -190,7 +194,7 @@ class StagedValidationTests(unittest.TestCase):
                 self.assertFalse(root.exists())
 
     def test_initialize_rejects_unknown_schema_before_creating_stage(self):
-        for schema in (None, True, 0, 3, "2"):
+        for schema in (None, True, 0, 4, "2"):
             with self.subTest(schema=schema), patch.object(home, "capture", return_value=json.dumps({**self.value, "schema": schema})), patch.object(home, "make_template") as template:
                 with self.assertRaisesRegex(ValueError, "Unsupported profile schema"):
                     home.initialize(self.base / "new-home", self.base / "seed.yaml", check=True)
@@ -222,6 +226,21 @@ class StagedValidationTests(unittest.TestCase):
         self.assertEqual(linked.read_bytes(), before)
         self.assertTrue(root.joinpath("profile.json").is_symlink())
         self.assertEqual(home.tree_digest(root), digest)
+
+    def test_apply_retains_schema_three_capabilities_and_custom_fields(self):
+        root = self.base / "live-three"
+        home.make_template(ROOT, INFO, root, LOCK)
+        value = {**self.value, "schema": 3, "roles": ["family"],
+                 "capabilities": ["recording"], "custom": {"retain": True}}
+        home.write_json(root / "profile.json", value)
+        before = home.tree_digest(root)
+        def check_stage(stage):
+            self.assertEqual(home.read_json(stage / "profile.json"), {**value, "roles": ["media"], "packages": []})
+        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "provision_brew") as brew:
+            home.apply(root, roles="media", packages="", check=True)
+            build.assert_called_once()
+            brew.assert_not_called()
+        self.assertEqual(home.tree_digest(root), before)
 
 
 if __name__ == "__main__":

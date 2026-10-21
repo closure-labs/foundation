@@ -100,6 +100,12 @@ class ConsumerTests(unittest.TestCase):
     def test_fixed_commit_update_remains_fixed(self):
         self.check_successful_update(False)
 
+    def test_update_preserves_supplied_schema_three_and_capabilities(self):
+        value = {**home.read_json(self.root / "profile.json"), "schema": 3,
+                 "roles": ["family"], "capabilities": ["recording"], "custom": {"retain": True}}
+        home.write_json(self.root / "profile.json", value)
+        self.check_successful_update(True)
+
     def check_successful_update(self, tracking):
         if not tracking:
             (self.root / "flake.nix").write_text(home.consumer_flake(INFO, reference=INFO["rev"]))
@@ -145,6 +151,14 @@ class ConsumerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "changed during"):
             home.commit_stage(self.root, stage, digest, self.activation)
         self.assertEqual((self.root / "customize.nix").read_text(), "edited during build")
+
+    def test_personal_legacy_nixgl_pin_cannot_be_silently_adopted_as_core(self):
+        original = {"nixGL": {"url": "github:nix-community/nixGL/" + "a" * 40},
+                    "personal": {"url": "github:example/personal", "inputs": {"nixGL": {"follows": "nixGL"}}}}
+        before = json.dumps(original, sort_keys=True)
+        with self.assertRaisesRegex(ValueError, "nixGL.*personal pin"):
+            home.migrate_input_declarations(original)
+        self.assertEqual(json.dumps(original, sort_keys=True), before)
 
     def test_activation_failure_restores_files_and_previous_generation(self):
         digest = home.tree_digest(self.root)

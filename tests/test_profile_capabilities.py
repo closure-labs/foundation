@@ -18,8 +18,8 @@ class CapabilityTests(unittest.TestCase):
     def test_catalog_and_helper_share_current_capabilities(self):
         capabilities = home.profile_capabilities()
         self.assertEqual(capabilities, evaluate("(project domain).profileCapabilities"))
-        self.assertEqual(capabilities["initializeSchemas"], [1, 2])
-        self.assertEqual(capabilities["normalizeSchemas"], [2])
+        self.assertEqual(capabilities["initializeSchemas"], [1, 2, 3])
+        self.assertEqual(capabilities["normalizeSchemas"], [2, 3])
         self.assertEqual(capabilities["writeSchema"], 2)
         self.assertEqual(capabilities["catalogSchemas"], [3])
 
@@ -35,7 +35,7 @@ class CapabilityTests(unittest.TestCase):
 
     def test_explicit_malformed_descriptors_fail(self):
         valid = home.profile_capabilities()
-        for value in (None, {}, {**valid, "schema": True}, {**valid, "writeSchema": 3},
+        for value in (None, {}, {**valid, "schema": True}, {**valid, "writeSchema": 4},
                       {**valid, "normalizeSchemas": [True]}, {**valid, "initializeSchemas": [1, 1]},
                       {**valid, "catalogSchemas": "3"}):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "capabilit"):
@@ -44,7 +44,7 @@ class CapabilityTests(unittest.TestCase):
     def test_running_helper_rejects_new_profile_schema_before_target_evaluation(self):
         with tempfile.TemporaryDirectory() as temporary:
             stage = Path(temporary)
-            home.write_json(stage / "profile.json", {**profile(), "schema": 3})
+            home.write_json(stage / "profile.json", {**profile(), "schema": 4})
             with patch.object(home, "capture") as capture:
                 with self.assertRaisesRegex(ValueError, "helper.*schema"):
                     home.validate_staged_profile(stage)
@@ -71,9 +71,9 @@ class CapabilityTests(unittest.TestCase):
             stage = Path(temporary)
             value = profile()
             home.write_json(stage / "profile.json", value)
-            data = {"hasNormalizer": True, "profile": {**value, "schema": 3}, "catalog": evaluate("project domain")}
+            data = {"hasNormalizer": True, "profile": {**value, "schema": 4}, "catalog": evaluate("project domain")}
             with patch.object(home, "capture", return_value=json.dumps(data)), patch.object(home, "validate_runtime_profile") as runtime:
-                with self.assertRaisesRegex(ValueError, "helper.*schema"):
+                with self.assertRaisesRegex(ValueError, "profile schema"):
                     home.validate_staged_profile(stage)
                 runtime.assert_not_called()
 
@@ -92,6 +92,37 @@ class CapabilityTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "helper.*catalog schema"):
                         home.validate_staged_profile(stage)
                     runtime.assert_not_called()
+
+    def test_normalizer_cannot_silently_change_supported_schemas(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            stage = Path(temporary)
+            home.write_json(stage / "profile.json", profile())
+            data = {"hasNormalizer": True, "profile": {**profile(), "schema": 3}, "catalog": evaluate("project domain")}
+            with patch.object(home, "capture", return_value=json.dumps(data)), patch.object(home, "validate_runtime_profile") as runtime:
+                with self.assertRaisesRegex(ValueError, "changed the profile schema"):
+                    home.validate_staged_profile(stage)
+                runtime.assert_not_called()
+
+    def test_schema_three_requires_explicit_target_capabilities(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            stage = Path(temporary)
+            value = {**profile(), "schema": 3, "capabilities": ["recording"]}
+            home.write_json(stage / "profile.json", value)
+            data = {"hasNormalizer": True, "profile": value, "catalog": evaluate("project domain")}
+            with patch.object(home, "capture", return_value=json.dumps(data)), patch.object(home, "validate_runtime_profile") as runtime:
+                with self.assertRaisesRegex(ValueError, "explicit.*capabilities"):
+                    home.validate_staged_profile(stage)
+                runtime.assert_not_called()
+
+    def test_old_executing_helper_rejects_three_even_when_selected_source_supports_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            stage = Path(temporary)
+            home.write_json(stage / "profile.json", {**profile(), "schema": 3})
+            old = {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2]}
+            with patch.object(home, "profile_capabilities", return_value=old), patch.object(home, "capture") as capture:
+                with self.assertRaisesRegex(ValueError, "helper.*schema"):
+                    home.validate_staged_profile(stage)
+                capture.assert_not_called()
 
 
 if __name__ == "__main__":

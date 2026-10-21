@@ -19,6 +19,10 @@
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     nix-flatpak.url = "github:gmodena/nix-flatpak";
+    nixGL = {
+      url = "github:nix-community/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -46,6 +50,7 @@
             ${pkgs.lib.escapeShellArg home.config.home.profileDirectory}
           touch "$out"
         '';
+      nixgl-wrapper = import ./tests/nixgl-wrapper.nix {foundation = inputs.self;};
     };
     packages.${system} = {
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};

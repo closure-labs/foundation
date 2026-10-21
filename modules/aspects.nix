@@ -2,6 +2,7 @@
   den.aspects.features = {
     base.homeManager.imports = [./aspects/base/home.nix];
     capabilities.devops.homeManager.imports = [./aspects/capabilities/devops/home.nix];
+    profile-composition.homeManager.imports = [./aspects/profile-composition.nix];
     roles = {
       developer = {
         includes = [den.aspects.features.capabilities.devops];

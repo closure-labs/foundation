@@ -1,11 +1,11 @@
-# Executable design contract only. This is intentionally outside normalizeProfile.
+# Shared composition contract; migration previews remain non-activating.
 {
   catalog,
   applicationContract ? import ./contract.nix {inherit catalog;},
 }: let
   contract = applicationContract;
   verification = builtins.fromJSON (builtins.readFile ./flathub-verification.json);
-  fail = message: throw "Invalid draft Foundation profile: ${message}";
+  fail = message: throw "Invalid Foundation profile: ${message}";
   unique = values:
     builtins.attrNames (builtins.listToAttrs (map (name: {
         inherit name;
@@ -22,8 +22,8 @@
     && builtins.all (name: builtins.isString name && builtins.hasAttr name choices) values
     && builtins.length values == builtins.length (unique values);
   concatMap = f: values: builtins.concatLists (map f values);
-  legacyNormalize = import ../normalize-profile.nix {inherit catalog;};
-  draftBaseNormalize = import ../normalize-profile.nix {
+  legacyNormalize = import ../normalize-profile-v2.nix {inherit catalog;};
+  draftBaseNormalize = import ../normalize-profile-v2.nix {
     catalog =
       catalog
       // {

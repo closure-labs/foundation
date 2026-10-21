@@ -28,6 +28,13 @@ if [[ ! -r "$current" ]]; then
   exit 1
 fi
 
+# The schema-3 capability editor and migration flow ship separately at A2.
+# Refuse before opening a six-role checklist that cannot represent this profile.
+if ! jq -e '.schema == 2' "$current" >/dev/null; then
+  echo 'This selector edits schema-2 profiles only; schema-3 editing requires the forthcoming capability editor.' >&2
+  exit 2
+fi
+
 # Prepare both dialogs before opening either one, so invalid input cannot
 # silently produce an empty checklist or partially advance the selector.
 if ! role_rows=$(jq -ce --slurpfile profile "$current" '

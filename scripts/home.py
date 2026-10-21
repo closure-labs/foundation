@@ -19,7 +19,7 @@ from pathlib import Path
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
 RELEASE_CHANNEL = "latest-release"
-CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak"}
+CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak", "nixGL"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
 REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
@@ -162,6 +162,8 @@ def nix_value(value):
 
 def migrate_input_declarations(inputs):
     """Keep custom input pins while moving their core follows to Foundation."""
+    if "nixGL" in inputs:
+        raise ValueError("A legacy input named nixGL requires manual migration to preserve its personal pin and followers")
     extras = {name: copy.deepcopy(value) for name, value in inputs.items() if name not in CORE}
     if "foundation" in extras:
         raise ValueError("A pre-existing personal input named foundation requires manual migration")
@@ -290,13 +292,20 @@ def validate_staged_profile(stage):
       hasCapabilities = target.lib ? profileCapabilities;
     in {
       inherit hasNormalizer;
-      catalog = target.lib.homeCatalog;
-      profile = if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
+      catalog = if target.lib ? homeCatalogForSchema then target.lib.homeCatalogForSchema submitted.schema else target.lib.homeCatalog;
+      profile = if submitted.schema == 3 && !hasCapabilities
+        then throw "Schema 3 requires explicit selected Foundation capabilities"
+        else if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
         then throw "Selected Foundation does not support this profile schema"
         else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
     } // (if hasCapabilities then { capabilities = target.lib.profileCapabilities; } else {})'''
     data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+    if submitted["schema"] == 3 and "capabilities" not in data:
+        raise ValueError("Schema 3 requires explicit selected Foundation capabilities")
     profile = data["profile"]
+    require_helper_schema(profile)
+    if profile.get("schema") != submitted["schema"]:
+        raise ValueError("Selected Foundation changed the profile schema during normalization")
     if (type(data["catalog"].get("schema")) is not int
             or data["catalog"]["schema"] not in profile_capabilities()["catalogSchemas"]):
         raise ValueError("The installed Foundation helper does not support this catalog schema")
@@ -304,7 +313,6 @@ def validate_staged_profile(stage):
         capabilities = validate_capabilities(data["capabilities"])
         if submitted["schema"] not in capabilities["normalizeSchemas"] or data["catalog"]["schema"] not in capabilities["catalogSchemas"]:
             raise ValueError("Selected Foundation capabilities do not support this profile or catalog schema")
-    require_helper_schema(profile)
     if not data["hasNormalizer"]:
         profile = validate_profile(profile, data["catalog"])
     validate_runtime_profile(profile, data["catalog"])
@@ -567,8 +575,9 @@ def initialize(root, profile_path, check=False):
     metadata = os.environ.get("FINITE_FOUNDATION_METADATA")
     info = read_json(metadata) if metadata else {}
     profile = json.loads(capture(["yq", "-o=json", ".", str(profile_path)]))
-    if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] not in (1, 2):
-        raise ValueError("Unsupported profile schema; initialization accepts schema 1 or 2")
+    if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
+            or profile["schema"] not in profile_capabilities()["initializeSchemas"]):
+        raise ValueError("Unsupported profile schema for this initializer")
     import pwd
     account = pwd.getpwuid(os.getuid())
     supplied = profile.get("identity", {})

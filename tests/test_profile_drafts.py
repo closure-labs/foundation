@@ -139,15 +139,15 @@ class DraftContractTests(unittest.TestCase):
                 self.assertIsNone(actual["candidate"])
                 self.assertFalse(actual["activationAllowed"])
 
-    def test_draft_does_not_enable_production_readers_catalog_or_writers(self):
+    def test_production_reader_accepts_three_while_default_catalog_and_writer_stay_two(self):
         actual = evaluate(f'''{{
           catalog = project domain;
           canRead = builtins.tryEval ((import {ROOT}/lib/normalize-profile.nix {{catalog = domain;}}) {expression(draft())});
         }}''')
-        self.assertFalse(actual["canRead"]["success"])
+        self.assertTrue(actual["canRead"]["success"])
         self.assertEqual(len(actual["catalog"]["roles"]), 6)
         self.assertNotIn("family", actual["catalog"]["roles"])
-        self.assertEqual(actual["catalog"]["profileCapabilities"]["normalizeSchemas"], [2])
+        self.assertEqual(actual["catalog"]["profileCapabilities"]["normalizeSchemas"], [2, 3])
         self.assertEqual(actual["catalog"]["profileCapabilities"]["writeSchema"], 2)
 
     def test_legacy_inventory_covers_actual_module_declarations(self):
@@ -164,6 +164,14 @@ class DraftContractTests(unittest.TestCase):
         self.assertEqual(len(used), 44)
         owned = {app for capability in self.contract["capabilities"].values() for app in capability["applications"]}
         self.assertTrue(used.issubset(owned))
+
+    def test_legacy_resolver_remains_strictly_schema_two(self):
+        self.assertNotEqual(run_draft("resolveLegacy", draft(), check=False).returncode, 0)
+
+    def test_production_three_normalizer_preserves_capabilities_and_extensions(self):
+        value = draft(roles=["family", "developer"], capabilities=["recording", "office"], custom={"keep": True})
+        actual = evaluate(f'(import {ROOT}/lib/normalize-profile.nix {{catalog = domain;}}) {expression(value)}')
+        self.assertEqual(actual, run_draft("normalize", value))
 
 
 if __name__ == "__main__":

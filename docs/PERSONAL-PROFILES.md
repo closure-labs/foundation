@@ -1,17 +1,18 @@
 # Proposed Personal profiles
 
-These are recommendations for the later application-composition stage, not
-newly enabled roles or installed applications. Existing schema-2 application
-sets stay intact while the reader/migration bridge is developed.
+These roles are implemented for explicitly supplied schema-3 profiles. Default
+generators and the selector remain schema 2 until the migration/editor stage.
+Existing schema-2 application sets stay intact; this change installs nothing on
+the running workstation.
 
 Recommend four independently composable roles under **Personal**, with a small
 default set and larger tools selected explicitly. The user confirmed lightweight
 defaults, with larger applications and launchers optional.
 The exact ownership and format are now an
-[executable schema-3 draft](architecture/ARCH-profile-schema3.md); production
+[schema-3 composition contract](architecture/ARCH-profile-schema3.md); default
 writers still emit schema 2.
 
-| Role | Purpose and proposed core | Optional additions |
+| Role | Purpose and core | Optional additions |
 | --- | --- | --- |
 | **Family** (`family`) | Household documents, browsing and mail: reuse shared Firefox/credential tools plus LibreOffice and Thunderbird. | Nextcloud client for an existing family server, Joplin for household notes, calendar integration once the account provider is known. |
 | **Media** (`media`) | Local music/video playback: VLC, reusing the shared browser for web media. | A Jellyfin client when a server is used; GNOME Audio Player for a focused audio interface. |
@@ -36,7 +37,7 @@ recording tools without selecting an entire Personal role, for example.
 - Prefer graphical Nixpkgs applications with nixGL where appropriate. Official
   or verified Flathub distributions are permitted exceptions. Keep schema-2
   providers unchanged; preview provider changes explicitly for migration to the
-  new format. The draft uses Nix for proposed creative tools and launchers,
+  new format. Schema 3 uses Nix for creative tools and launchers,
   with verified Flathub exceptions where no matching Nix package exists.
 - Treat server URLs, accounts, sync folders and credentials as user configuration.
   No role starts a media/cloud server, chooses sync roots, downloads games, or
@@ -47,8 +48,8 @@ recording tools without selecting an entire Personal role, for example.
 - Enable selectable roles only when they deliver meaningful behavior and the
   installed helper, selected Foundation and provisioning entry points support
   them. Keep the old application closure for schema 2, and preview changes on
-  explicit migration. The Personal classification itself remains metadata until
-  then.
+  explicit migration. The default selector exposes Personal roles at A2's
+  migration/editor stage.
 
 Recommended combinations: Family + Media for a household laptop; Creative +
 Media for a hobby workstation; Gaming + Media for an entertainment desktop;
@@ -74,5 +75,5 @@ Checked 2026-10-20:
   supports local games against another person or an installed chess engine.
 - Optional creative projects: [Kdenlive](https://kdenlive.org/),
   [Blender](https://www.blender.org/), [OBS Studio](https://obsproject.com/).
-  The draft selects their Nixpkgs packages; the locked provider fixture checks
+  Schema 3 selects their Nixpkgs packages; the locked provider fixture checks
   availability. GUI and engine launches remain rollout checks.

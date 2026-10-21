@@ -8,8 +8,8 @@ rootfs="modules/aspects/capabilities/devops/rootfs"
 for file in .zshrc aliases.zsh bindings.zsh fzf.zsh prompt.zsh starship.toml LICENSE; do
 	test -f "${rootfs}/usr/share/finite/zsh/${file}"
 done
-grep -qF 'paths = [pkgs.ghostty];' "${module}"
-grep -qF -- "--replace-fail 'DBusActivatable=true' 'DBusActivatable=false'" "${module}"
+grep -qF 'paths = [pkgs.ghostty];' lib/ghostty-package.nix
+grep -qF -- "--replace-fail 'DBusActivatable=true' 'DBusActivatable=false'" lib/ghostty-package.nix
 grep -qF '"ghostty/config.ghostty".text' "${module}"
 # shellcheck disable=SC2016 # Ghostty must start the Home Manager Zsh package.
 grep -qF '"command = ${config.programs.zsh.package}/bin/zsh"' "${module}"

@@ -12,6 +12,10 @@
   catalog = import ../lib/catalog.nix;
   canonicalRoles = vars.roles;
   canonicalPackages = vars.packages;
+  composition =
+    if vars.schema == 3
+    then (import ../lib/profile-drafts {inherit catalog;}).resolve vars
+    else null;
   pkgs = import inputs.nixpkgs {
     inherit system;
     config.allowUnfree = true;
@@ -50,6 +54,8 @@ in {
         inherit modules pkgs;
         extraSpecialArgs = {
           inherit inputs;
+          foundationProfileSchema = vars.schema;
+          foundationComposition = composition;
           finiteHomeAssets = {
             devops = ./aspects/capabilities/devops/rootfs/usr/share/finite;
           };
@@ -61,13 +67,21 @@ in {
     finite-home = {
       includes =
         [den.aspects.features.base]
-        ++ map (role: den.aspects.features.roles.${role}) canonicalRoles
+        ++ (
+          if vars.schema == 2
+          then map (role: den.aspects.features.roles.${role}) canonicalRoles
+          else
+            [den.aspects.features.profile-composition]
+            ++ lib.optional (builtins.elem "devops" composition.effectiveCapabilities) den.aspects.features.capabilities.devops
+        )
         ++ [den.aspects.features.hardware.${vars.hardware}];
       homeManager = {
         home = {
           username = lib.mkForce vars.identity.username;
           homeDirectory = lib.mkForce vars.identity.homeDirectory;
-          packages = [configure homeApply applications.homeUpdate applications.homeMigrate applications.appStatus] ++ selectedPackages;
+          packages =
+            [configure homeApply applications.homeUpdate applications.homeMigrate applications.appStatus]
+            ++ lib.optionals (vars.schema == 2) selectedPackages;
           sessionVariables = {
             FINITE_FOUNDATION = vars.foundation;
             FINITE_HARDWARE = vars.hardware;

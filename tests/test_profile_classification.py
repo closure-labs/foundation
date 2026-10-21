@@ -219,6 +219,15 @@ else:
                 self.assertEqual(events, [])
                 self.assertIn("catalog", result.stderr.lower())
 
+    def test_schema_three_is_preserved_and_refused_before_incomplete_editing(self):
+        value = {"schema": 3, "roles": ["family", "developer"], "packages": ["jj"],
+                 "capabilities": ["recording"], "custom": {"retain": True}}
+        self.profile.write_text(json.dumps(value))
+        result, events = self.run_selector()
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(events, [])
+        self.assertIn("schema-3 editing", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,10 @@
 # Schema-3 application composition contract
 
-Status: A1 executable draft, 2026-10-20. Implemented in
-[`lib.profileDrafts`](../../lib/profile-drafts/default.nix), separate from the
-production normalizer, constructor, catalog and writers. It does not enable
-schema-3 activation or install these applications. Follow
+Status: F1b reader/composition bridge implemented, 2026-10-20. The public
+normalizer and constructor accept explicitly supplied schema 3, backed by the
+[composition resolver](../../lib/profile-drafts/default.nix) and
+[application module](../../modules/aspects/profile-composition.nix). Default
+writers/catalogs stay schema 2; no existing profile is converted. Follow
 [the staged plan](../plans/PLAN-profile-refactor.md) for rollout.
 
 ## Why a schema change helps
@@ -112,7 +113,7 @@ need a session test before rollout.
 
 Prefer graphical Nixpkgs packages with nixGL on this non-NixOS host. Official
 or verified Flathub distributions are allowed exceptions; Flathub availability
-alone is insufficient. This draft uses Nix wherever an appropriate package
+alone is insufficient. Schema 3 uses Nix wherever an appropriate package
 exists in the locked sources. All 53 Nix declarations, including
 `kdePackages.kdenlive`, are checked by the
 [locked provider fixture](../../tests/draft-providers.nix). Existence is not a
@@ -140,7 +141,8 @@ not a security audit.
 Use Home Manager's [nixGL integration](https://github.com/nix-community/home-manager/blob/master/modules/targets/generic-linux/nixgl.nix)
 and [non-NixOS graphics guidance](https://github.com/nix-community/home-manager/blob/master/docs/manual/usage/gpu-non-nixos.md).
 The intended Intel/AMD path is Mesa via [nixGL](https://github.com/nix-community/nixGL).
-F1b must:
+The reader bridge implements the first four requirements below; physical
+application/session validation remains a rollout requirement:
 
 1. Pin nixGL and align its Nixpkgs input with the selected package family where
    possible. Set non-null `targets.genericLinux.nixGL.packages` and the Mesa
@@ -150,8 +152,10 @@ F1b must:
    the schema-2 backend.
 3. Wrap selected graphical Nix packages with `config.lib.nixGL.wrap`, retaining
    configured recipes and desktop/D-Bus/service launch paths. Keep CLI tools,
-   shell sessions and Flatpaks outside wrappers. `wrappedApplicationIds` is the
-   intended list, not evidence of installed wrappers.
+   shell sessions and Flatpaks outside wrappers. Actual composition is evaluated
+   against `wrappedApplicationIds`; a synthetic app is built and launched through
+   the pinned wrapper, with desktop, D-Bus and systemd paths checked. This does
+   not establish physical rendering or every app's runtime compatibility.
 4. Leave Vulkan and discrete-GPU offload explicit until H1 supplies tested
    choices. Do not export global graphics-library paths, install host drivers,
    or add NVIDIA work.
@@ -162,12 +166,13 @@ F1b must:
 
 ## Preview and migration
 
-`lib.profileDrafts.normalize` validates draft JSON; `resolve` produces derived
+`lib.normalizeProfile` accepts schemas 2/3. `lib.resolveProfile` produces derived
 classes, capabilities, app identities, provider-qualified declarations and the
-planned graphics backend. `resolveLegacy` models schema-2 declarations.
+graphics policy for schema 3. The retained `lib.profileDrafts.resolveLegacy`
+models strictly schema-2 declarations.
 `previewMigration { profile; roles ? null; capabilities ? []; }` compares them
-without writing or activating. This is a draft API, not a production
-compatibility promise.
+under `lib.profileDrafts` without writing or activating. Migration preview
+remains a draft API until the editor/migration stage.
 
 Evaluate a preview from the repository root:
 
@@ -202,17 +207,25 @@ undoes external provider effects.
 
 ## Delivery boundaries
 
-- **A1, this change:** isolated contract, resolver, migration preview, complete
+- **A1, complete:** contract, resolver, migration preview, complete
   legacy declaration inventory, provider checks and focused tests/documentation.
-- **F1b, next:** production dual normalization/composition and actual nixGL
+- **F1b, implemented:** production dual normalization/composition and actual nixGL
   wrappers; helpers, selector read paths and Finite readers accept schema 3
   while generators still emit schema 2. Capability advertising follows actual
   support and rejects incompatible helper/source pairs.
 - **A2:** negotiated schema-3 selection/writing, explicit migration and recovery.
-  Only then expose Personal choices through the production catalog/selector.
+  Only then expose Personal choices through the default generator catalog/selector.
 
-Production remains six roles, profile schema 2, catalog schema 3, compatibility 1
-throughout A1. The current generator enumerates catalog roles and emits schema
-2; adding Personal roles there now would produce incompatible data. Additive
-draft metadata needs no catalog schema 4; revisit the version only if an actual
-breaking contract is necessary. Hardware schema refactoring remains separate.
+The bridge advertises initialize schemas 1/2/3 and normalize schemas 2/3 with
+write schema 2. Schema 3 requires an explicit selected-source capability
+descriptor; historical descriptor absence cannot imply support. Normalization
+cannot change a submitted schema. Initialization preserves supplied capabilities,
+custom fields and schema 3, while schema 1 retains its explicit conversion to 2.
+
+`homeCatalogForSchema 2` equals the default six-role `homeCatalog`.
+`homeCatalogForSchema 3` adds Personal roles and capabilities only for readers
+requesting that format. Catalog schema remains 3 and compatibility remains 1.
+`finite-configure` refuses schema 3 before opening dialogs; it cannot discard
+capability selections through its older checklist. Legacy input adoption rejects
+a personal `nixGL` name collision before filtering or rebasing its pin/followers.
+Hardware schema refactoring remains separate.

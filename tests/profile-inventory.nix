@@ -20,7 +20,10 @@ let
   args = {
     inherit pkgs;
     config = {};
-    lib = {};
+    lib.optionals = condition: values:
+      if condition
+      then values
+      else [];
     finiteHomeAssets.devops = ../modules/aspects/capabilities/devops/rootfs/usr/share/finite;
     inputs = {
       nixpkgs-weekly.legacyPackages.fixture = weekly;

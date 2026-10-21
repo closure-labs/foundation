@@ -3,6 +3,7 @@
   version = lib.removeSuffix "\n" (builtins.readFile ../VERSION);
   catalog = import ./catalog.nix;
   normalizeProfile = import ./normalize-profile.nix {inherit catalog;};
+  profileComposition = import ./profile-drafts {inherit catalog;};
   sourceInfo = {
     inherit version;
     compatibility = 1;
@@ -27,7 +28,27 @@
 in {
   inherit catalog homeCatalog sourceInfo mkApplications normalizeProfile;
   inherit (homeCatalog) profileCapabilities;
-  profileDrafts = import ./profile-drafts {inherit catalog;};
+  profileDrafts = profileComposition;
+  resolveProfile = profileComposition.resolve;
+  homeCatalogForSchema = schema:
+    if schema == 2
+    then homeCatalog
+    else if schema == 3
+    then
+      (import ./home-catalog.nix {
+        domainCatalog =
+          catalog
+          // {
+            rolesByName = profileComposition.contract.roles;
+            roleNames = map (role: role.name) (lib.sort (a: b: a.order < b.order) (builtins.attrValues profileComposition.contract.roles));
+          };
+        inherit lib version;
+      })
+      // {
+        capabilities = profileComposition.contract.capabilities;
+        profileSchema = 3;
+      }
+    else throw "Unsupported Foundation catalog profile schema";
   mkHomeCatalog = {domainCatalog ? catalog}: import ./home-catalog.nix {inherit domainCatalog lib version;};
   compatibility = 1;
   mkHomeConfiguration = {

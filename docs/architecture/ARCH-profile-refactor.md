@@ -1,8 +1,9 @@
 # Profile refactor architecture
 
 Status: classification, dependency/normalization and reader-readiness slices
-implemented. The [A1 schema-3 contract](ARCH-profile-schema3.md) is an isolated
-executable draft; production composition/readers and writers follow at F1b/A2.
+implemented. The [schema-3 contract](ARCH-profile-schema3.md) now has F1b dual
+readers/composition and actual nixGL wrappers. Default writers remain schema 2;
+editor/migration enablement follows at A2.
 Classification-first sequencing confirmed by the user on 2026-10-20.
 This document and the
 [implementation plan](../plans/PLAN-profile-refactor.md) supersede the rollout
@@ -89,7 +90,7 @@ isolated Finite `profile-readers` jj workspace:
 
 | Boundary | Evidence | Required later change |
 | --- | --- | --- |
-| Initialization | Previously assigned `schema=2` unconditionally. | N1 accepts schema 1/2, explicitly converts 1 to 2, and rejects unsupported schemas. New-format migration remains deferred. |
+| Initialization | Previously assigned `schema=2` unconditionally. | F1b accepts supplied schemas 1/2/3, converts only 1 to 2, preserves 3 and rejects unsupported formats. Default generators remain 2. |
 | Build validation | Previously used the executing helper/env catalog. | N1 resolves the pure normalizer and catalog from the staged locked Foundation; fallback requires API absence. |
 | Validator ownership | Validation was independently implemented in Nix and Python. | N1 shares a pure Nix normalizer between composition and staging; Python retains runtime account/image checks and a legacy-target schema-2 fallback. The schema-2 generator remains unchanged. |
 | Ordering | Valid reordered selections were accepted by composition but not persisted consistently. | N1 canonicalizes by catalog order then name, persists staged selections before building, and rejects unknowns/duplicates. |
@@ -121,21 +122,25 @@ the actual script, ignoring source overrides. Staging intersects this helper's
 support with the locked target's descriptor; explicit malformed metadata fails.
 Descriptor absence identifies a legacy target, not evidence for a future format.
 First-login similarly limits helpers without the query to historical schema 1/2.
-The later F1b stage adds real future-format readers only after A1 defines them.
+F1b extends the manifest to initialize schemas 1/2/3 and normalize schemas 2/3,
+keeping write schema 2. Actual composition and selected-source catalog support
+are implemented alongside that advertising; schema 3 requires an explicit target
+descriptor and normalization cannot change the submitted version.
 
 ## Later composition boundaries
 
 After compatibility groundwork, introduce professional/personal selections with
 shared defaults and opt-in role leaves. Selecting any existing work role implies
 Professional, preserving that role without selecting its siblings. Selecting
-Personal plus a work role can compose both categories in one home generation.
+a Personal role plus a work role can compose both categories in one generation.
 Schema 2 retains its complete legacy application declarations throughout the
 supported migration; adopting a smaller set requires an explicit preview.
 
-The earlier review's per-application allocation is provisional. Confirm it in a
-separate app-split decision; the present choice does not approve moving Chromium,
-camera controls, or other apps out of the shared base. Keep unmanaged Flatpaks
-preserved and explain retained installations during a later migration preview.
+The [schema-3 contract](ARCH-profile-schema3.md) now records application ownership:
+Chromium is optional and camera controls follow declared hardware or explicit
+selection. F1b implements those semantics for supplied schema 3; schema 2 retains
+its old base. Keep unmanaged Flatpaks preserved and explain retained installations
+during an explicit migration preview.
 
 Separate machine form factor, CPU, GPU, and model dimensions in another slice.
 Preserve the current Dell panel/camera behavior and hardware adapters first.

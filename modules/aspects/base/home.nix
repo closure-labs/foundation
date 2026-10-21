@@ -3,6 +3,7 @@
   inputs,
   lib,
   pkgs,
+  foundationProfileSchema ? 2,
   ...
 }: let
   system = pkgs.stdenv.hostPlatform.system;
@@ -48,21 +49,25 @@ in {
     stateVersion = "26.05";
     # Bluefin's shared CLI tools come from Homebrew; keep Nix-only user apps
     # and the pinned dependencies of Finite's own scripts in Nix.
-    packages =
-      (with pkgs; [
-        marp-cli
-        neovim
-      ])
-      ++ [
-        brewMigrationStatus
-        weekly.bitwarden-desktop
-        weekly.element-desktop
-        weekly.libreoffice
-        weekly.nextcloud-client
-        pkgs.thunderbird
-        pkgs.vlc
-        weekly.bitwarden-cli
-      ];
+    packages = (
+      if foundationProfileSchema == 2
+      then
+        (with pkgs; [
+          marp-cli
+          neovim
+        ])
+        ++ [
+          brewMigrationStatus
+          weekly.bitwarden-desktop
+          weekly.element-desktop
+          weekly.libreoffice
+          weekly.nextcloud-client
+          pkgs.thunderbird
+          pkgs.vlc
+          weekly.bitwarden-cli
+        ]
+      else [brewMigrationStatus]
+    );
     activation.checkBrewProviders = lib.hm.dag.entryBefore ["writeBoundary"] ''
       if ! HOMEBREW_NO_AUTO_UPDATE=1 FINITE_BREW_POLICY=${./brew-packages.json} \
         ${brewMigrationStatus}/bin/finite-brew-migration-status --check-installed; then
@@ -96,7 +101,12 @@ in {
 
   targets.genericLinux = {
     enable = true;
-    gpu.enable = true;
+    gpu.enable = foundationProfileSchema == 2;
+    nixGL = lib.mkIf (foundationProfileSchema == 3) {
+      packages = inputs.nixGL.packages;
+      defaultWrapper = "mesa";
+      vulkan.enable = false;
+    };
   };
 
   services.flatpak = {
@@ -105,7 +115,7 @@ in {
     # Drop runtimes no installed application needs while preserving extra apps.
     uninstallUnused = true;
     update.auto.enable = false;
-    packages = [
+    packages = lib.optionals (foundationProfileSchema == 2) [
       "app.drey.Damask"
       "be.alexandervanhee.gradia"
       "com.github.PintaProject.Pinta"
@@ -130,7 +140,10 @@ in {
   programs = {
     firefox = {
       enable = true;
-      package = finiteFirefox;
+      package =
+        if foundationProfileSchema == 3
+        then config.lib.nixGL.wrap finiteFirefox
+        else finiteFirefox;
     };
     fzf.enable = true;
     git.enable = true;

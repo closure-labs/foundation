@@ -86,20 +86,32 @@ unsupported versions; it does not overwrite a newer schema version.
 `finite-home-init --capabilities` reports the executing helper's supported
 initialization, normalization and catalog schemas without accessing a consumer.
 The catalog and `lib.profileCapabilities` expose the selected source's support;
-staging requires both sides to understand the input. Current writers emit schema 2.
+staging requires both sides to understand the input. Default generators emit schema 2.
 
-The [schema-3 composition draft](docs/architecture/ARCH-profile-schema3.md)
-defines smaller Professional/Personal defaults, optional capabilities, a
-Nixpkgs/nixGL provider preference, and a read-only migration preview through
-`lib.profileDrafts`. It is isolated from production readers and activation;
-existing profiles retain their current applications and providers.
+The [schema-3 composition contract](docs/architecture/ARCH-profile-schema3.md)
+now has production readers and Home Manager composition for explicitly supplied
+profiles. It provides smaller Professional/Personal defaults, optional
+capabilities and graphical Nixpkgs apps wrapped with nixGL Mesa. Verified Flathub
+exceptions remain where matching Nix packages are unavailable. Existing schema-2
+profiles keep their current applications, providers and graphics backend.
+
+`lib.homeCatalogForSchema 3` exposes the ten-role/capability catalog;
+`lib.homeCatalog` remains the six-role catalog for schema-2 generators.
+`lib.resolveProfile` resolves schema-3 composition. The read-only migration
+preview remains under `lib.profileDrafts` and never authorizes activation.
+Default generation still writes schema 2, and `finite-configure` refuses schema-3
+editing until the capability editor/migration stage is implemented. No profile
+is converted automatically. Validate physical graphics/app behavior before
+migrating a workstation. Legacy configurations with a personal input named
+`nixGL` require manual migration to preserve its pin and followers.
 
 Developer, Sales, Trainer, Support, Executive, and IT are classified as
 **Professional** in the selector and catalog. They remain individually
 selectable with their existing applications. **Personal** is registered as a
-peer category for future profiles; it currently adds no roles or applications.
-These categories do not change schema 2 profiles or the Bluefin/DX image choice.
-See the [Personal profile proposals](docs/PERSONAL-PROFILES.md) for Family,
+peer category, with Family, Media, Creative and Gaming available to explicitly
+supplied schema-3 profiles. The default selector retains six Professional roles.
+These categories do not change schema-2 profiles or the Bluefin/DX image choice.
+See the [Personal profiles](docs/PERSONAL-PROFILES.md) for Family,
 Media, Creative and Gaming compositions and optional applications.
 
 The flake and its lock determine the Home Manager package set. Activation adds

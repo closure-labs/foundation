@@ -15,10 +15,11 @@ from test_home import ROOT, home
 from test_profile_validation import profile
 
 
-def target(directory, *, normalizer, candidate=False):
+def target(directory, *, normalizer, candidate=False, descriptor=True):
     directory.mkdir()
-    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "profile-capabilities.json"):
+    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "profile-capabilities.json"):
         shutil.copyfile(ROOT / "lib" / name, directory / name)
+    shutil.copytree(ROOT / "lib/profile-drafts", directory / "profile-drafts")
     extension = '''// {
       rolesByName = base.rolesByName // { future = { name = "future"; label = "Future"; order = 5; }; };
       roleNames = ["future"] ++ base.roleNames;
@@ -36,7 +37,7 @@ def target(directory, *, normalizer, candidate=False):
         CAPABILITIES
         NORMALIZER
       }; };
-    }'''.replace("EXTENSION", extension).replace("CAPABILITIES", "profileCapabilities = builtins.fromJSON (builtins.readFile ./profile-capabilities.json);" if normalizer else "").replace("NORMALIZER", "normalizeProfile = import ./normalize-profile.nix { inherit catalog; };" if normalizer else ""))
+    }'''.replace("EXTENSION", extension).replace("CAPABILITIES", "profileCapabilities = builtins.fromJSON (builtins.readFile ./profile-capabilities.json);" if normalizer and descriptor else "").replace("NORMALIZER", "normalizeProfile = import ./normalize-profile.nix { inherit catalog; };" if normalizer else ""))
 
 
 def main():
@@ -89,6 +90,16 @@ def main():
                     raise AssertionError(f"{name} accepted an unknown role")
                 print(f"Locked {name} target normalization and rejection passed", flush=True)
 
+                if normalizer and not candidate:
+                    value = {**profile(), "schema": 3, "roles": ["creative", "family"],
+                             "capabilities": ["recording"], "custom": {"preserve": True}}
+                    home.write_json(stage / "profile.json", value)
+                    actual = home.validate_staged_profile(stage)
+                    assert actual == {**value, "roles": ["family", "creative"], "packages": ["jj", "uv"]}
+                    assert home.read_json(stage / "profile.json") == value
+                    assert stage.joinpath("flake.lock").read_bytes() == lock_bytes
+                    print("Locked schema-3 reader preserves capabilities/extensions without writing", flush=True)
+
             # Legacy generated standalone flakes use their own lib API.
             standalone = base / "standalone"
             target(standalone, normalizer=True)
@@ -120,6 +131,45 @@ def main():
             actual = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
             assert actual["roles"] == ["developer", "it"]
             print("Foundation public normalization export passed", flush=True)
+
+            expression = 'let f = builtins.getFlake ' + home.nix_value("path:" + str(ROOT)) + '; in { default = f.lib.homeCatalog; legacy = f.lib.homeCatalogForSchema 2; current = f.lib.homeCatalogForSchema 3; }'
+            catalogs = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+            assert catalogs["default"] == catalogs["legacy"]
+            assert len(catalogs["default"]["roles"]) == 6
+            assert len(catalogs["current"]["roles"]) == 10
+            assert len(catalogs["current"]["capabilities"]) == 31
+            assert catalogs["current"]["profileCapabilities"]["writeSchema"] == 2
+            print("Schema-aware catalogs expose ten roles only to schema-3 readers; default writer stays schema 2", flush=True)
+
+            selected = base / "old-schema2-source"
+            target(selected, normalizer=True)
+            selected.joinpath("normalize-profile.nix").write_text((ROOT / "lib/normalize-profile-v2.nix").read_text())
+            home.write_json(selected / "profile-capabilities.json", {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2]})
+            home.write_json(selected / "profile.json", {**profile(), "schema": 3, "capabilities": []})
+            home.run(["nix", "flake", "lock", "path:" + str(selected)])
+            before = home.tree_digest(selected)
+            try:
+                home.validate_staged_profile(selected)
+            except subprocess.CalledProcessError:
+                pass
+            else:
+                raise AssertionError("Old schema-2 source accepted schema 3")
+            assert home.tree_digest(selected) == before
+            print("New helper rejects supplied schema 3 against a schema-2-only source without writes", flush=True)
+
+            selected = base / "descriptor-absent-source"
+            target(selected, normalizer=True, descriptor=False)
+            home.write_json(selected / "profile.json", {**profile(), "schema": 3, "capabilities": []})
+            home.run(["nix", "flake", "lock", "path:" + str(selected)])
+            before = home.tree_digest(selected)
+            try:
+                home.validate_staged_profile(selected)
+            except subprocess.CalledProcessError:
+                pass
+            else:
+                raise AssertionError("Descriptor-absent target implied schema-3 support")
+            assert home.tree_digest(selected) == before
+            print("Schema-3 normalizer without explicit capabilities rejected without writes", flush=True)
 
             expression = 'import ' + str(ROOT / "tests/draft-providers.nix") + ' { foundation = builtins.getFlake '
             expression += home.nix_value("path:" + str(ROOT)) + '; }'

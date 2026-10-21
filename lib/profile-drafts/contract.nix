@@ -1,4 +1,4 @@
-# Draft-only A1 data. Production catalogs and writers do not consume this yet.
+# Schema-3 composition contract. Default writers/catalogs remain schema 2.
 {catalog}: let
   nix = input: attribute: graphical: {
     provider = "nix";

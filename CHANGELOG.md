@@ -6,6 +6,7 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Read and compose explicitly supplied schema-3 profiles with lightweight Professional/Personal roles, optional capabilities and nixGL-wrapped graphical Nixpkgs apps. Preserve schema-2 composition and default writers; expose schema-aware catalogs and reject incomplete selector editing, silent schema changes and legacy personal nixGL input collisions.
 - Add an isolated schema-3 composition draft and migration preview: smaller role defaults, four Personal roles, optional capabilities, Nixpkgs/nixGL preference and verified Flathub exceptions. Production readers, writers and schema-2 application sets remain unchanged.
 - Expose profile capabilities in the catalog, library and a read-only initializer query; reject staged profile/catalog formats the running helper or selected Foundation cannot read.
 - Validate staged profiles with the locked Foundation revision's normalization rules and catalog. Preserve schema-2 selections, reject unsupported initialization schemas, and prevent staged profile writes from modifying live symlink targets.
