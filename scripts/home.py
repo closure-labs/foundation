@@ -19,7 +19,7 @@ from pathlib import Path
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
 RELEASE_CHANNEL = "latest-release"
-CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "home-manager", "determinate", "nix-flatpak"}
+CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
 REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
