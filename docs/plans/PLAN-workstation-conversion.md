@@ -53,13 +53,21 @@ is a distinct step from completing and testing H1 code.
 
 The candidate is staged at
 `/tmp/foundation-host-composition-in7p4_ky/workstation/`, pinned to immutable local
-Foundation snapshot `b5800a90494040dc1a54fe357c7b5422b2c8f794`. Personal Devenv's
+Foundation snapshot `7eed78af934634b253a84e7bbaba758234d870b2`. Personal Devenv's
 13-node input closure and the unstable input are unchanged. Local modules/assets
 are byte-identical; staged graphical bindings have been adapted as above.
-Dry-run evaluation passes. The complete build needs 22.7 GiB unpacked while
-`/nix` has 9.6 GiB available, so the build has not started. Existing generations
-and the live configuration remain intact. Results and remaining work are recorded
-in the [H1 validation report](../qa-reports/QA-host-composition.md).
+The full activation-package build and built-command/launcher checks now pass
+after the user freed disk space. Existing generations and the live configuration
+remain intact. The previous capacity limit and initial evaluation are recorded
+in the [H1 validation report](../qa-reports/QA-host-composition.md); completed
+build evidence is in the [workstation build report](../qa-reports/QA-workstation-build.md).
 The merged audit also confirms nine graphical packages wrapped once and the
 custom launchers/autostart using their selected wrapped outputs. Original
 Element/Bitwarden arguments and environment are preserved.
+
+This local source is manually pinned: update/status skip published releases and
+explain that its Foundation input must be advanced explicitly. The proposed
+switch includes the reviewed `customize.nix` changes in the existing backup and
+rollback transaction, preserving personal repository metadata and local modules.
+The exact candidate, active-generation guard and switch command are prepared;
+live activation is pending approval.

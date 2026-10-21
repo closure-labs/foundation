@@ -17,7 +17,8 @@ requested the first slice after the architecture and plan were presented.
 | profile-future-readers | F1b future-format readers | Complete | CI90, full Nix build/checks, eight actual schema3 compositions, real nixGL synthetic launch, exact32legacy parity, old/new-source Finite contracts, constructor/adapter proofs and architect/QA/security review pass. Default writers stay2. Foundation jj `zlorynyq`; Finite fixtures `pqkymstk`. |
 | profile-writers-migration | A2 capability editor and migration | Complete | Versioned pinned-target preview/editor APIs, explicit conversion approval, capability selection and symlink-preserving recovery implemented. CI115/full Nix checks, locked-target editing and immutable-source Finite home contracts pass; default generators remain schema2. jj `uvtpxqsw`. |
 | profile-host-composition | H1 form factor and hardware aspects | Complete | Structured schema3 host and independent machine/CPU/GPU/model aspects implemented. CI124, nine pure host tests, nine actual Home Manager host cases, full Nix builds/checks and QA review pass. Native lid behavior retained. jj `ommsszxm`. |
-| profile-workstation-conversion | This workstation only | In progress | Broad Foundation refactor continues; migration limited to Dale's Dell. Candidate and custom GUI wrappers staged, dry-run evaluation and personal pin/asset preservation pass. Full build awaits capacity: 22.7GiB needed versus 9.6GiB free. No activation or new multi-version migration work. |
+| profile-workstation-build | This workstation build and preflight | Complete | Full schema3 workstation build passed at immutable source `7eed78af` (jj `rkxnuwlv`). Fixed icon build-file collision and local pinned-source helpers; CI131, full Nix checks, built-command/launcher/Brew checks and CLI/security review pass. Original/live configuration and generation unchanged. |
+| profile-workstation-conversion | This workstation only | Ready for approval | Verified candidate, retained GC root, guarded switch and customization rollback prepared. Migration remains limited to Dale's Dell; no activation or new multi-version migration work. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release | Publication/activation | Not started | Separate release action after code review and validation; no automatic deployment. |
 
@@ -30,4 +31,5 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [A2 validation](../docs/qa-reports/QA-profile-editor.md),
 [H1 contract](../docs/architecture/ARCH-host-composition.md),
 [H1 validation](../docs/qa-reports/QA-host-composition.md),
-[workstation conversion](../docs/plans/PLAN-workstation-conversion.md).
+[workstation conversion](../docs/plans/PLAN-workstation-conversion.md),
+[workstation build](../docs/qa-reports/QA-workstation-build.md).

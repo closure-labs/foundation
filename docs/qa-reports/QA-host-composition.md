@@ -36,7 +36,7 @@ generation, firmware, OS services or saved consumer pins were changed.
 | Workstation staged evaluation | Dry-run evaluation passed against immutable Foundation snapshot `b5800a90494040dc1a54fe357c7b5422b2c8f794` |
 | Personal input pins/assets | Devenv's 13 locked nodes and the personal unstable input unchanged; local modules/Espanso assets preserved byte-for-byte |
 | Workstation merged launchers | Passed: nine custom GUI packages wrapped exactly once; Element/Bitwarden helper scripts and 1Password/Nextcloud/Firefox autostart point at the selected wrapped outputs; flags/environment preserved |
-| Full workstation activation-package build | Not started: dry run requires 22.7 GiB unpacked/8.4 GiB download; only 9.6 GiB free on `/nix` |
+| Full workstation activation-package build | Initially blocked by disk capacity; the [follow-up build](QA-workstation-build.md) now passes after cleanup and targeted packaging fixes |
 
 The review found that a fully normalized old custom `host` field could otherwise
 gain operational meaning during conversion. Both pure preview APIs now reject
@@ -58,9 +58,10 @@ package-set imports from the audit itself; an earlier duplicate-set audit exceed
 that limit. This audit inspects evaluated script/declaration contents and does
 not establish runtime graphics or activation success.
 
-A package build is not established by a passing evaluation. Disk capacity must
-be resolved before the full workstation build. Existing generations were not
-garbage-collected or deleted to make space. The candidate is not activated;
+The original H1 evaluation did not establish a successful workstation build.
+The follow-up report records the completed build, local-source helper support
+and icon collision fix. This work did not garbage-collect existing generations.
+The candidate is not activated;
 graphics/media, camera capture, docking/suspend and application-data checks
 remain physical-session acceptance work.
 
