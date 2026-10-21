@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Generate new schema-3 profiles in JSON or YAML with Professional/Personal roles, optional capabilities and independent host selections. Default templates and catalogs now use schema 3; generation validates bundled rules without fetching inputs, building or changing a consumer. Existing profiles retain their format.
+
 - Accept explicitly pinned local Git Foundation inputs for workstation editing. Verify metadata from the locked source and report manual pin maintenance without checking or replacing it with a published release.
 
 - Compose schema-3 hosts from independent machine, Intel/AMD CPU/GPU and model aspects, with camera-aware controls and laptop-only preferences. Focus conversion on the current Dell workstation.

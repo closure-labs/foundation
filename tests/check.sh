@@ -30,5 +30,6 @@ PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_capabilities.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_drafts.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_editor.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_host_profiles.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_generation.py
 for aspect in tests/aspects-*.sh; do bash "$aspect"; done
 printf 'Foundation checks passed\n'

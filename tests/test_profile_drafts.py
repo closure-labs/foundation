@@ -140,16 +140,16 @@ class DraftContractTests(unittest.TestCase):
                 self.assertIsNone(actual["candidate"])
                 self.assertFalse(actual["activationAllowed"])
 
-    def test_production_reader_accepts_three_while_default_catalog_and_writer_stay_two(self):
+    def test_production_reader_catalog_and_default_writer_use_three(self):
         actual = evaluate(f'''{{
-          catalog = project domain;
+          catalog = import {ROOT}/lib/profile-catalog.nix {{ domainCatalog = domain; inherit lib; version = "fixture"; }};
           canRead = builtins.tryEval ((import {ROOT}/lib/normalize-profile.nix {{catalog = domain;}}) {expression(draft())});
         }}''')
         self.assertTrue(actual["canRead"]["success"])
-        self.assertEqual(len(actual["catalog"]["roles"]), 6)
-        self.assertNotIn("family", actual["catalog"]["roles"])
+        self.assertEqual(len(actual["catalog"]["roles"]), 10)
+        self.assertIn("family", actual["catalog"]["roles"])
         self.assertEqual(actual["catalog"]["profileCapabilities"]["normalizeSchemas"], [2, 3])
-        self.assertEqual(actual["catalog"]["profileCapabilities"]["writeSchema"], 2)
+        self.assertEqual(actual["catalog"]["profileCapabilities"]["writeSchema"], 3)
 
     def test_legacy_inventory_covers_actual_module_declarations(self):
         actual = evaluate(f'import {ROOT}/tests/profile-inventory.nix')

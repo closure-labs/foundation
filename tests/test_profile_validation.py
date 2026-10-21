@@ -203,6 +203,7 @@ class StagedValidationTests(unittest.TestCase):
     def test_apply_validation_failure_preserves_live_tree(self):
         root = self.base / "live"
         home.make_template(ROOT, INFO, root, LOCK)
+        home.write_json(root / "profile.json", self.value)
         before = home.tree_digest(root)
         with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "validate_staged_profile", side_effect=ValueError("target rejected")), patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "target rejected"):

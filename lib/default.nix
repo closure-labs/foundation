@@ -12,10 +12,12 @@
     narHash = inputs.self.narHash or null;
     lastModified = inputs.self.lastModified or 0;
   };
-  homeCatalog = import ./home-catalog.nix {
-    domainCatalog = catalog;
-    inherit lib version;
-  };
+  homeCatalogForSchema = schema:
+    import ./profile-catalog.nix {
+      domainCatalog = catalog;
+      inherit lib version schema;
+    };
+  homeCatalog = homeCatalogForSchema 3;
   mkApplications = {
     pkgs,
     releaseInfo ? sourceInfo,
@@ -26,7 +28,7 @@
       sourceInfo = releaseInfo;
     };
 in {
-  inherit catalog homeCatalog sourceInfo mkApplications normalizeProfile;
+  inherit catalog homeCatalog homeCatalogForSchema sourceInfo mkApplications normalizeProfile;
   hosts = import ./hosts.nix;
   inherit (homeCatalog) profileCapabilities;
   profileDrafts = profileComposition;
@@ -35,27 +37,11 @@ in {
     schema = 1;
     preview = import ./profile-changes.nix {inherit catalog;};
   };
-  homeCatalogForSchema = schema:
-    if schema == 2
-    then homeCatalog
-    else if schema == 3
-    then
-      (import ./home-catalog.nix {
-        domainCatalog =
-          catalog
-          // {
-            rolesByName = profileComposition.contract.roles;
-            roleNames = map (role: role.name) (lib.sort (a: b: a.order < b.order) (builtins.attrValues profileComposition.contract.roles));
-          };
-        inherit lib version;
-      })
-      // {
-        capabilities = profileComposition.contract.capabilities;
-        hosts = (import ./hosts.nix).choices;
-        profileSchema = 3;
-      }
-    else throw "Unsupported Foundation catalog profile schema";
-  mkHomeCatalog = {domainCatalog ? catalog}: import ./home-catalog.nix {inherit domainCatalog lib version;};
+  mkHomeCatalog = {
+    domainCatalog ? catalog,
+    schema ? 3,
+  }:
+    import ./profile-catalog.nix {inherit domainCatalog lib version schema;};
   compatibility = 1;
   mkHomeConfiguration = {
     profile,

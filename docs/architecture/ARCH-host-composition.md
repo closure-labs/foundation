@@ -49,8 +49,9 @@ fingerprint enrollment or working drivers.
 
 `lib.hosts` exports the choices and pure normalizer. The schema-3 catalog exposes
 the choices as `hosts`. Normalized schema-3 profiles always contain the complete
-host object. The role/capability editor preserves it; hardware selection is
-currently made in profile JSON rather than an additional graphical dialog.
+host object. The role/capability editor preserves it; new profiles can select
+hardware through the [generator flags](ARCH-profile-generation.md). Existing
+host declarations can be edited in profile JSON; there is no hardware dialog.
 
 ## Aspect ownership
 
@@ -107,5 +108,6 @@ vendor GPUs, integrated/discrete combinations, Dell camera-disabled and the
 workstation candidate. They inspect the selected aspect effects and graphics
 backend, rather than only testing a list of aspect names.
 
-Physical suspend, closed-lid docking, GPU/media acceleration, camera capture and
+The activated workstation's nixGL probe confirms accelerated Intel OpenGL.
+Physical suspend, closed-lid docking, media acceleration, camera capture and
 fingerprint login remain session checks. Evaluations cannot establish them.

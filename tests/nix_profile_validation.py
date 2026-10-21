@@ -134,19 +134,43 @@ def main():
             assert actual["roles"] == ["developer", "it"]
             print("Foundation public normalization export passed", flush=True)
 
-            expression = 'let f = builtins.getFlake ' + home.nix_value("path:" + str(ROOT)) + '; in { default = f.lib.homeCatalog; legacy = f.lib.homeCatalogForSchema 2; current = f.lib.homeCatalogForSchema 3; }'
+            expression = '''let f = builtins.getFlake ''' + home.nix_value("path:" + str(ROOT)) + ''';
+              domain = f.lib.catalog;
+              withImages = domain // {
+                foundationsByName = builtins.mapAttrs (name: value: value // {
+                  profiles.generic-x86_64.name = if name == "bluefin" then "finite" else "finite-dev";
+                }) domain.foundationsByName;
+              };
+              legacyDomain = builtins.removeAttrs domain ["classifications"] // {
+                rolesByName = builtins.mapAttrs (_: role: builtins.removeAttrs role ["classification"]) domain.rolesByName;
+              };
+            in {
+              default = f.lib.homeCatalog;
+              legacy = f.lib.homeCatalogForSchema 2;
+              current = f.lib.homeCatalogForSchema 3;
+              custom = f.lib.mkHomeCatalog { domainCatalog = withImages; };
+              customLegacy = f.lib.mkHomeCatalog { domainCatalog = legacyDomain; schema = 2; };
+              applications = builtins.fromJSON (builtins.readFile (f.lib.mkApplications {pkgs = f.inputs.nixpkgs.legacyPackages.x86_64-linux;}).profileCatalog);
+              packaged = builtins.fromJSON (builtins.readFile f.packages.x86_64-linux.home-profile-catalog);
+            }'''
             catalogs = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
-            assert catalogs["default"] == catalogs["legacy"]
-            assert len(catalogs["default"]["roles"]) == 6
+            assert catalogs["default"] == catalogs["current"]
+            assert len(catalogs["legacy"]["roles"]) == 6
             assert len(catalogs["current"]["roles"]) == 10
             assert len(catalogs["current"]["capabilities"]) == 31
-            assert catalogs["current"]["profileCapabilities"]["writeSchema"] == 2
-            print("Schema-aware catalogs expose ten roles only to schema-3 readers; default writer stays schema 2", flush=True)
+            assert catalogs["current"]["profileCapabilities"]["writeSchema"] == 3
+            assert catalogs["default"] == catalogs["applications"] == catalogs["packaged"]
+            assert catalogs["custom"]["foundations"]["bluefin"]["profiles"] == {"generic-x86_64": "finite"}
+            assert catalogs["custom"]["classifications"]["personal"]["roles"] == ["family", "media", "creative", "gaming"]
+            assert catalogs["customLegacy"]["classifications"] == {}
+            assert len(catalogs["customLegacy"]["roles"]) == 6
+            assert all(role["classification"] is None for role in catalogs["customLegacy"]["roles"].values())
+            print("API/application/package catalogs agree; schema-3 image mappings and explicit legacy custom constructor pass", flush=True)
 
             selected = base / "old-schema2-source"
             target(selected, normalizer=True)
             selected.joinpath("normalize-profile.nix").write_text((ROOT / "lib/normalize-profile-v2.nix").read_text())
-            home.write_json(selected / "profile-capabilities.json", {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2]})
+            home.write_json(selected / "profile-capabilities.json", {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2], "writeSchema": 2})
             home.write_json(selected / "profile.json", {**profile(), "schema": 3, "capabilities": []})
             home.run(["nix", "flake", "lock", "path:" + str(selected)])
             before = home.tree_digest(selected)

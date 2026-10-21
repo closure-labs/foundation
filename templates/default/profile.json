@@ -1,9 +1,18 @@
 {
-  "schema": 2,
+  "schema": 3,
   "foundation": "bluefin",
-  "hardware": "generic-x86_64",
+  "host": {
+    "system": "x86_64-linux",
+    "formFactor": "generic",
+    "cpu": "generic",
+    "gpus": [],
+    "model": "generic",
+    "camera": false,
+    "fingerprint": false
+  },
   "packages": [],
   "roles": [],
+  "capabilities": [],
   "identity": {
     "username": "finite",
     "homeDirectory": "/var/home/finite"

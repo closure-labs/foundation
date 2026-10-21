@@ -5,17 +5,21 @@ validated, together with F1a reader readiness. A1 now has an isolated executable
 [schema-3 application contract](../architecture/ARCH-profile-schema3.md),
 resolver and migration preview. Personal application proposals are
 recorded in [PERSONAL-PROFILES](../PERSONAL-PROFILES.md).
-F1b implements actual schema-3 readers/composition and nixGL wrappers; default
-generators remain schema 2. A2 now implements negotiated capability editing,
-explicit conversion previews/approval and recovery.
+F1b implements actual schema-3 readers/composition and nixGL wrappers. A2
+implements negotiated capability editing, explicit conversion previews/approval
+and recovery. H1 host composition and this workstation's activation are complete.
+W3 makes schema 3 the default for new Foundation profiles and templates, with
+one shared current catalog; see [generation](../architecture/ARCH-profile-generation.md).
 User decision: **classify first, split applications later**. Firmware has been
 updated manually and is outside this plan's critical path.
 
 Scope update, 2026-10-20: the user confirmed that Foundation's refactor remains
 broad, while migration targets only this workstation. Historical compatibility
 work below is completed evidence, not a requirement to extend that matrix.
-H1 continues with independent laptop/desktop and Intel/AMD composition; conversion
-follows the [workstation plan](PLAN-workstation-conversion.md).
+H1 supplies independent laptop/desktop and Intel/AMD composition. The sole
+conversion succeeded under the [workstation plan](PLAN-workstation-conversion.md).
+Earlier first-slice and compatibility criteria below are historical evidence;
+they do not constrain new profile defaults to schema 2.
 
 Architecture: [ARCH-profile-refactor](../architecture/ARCH-profile-refactor.md).
 Evidence and original Den research: [review](../PROFILE-ARCHITECTURE.md).
@@ -136,6 +140,7 @@ by the earlier research document.
 | F1b Future-format readers | After A1: implement production dual normalization/composition, configured Nix GUI recipes and nixGL Mesa wrappers with the alternate generic GPU backend disabled only for schema 3. Coordinate Foundation helpers and Finite first-login/provisioning. Advertise only implemented support. | Old/new inputs are accepted while default writers remain schema 2; incompatible helper/source pairs fail before writing. Evaluate all draft apps and old-profile parity; verify physical GUI/backend behavior before migration rollout. |
 | A2 Writers and migration | After A1/F1b: implement selector/CLI migration and enable schema-3 writing only with verified reader/helper support. Keep source and profile rollback separate. | Both categories compose; update/build/activation and recovery fixtures pass for old and migrated consumers; unmanaged Flatpaks stay preserved; no silent schema rewrite. |
 | H1 Host composition | After D1 and the normalization bridge: add form-factor, CPU, integrated/discrete GPU and model selections; retain legacy hardware IDs/env/module adapters. Serialize shared-file edits with A1/A2. | Laptop/desktop and Intel/AMD/mixed-GPU evaluation passes; Dell panel/camera behavior preserved; no desktop-only home receives laptop power units; no Bluefin-owned drivers/PAM/services are installed by Home Manager. |
+| W3 Current profile generation | After the successful workstation conversion: default Foundation's generator/templates to schema 3 and share the current catalog projection across API and packaged tools. | JSON/YAML round trips, pure sandboxed validation, current catalog consistency and actual Home Manager checks pass. Existing consumer files/pin remain unchanged; no new migration matrix. |
 | U1 Update hardening | Independent Finite task: retain OS → Flatpak → Brew → Foundation; move root rejection before upstream execution; establish a supported failure-propagation integration. Do not parse upstream recipe bodies as an assumed stable API. | Failure-injection fixtures prove each failed prerequisite prevents Foundation activation, intentional Brew skips work, and the staged updater's backup/resource/recovery behavior remains. |
 
 Text dependency map: `P4 -> D1`; `P4 -> N1 -> F1a -> A1 -> F1b -> A2`;
@@ -167,9 +172,10 @@ accounts for every existing application, provides declaration/provider diffs,
 and follows the confirmed optional Chromium/camera-aware controls and
 Nixpkgs/nixGL preference. Its draft API does not change production capability
 advertising or catalogs. F1b now advertises actual schema-3 reading/composition,
-provides a schema-aware ten-role catalog, and retains the six-role default
-catalog for schema-2 writers. A2 now provides the complete additional-capability
-dialog and explicit conversion flow; H1 host composition is the next stage.
+provides a schema-aware ten-role catalog. A2 provides the complete
+additional-capability dialog and explicit conversion flow; H1 host composition
+and the workstation conversion are complete. W3 promotes the ten-role catalog
+and schema-3 generator to current defaults. The six-role reader view is explicit.
 See the [A1 validation report](../qa-reports/QA-profile-application-contract.md)
 for the inventory, provider, draft isolation and compatibility evidence.
 The [F1b validation report](../qa-reports/QA-schema3-readers.md) records actual
@@ -190,8 +196,9 @@ preview binding and recovery.
   declaration and provider changes, preserves unmanaged Flatpaks/data and supports
   source/profile rollback. Physical application-data transfer remains a separate
   rollout check.
-- **New profile recovery:** dual readers must ship before writers; test old
-  controller catalogs and manually locked consumers, not just the newest checkout.
+- **New profile generation:** dual readers already precede current writers;
+  validate the packaged generator and public catalog together. Finite adopts
+  the new default through its own reviewed pin/first-login changes later.
 - **Hardware scope:** preserve existing native lid/power behavior initially.
   AC plus external-input-only lid handling needs a separate, user-confirmed
   docking predicate and physical tests. Firmware has already been updated;

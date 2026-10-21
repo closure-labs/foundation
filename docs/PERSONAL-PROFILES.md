@@ -2,16 +2,16 @@
 
 These roles are implemented for schema-3 profiles. Use
 `finite-configure --migrate-profile` to review an explicit conversion; ordinary
-`finite-configure` edits the existing format. Default generators remain schema 2.
-Existing schema-2 application sets stay intact; this change installs nothing on
-the running workstation.
+`finite-configure` edits the existing format. New profiles default to schema 3
+and can select Personal roles directly with `finite-home-profile`.
+Existing schema-2 application sets stay intact.
 
 Recommend four independently composable roles under **Personal**, with a small
 default set and larger tools selected explicitly. The user confirmed lightweight
 defaults, with larger applications and launchers optional.
 The exact ownership and format follow the
-[schema-3 composition contract](architecture/ARCH-profile-schema3.md); default
-writers still emit schema 2.
+[schema-3 composition contract](architecture/ARCH-profile-schema3.md) and
+[generation guide](architecture/ARCH-profile-generation.md).
 
 | Role | Purpose and core | Optional additions |
 | --- | --- | --- |
@@ -25,8 +25,8 @@ It does not imply a shared login, child account, parental controls, content
 filtering, or kiosk mode. A child-oriented variant needs a separate request.
 
 Firefox, credential tools, office/mail, VLC, Nextcloud, Joplin, Pinta and Gradia
-are already declared in today's shared base. Their presence here describes
-future ownership, not permission to remove them from existing profiles.
+remain declared in the schema-2 shared base. Schema 3 assigns them to shared
+essentials, roles or optional capabilities without changing schema-2 profiles.
 Professional roles may reuse the same capabilities: a Trainer can select
 recording tools without selecting an entire Personal role, for example.
 

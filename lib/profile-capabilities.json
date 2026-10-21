@@ -2,7 +2,7 @@
   "schema": 1,
   "initializeSchemas": [1, 2, 3],
   "normalizeSchemas": [2, 3],
-  "writeSchema": 2,
+  "writeSchema": 3,
   "editSchemas": [2, 3],
   "catalogSchemas": [3]
 }

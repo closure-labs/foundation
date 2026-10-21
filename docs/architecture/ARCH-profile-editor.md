@@ -39,8 +39,9 @@ Omitting `--roles` or `--packages` preserves the existing selections. On an
 existing schema-3 profile, omitted `--capabilities` preserves explicit choices;
 `--capabilities ''` clears them. Capabilities on schema 2 require explicit
 `--migrate-profile`, even for an empty selection. A custom schema-2 field named
-`capabilities` blocks conversion rather than being overwritten. Default profile,
-first-login and cloud-init generators continue to emit schema 2.
+`capabilities` blocks conversion rather than being overwritten. Foundation's
+default generator and templates now use schema 3. Finite first-login/cloud-init
+adoption is separate from this Foundation change.
 
 `finite-home-migrate` retains its existing purpose: adopting Foundation into a
 legacy standalone configuration. Profile-format conversion uses the separate
@@ -49,7 +50,7 @@ legacy standalone configuration. Profile-format conversion uses the separate
 ## Locked-source contracts and negotiation
 
 The additive manifest field `editSchemas = [2, 3]` describes implemented editing,
-separately from initialization, normalization and default `writeSchema = 2`.
+separately from initialization, normalization and default `writeSchema = 3`.
 Absent editing metadata means historical schema-2 editing only. Explicit invalid
 metadata fails validation. The running helper checks its own manifest, ignoring
 source overrides when reporting support.
@@ -72,7 +73,8 @@ update that Foundation input before using the new editor/conversion flow.
 The existing `lib.profileDrafts.previewMigration` remains available for older
 callers, now also accepting candidate-only `packages`. Its draft status does not
 grant controller activation. Catalog schema 3 and release compatibility 1 remain
-unchanged; the default public catalog retains six roles for existing generators.
+unchanged. The default public catalog now exposes ten roles; existing schema-2
+editors request their six-role view explicitly.
 
 ## Preview binding and concurrency
 

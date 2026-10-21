@@ -20,7 +20,7 @@ class CapabilityTests(unittest.TestCase):
         self.assertEqual(capabilities, evaluate("(project domain).profileCapabilities"))
         self.assertEqual(capabilities["initializeSchemas"], [1, 2, 3])
         self.assertEqual(capabilities["normalizeSchemas"], [2, 3])
-        self.assertEqual(capabilities["writeSchema"], 2)
+        self.assertEqual(capabilities["writeSchema"], 3)
         self.assertEqual(capabilities["editSchemas"], [2, 3])
         self.assertEqual(capabilities["catalogSchemas"], [3])
 
@@ -120,7 +120,7 @@ class CapabilityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             stage = Path(temporary)
             home.write_json(stage / "profile.json", {**profile(), "schema": 3})
-            old = {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2]}
+            old = {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2], "writeSchema": 2}
             with patch.object(home, "profile_capabilities", return_value=old), patch.object(home, "capture") as capture:
                 with self.assertRaisesRegex(ValueError, "helper.*schema"):
                     home.validate_staged_profile(stage)

@@ -32,6 +32,10 @@ class ConsumerTests(unittest.TestCase):
         self.base = Path(self.tmp.name)
         self.root = self.base / "home-manager"
         home.make_template(ROOT, INFO, self.root, LOCK)
+        # These recovery/update fixtures deliberately model an existing schema-2 consumer.
+        value = home.read_json(self.root / "profile.json")
+        value = {key: item for key, item in value.items() if key not in ("host", "capabilities")}
+        home.write_json(self.root / "profile.json", {**value, "schema": 2, "hardware": "generic-x86_64"})
         self.activation = self.base / "generation"
         self.activation.mkdir()
         (self.activation / "activate").write_text("#!/bin/sh\nexit 0\n")

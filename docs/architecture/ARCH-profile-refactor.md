@@ -3,8 +3,11 @@
 Status: classification, dependency/normalization and reader-readiness slices
 implemented. The [schema-3 contract](ARCH-profile-schema3.md) now has F1b dual
 readers/composition and actual nixGL wrappers. A2 adds negotiated capability
-editing and explicit reviewed conversion; default generators remain schema 2.
-H1 adds [structured host composition](ARCH-host-composition.md). The user's
+editing and explicit reviewed conversion. H1 adds
+[structured host composition](ARCH-host-composition.md); the workstation's
+conversion has succeeded. W3 now defaults new profiles/templates and the
+catalog to schema 3; see [profile generation](ARCH-profile-generation.md).
+The user's
 latest scope clarification keeps Foundation broad and limits migration to this
 workstation; earlier multi-consumer compatibility requirements are historical.
 Classification-first sequencing confirmed by the user on 2026-10-20.
@@ -127,6 +130,9 @@ Descriptor absence identifies a legacy target, not evidence for a future format.
 First-login similarly limits helpers without the query to historical schema 1/2.
 F1b extends the manifest to initialize schemas 1/2/3 and normalize schemas 2/3,
 keeping write schema 2. A2 adds `editSchemas = [2, 3]` and a versioned change API.
+After the successful workstation conversion, W3 changes `writeSchema` to 3 for
+new Foundation profiles and templates. Initialization/normalization support is
+unchanged; the earlier phase descriptions above record the bridge sequence.
 Actual composition and selected-source catalog support
 are implemented alongside that advertising; schema 3 requires an explicit target
 descriptor and normalization cannot change the submitted version.

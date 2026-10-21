@@ -16,7 +16,7 @@
       '';
     };
   homeCatalog = pkgs.writeText "home-profile-catalog.json" (builtins.toJSON
-    (import ./home-catalog.nix {
+    (import ./profile-catalog.nix {
       domainCatalog = import ./catalog.nix;
       inherit (pkgs) lib;
       version = pkgs.lib.removeSuffix "\n" (builtins.readFile ../VERSION);
@@ -24,8 +24,7 @@
 in {
   profileCatalog = homeCatalog;
   homeProfile = import ./profile.nix {
-    inherit pkgs;
-    catalog = homeCatalog;
+    inherit pkgs source;
   };
   homeInit = command "finite-home-init" "init";
   homeBootstrap = command "finite-home-bootstrap" "init";

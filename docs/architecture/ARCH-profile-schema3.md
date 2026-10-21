@@ -1,11 +1,12 @@
 # Schema-3 application composition contract
 
-Status: F1b reader/composition bridge and A2 editor/conversion implemented,
-2026-10-20. The public
-normalizer and constructor accept explicitly supplied schema 3, backed by the
+Status: F1b readers, A2 editing, H1 host composition and W3 default generation
+implemented, 2026-10-21. The public
+normalizer and constructor accept schema 3, backed by the
 [composition resolver](../../lib/profile-drafts/default.nix) and
-[application module](../../modules/aspects/profile-composition.nix). Default
-generators/catalogs stay schema 2; conversion is explicitly reviewed. Follow
+[application module](../../modules/aspects/profile-composition.nix). New
+profiles/templates and the default catalog use schema 3; existing profile
+conversion is explicitly reviewed. Follow
 [the staged plan](../plans/PLAN-profile-refactor.md) for rollout.
 
 ## Why a schema change helps
@@ -224,16 +225,21 @@ undoes external provider effects.
 - **H1, implemented:** independent host form factor, Intel/AMD CPU/GPU and model
   aspects; camera presence and laptop-only preferences. Migration planning now
   targets this workstation alone, while Foundation's refactor remains broad.
+- **Workstation conversion, complete:** the reviewed Dell candidate was activated
+  successfully, with accelerated Intel OpenGL verified. Its source stays pinned.
+- **W3, implemented:** Foundation's generator and new templates emit schema 3;
+  one shared catalog projection supplies the API, packages and selector metadata.
+  Earlier phase descriptions above record when schema-2 defaults were retained.
 
 The bridge advertises initialize schemas 1/2/3 and normalize schemas 2/3 with
-default write schema 2 and explicit `editSchemas = [2, 3]`. Schema 3 requires an explicit selected-source capability
+default write schema 3 and explicit `editSchemas = [2, 3]`. Schema 3 requires an explicit selected-source capability
 descriptor; historical descriptor absence cannot imply support. Normalization
 cannot change a submitted schema. Initialization preserves supplied capabilities,
 custom fields and schema 3, while schema 1 retains its explicit conversion to 2.
 
-`homeCatalogForSchema 2` equals the default six-role `homeCatalog`.
-`homeCatalogForSchema 3` adds Personal roles and capabilities only for readers
-requesting that format. Catalog schema remains 3 and compatibility remains 1.
+`homeCatalogForSchema 3` equals the default ten-role `homeCatalog`, including
+Personal roles, capabilities and host choices. `homeCatalogForSchema 2` retains
+the six-role view. Catalog schema remains 3 and compatibility remains 1.
 `finite-configure` edits schema 3 only when the running helper and locked target
 support the editor API; older targets require an input update first. Capability
 checkboxes reflect explicit selections, with defaults still derived. Legacy input adoption rejects

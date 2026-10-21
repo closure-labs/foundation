@@ -1,4 +1,4 @@
-# Schema-3 composition contract. Default writers/catalogs remain schema 2.
+# Schema-3 composition contract used by current writers and catalogs.
 {catalog}: let
   nix = input: attribute: graphical: {
     provider = "nix";

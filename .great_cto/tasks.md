@@ -19,6 +19,7 @@ requested the first slice after the architecture and plan were presented.
 | profile-host-composition | H1 form factor and hardware aspects | Complete | Structured schema3 host and independent machine/CPU/GPU/model aspects implemented. CI124, nine pure host tests, nine actual Home Manager host cases, full Nix builds/checks and QA review pass. Native lid behavior retained. jj `ommsszxm`. |
 | profile-workstation-build | This workstation build and preflight | Complete | Full schema3 workstation build passed at immutable source `7eed78af` (jj `rkxnuwlv`). Fixed icon build-file collision and local pinned-source helpers; CI131, full Nix checks, built-command/launcher/Brew checks and CLI/security review pass. Original/live configuration and generation unchanged. |
 | profile-workstation-conversion | This workstation only | Complete | User approved and guarded activation succeeded on 2026-10-21. Live schema3/cache match candidate; personal modules preserved; helpers, selected Flatpaks and user services pass. Active nixGL probe confirms accelerated Intel OpenGL. Original configuration/generation retained. |
+| profile-current-generation | W3 schema-3 default generator/catalog | Complete | JSON/YAML generator, host flags, default templates and shared current catalog implemented. CI141, packaged sandbox test, catalog equality, eight actual schema3 cases, nine host cases, full Nix build/checks and immutable-source consumer-template build pass. CLI/library/security/QA reviews found no blockers. Active workstation files/pin unchanged. jj `oqosqtnt`. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release | Publication | Not started | No remote release published. This workstation's separately approved activation is complete. |
 
@@ -33,4 +34,6 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [H1 validation](../docs/qa-reports/QA-host-composition.md),
 [workstation conversion](../docs/plans/PLAN-workstation-conversion.md),
 [workstation build](../docs/qa-reports/QA-workstation-build.md),
-[workstation activation](../docs/qa-reports/QA-workstation-activation.md).
+[workstation activation](../docs/qa-reports/QA-workstation-activation.md),
+[W3 generation](../docs/architecture/ARCH-profile-generation.md),
+[W3 validation](../docs/qa-reports/QA-profile-generation.md).

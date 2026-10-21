@@ -884,9 +884,48 @@ def status(root, machine=False, notify=False, review=False):
             raise ValueError("Could not display the Foundation update review")
 
 
+def generate_profile(args):
+    """Generate data through the bundled pure validator; no consumer or flake evaluation."""
+    import pwd
+    account = pwd.getpwuid(os.getuid())
+    def csv(value):
+        return value.split(",") if value else []
+    submitted = {"schema": 3, "foundation": args.foundation,
+                 "roles": csv(args.roles), "packages": csv(args.packages), "capabilities": csv(args.capabilities),
+                 "identity": {"username": account.pw_name, "homeDirectory": account.pw_dir}}
+    if args.hardware is not None:
+        submitted["hardware"] = args.hardware
+    host = {field: getattr(args, field) for field in ("system", "cpu", "model", "camera", "fingerprint")
+            if getattr(args, field) is not None}
+    if args.form_factor is not None:
+        host["formFactor"] = args.form_factor
+    if args.gpus is not None:
+        host["gpus"] = csv(args.gpus)
+    bundled = Path(__file__).resolve().parents[1]
+    with tempfile.TemporaryDirectory(prefix="foundation-profile-") as temporary:
+        profile_file = Path(temporary) / "profile.json"
+        host_file = Path(temporary) / "host.json"
+        write_json(profile_file, submitted)
+        write_json(host_file, host)
+        checked = json.loads(capture(["nix-instantiate", "--store", "dummy://", "--eval", "--strict", "--json", str(bundled / "lib/generate-profile.nix"),
+                                      "--argstr", "profileFile", str(profile_file), "--argstr", "hostFile", str(host_file)]))
+    if os.environ.get("FINITE_SKIP_FOUNDATION_CHECK") != "true":
+        validate_runtime_profile(checked["profile"], {"hardware": checked["hardware"]})
+    return checked["profile"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+    item = sub.add_parser("profile", help="Generate a schema-3 Home Manager profile")
+    item.add_argument("--foundation", required=True)
+    for name in ("roles", "packages", "capabilities"):
+        item.add_argument("--" + name, default="", help="Comma-separated selections")
+    for name in ("hardware", "system", "form-factor", "cpu", "gpus", "model"):
+        item.add_argument("--" + name)
+    for name in ("camera", "fingerprint"):
+        item.add_argument("--" + name, action=argparse.BooleanOptionalAction, default=None)
+    item.add_argument("--format", choices=("json", "yaml"), default="yaml")
     for command in ("update", "migrate", "init", "apply"):
         item = sub.add_parser(command)
         item.add_argument("--check", action="store_true")
@@ -911,6 +950,12 @@ def main():
         item.add_argument("--" + field, required=True, type=Path)
     args = parser.parse_args()
     try:
+        if args.command == "profile":
+            payload = json.dumps(generate_profile(args), indent=2, sort_keys=True) + "\n"
+            if args.format == "yaml":
+                payload = run(["yq", "-P"], input=payload, stdout=subprocess.PIPE).stdout
+            print(payload, end="")
+            return 0
         if args.command == "init" and args.capabilities:
             print(json.dumps(profile_capabilities(), sort_keys=True))
             return 0

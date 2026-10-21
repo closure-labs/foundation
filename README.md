@@ -28,9 +28,10 @@ inputs.foundation.lib.mkHomeConfiguration {
 }
 ```
 
-Use schema 2 profiles with Bluefin or Bluefin DX, generic or Dell XPS 9350 Intel
-hardware, and any combination of the roles and optional packages in
-`lib.catalog`. Account identity must match the desktop user. Keep
+New profiles use schema 3 with Bluefin or Bluefin DX, independent host hardware,
+Professional/Personal roles and optional capabilities. Generate JSON or YAML
+with `finite-home-profile`; see the [generation guide](docs/architecture/ARCH-profile-generation.md).
+Account identity must match the desktop user. Keep
 `home.stateVersion` unchanged when updating.
 
 ## Updates and migration
@@ -86,7 +87,8 @@ unsupported versions; it does not overwrite a newer schema version.
 `finite-home-init --capabilities` reports the executing helper's supported
 initialization, normalization and catalog schemas without accessing a consumer.
 The catalog and `lib.profileCapabilities` expose the selected source's support;
-staging requires both sides to understand the input. Default generators emit schema 2.
+staging requires both sides to understand the input. Foundation's generator and
+new templates emit schema 3; existing profiles retain their format.
 
 The [schema-3 composition contract](docs/architecture/ARCH-profile-schema3.md)
 now has production readers and Home Manager composition for explicitly supplied
@@ -95,8 +97,9 @@ capabilities and graphical Nixpkgs apps wrapped with nixGL Mesa. Verified Flathu
 exceptions remain where matching Nix packages are unavailable. Existing schema-2
 profiles keep their current applications, providers and graphics backend.
 
-`lib.homeCatalogForSchema 3` exposes the ten-role/capability catalog;
-`lib.homeCatalog` remains the six-role catalog for schema-2 generators.
+`lib.homeCatalog` and `lib.homeCatalogForSchema 3` expose the same
+ten-role/capability catalog. `lib.homeCatalogForSchema 2` retains the six-role
+view for existing profiles.
 Schema-3 profiles also accept independent laptop/desktop, Intel/AMD CPU,
 integrated/discrete GPU, model, camera and fingerprint declarations. See
 [host composition](docs/architecture/ARCH-host-composition.md) and the
@@ -106,8 +109,8 @@ integrated/discrete GPU, model, camera and fingerprint declarations. See
 the versioned change-preview API; the older draft preview remains available.
 `finite-configure` edits schema 3 with Personal roles and additional capabilities.
 Use `finite-configure --migrate-profile` to explicitly review conversion from
-schema 2. Default generation still writes schema 2; no profile is converted
-automatically. Validate physical graphics/app behavior before
+schema 2. Generating a new profile does not convert an existing consumer.
+Validate physical graphics/app behavior before
 migrating a workstation. Legacy configurations with a personal input named
 `nixGL` require manual migration to preserve its pin and followers.
 
