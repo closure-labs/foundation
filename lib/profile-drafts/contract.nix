@@ -163,10 +163,6 @@ in {
     lutris = capability 310 "Lutris launcher" ["lutris"];
   };
   commonCapabilities = ["essentials" "desktop-tools"];
-  hardwareCapabilities = {
-    generic-x86_64 = [];
-    dell-xps-9350-intel = ["camera-controls"];
-  };
   optionalPackages = builtins.listToAttrs (map (name: {
       inherit name;
       value = name;

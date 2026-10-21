@@ -11,6 +11,12 @@ explicit conversion previews/approval and recovery.
 User decision: **classify first, split applications later**. Firmware has been
 updated manually and is outside this plan's critical path.
 
+Scope update, 2026-10-20: the user confirmed that Foundation's refactor remains
+broad, while migration targets only this workstation. Historical compatibility
+work below is completed evidence, not a requirement to extend that matrix.
+H1 continues with independent laptop/desktop and Intel/AMD composition; conversion
+follows the [workstation plan](PLAN-workstation-conversion.md).
+
 Architecture: [ARCH-profile-refactor](../architecture/ARCH-profile-refactor.md).
 Evidence and original Den research: [review](../PROFILE-ARCHITECTURE.md).
 Prepared using the great-cto staged refactor workflow, with a read-only architect

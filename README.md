@@ -97,6 +97,11 @@ profiles keep their current applications, providers and graphics backend.
 
 `lib.homeCatalogForSchema 3` exposes the ten-role/capability catalog;
 `lib.homeCatalog` remains the six-role catalog for schema-2 generators.
+Schema-3 profiles also accept independent laptop/desktop, Intel/AMD CPU,
+integrated/discrete GPU, model, camera and fingerprint declarations. See
+[host composition](docs/architecture/ARCH-host-composition.md) and the
+[Dell workstation candidate](examples/workstations/dale-xps-9350.json).
+
 `lib.resolveProfile` resolves schema-3 composition. `lib.profileChanges` provides
 the versioned change-preview API; the older draft preview remains available.
 `finite-configure` edits schema 3 with Personal roles and additional capabilities.
@@ -142,15 +147,16 @@ tools and activate. Standalone maintainers update their Git checkout explicitly;
 release-update commands target importing personal flakes.
 
 The Support role's Espanso backend requires administrator-managed keyboard access.
-On non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper after first
-activation as described by Home Manager. Foundation never grants keyboard access.
+For schema 2 on non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper
+after first activation as described by Home Manager. Schema 3 uses nixGL Mesa
+instead. Foundation never grants keyboard access.
 
 ## Maintain the repository
 
 See the [profile architecture and workstation review](docs/PROFILE-ARCHITECTURE.md)
 for the proposed professional/personal profile composition, recent Den findings,
-hardware boundaries, and staged migration plan. This is a design document;
-the schema 2 configuration described above remains the implemented interface.
+hardware boundaries, and the original staged migration plan. Current schema-3
+composition and host behavior are documented in the contracts linked above.
 The [refactor implementation plan](docs/plans/PLAN-profile-refactor.md) records
 the implemented classification slice and the later application/hardware work.
 

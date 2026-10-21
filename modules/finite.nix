@@ -8,7 +8,10 @@
 }: let
   # The version-controlled profile selects the account, roles and packages.
   vars = (import ../lib/normalize-profile.nix {inherit catalog;}) foundationProfile;
-  system = "x86_64-linux";
+  system =
+    if vars.schema == 3
+    then vars.host.system
+    else "x86_64-linux";
   catalog = import ../lib/catalog.nix;
   canonicalRoles = vars.roles;
   canonicalPackages = vars.packages;
@@ -55,6 +58,10 @@ in {
         extraSpecialArgs = {
           inherit inputs;
           foundationProfileSchema = vars.schema;
+          foundationHost =
+            if vars.schema == 3
+            then vars.host
+            else null;
           foundationComposition = composition;
           finiteHomeAssets = {
             devops = ./aspects/capabilities/devops/rootfs/usr/share/finite;
@@ -74,7 +81,18 @@ in {
             [den.aspects.features.profile-composition]
             ++ lib.optional (builtins.elem "devops" composition.effectiveCapabilities) den.aspects.features.capabilities.devops
         )
-        ++ [den.aspects.features.hardware.${vars.hardware}];
+        ++ (
+          if vars.schema == 3
+          then
+            [
+              den.aspects.features.host
+              den.aspects.features.machines.${vars.host.formFactor}
+              den.aspects.features.hardware.cpu.${vars.host.cpu}
+              den.aspects.features.hardware.models.${vars.host.model}
+            ]
+            ++ map (gpu: den.aspects.features.hardware.gpu.${gpu}) vars.host.gpus
+          else [den.aspects.features.hardware.${vars.hardware}]
+        );
       homeManager = {
         home = {
           username = lib.mkForce vars.identity.username;

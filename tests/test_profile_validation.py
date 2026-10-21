@@ -235,7 +235,8 @@ class StagedValidationTests(unittest.TestCase):
         home.write_json(root / "profile.json", value)
         before = home.tree_digest(root)
         def check_stage(stage):
-            self.assertEqual(home.read_json(stage / "profile.json"), {**value, "roles": ["media"], "packages": []})
+            self.assertEqual(home.read_json(stage / "profile.json"), {**value, "roles": ["media"], "packages": [],
+                "host": evaluate(f'(import {ROOT}/lib/hosts.nix).defaults')})
         change = {"profile": value, "roles": ["media"], "packages": []}
         preview = evaluate(f'(import {ROOT}/lib/profile-changes.nix {{catalog = domain;}}) {home.nix_value(change)}')
         with patch.object(home, "prepare_profile_change", return_value={"preview": preview}), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "provision_brew") as brew:

@@ -16,7 +16,8 @@ requested the first slice after the architecture and plan were presented.
 | profile-application-contract | A1 Personal format/application contract | Complete | Isolated schema-3 resolver/preview, full legacy app inventory and Nixpkgs/nixGL policy with verified exceptions. CI81, 13 focused tests, all 53 locked Nix providers, full no-build Nix checks, exact existing catalog/runtime-source parity and architect/QA/security review pass. jj change `tqkozxwn`. |
 | profile-future-readers | F1b future-format readers | Complete | CI90, full Nix build/checks, eight actual schema3 compositions, real nixGL synthetic launch, exact32legacy parity, old/new-source Finite contracts, constructor/adapter proofs and architect/QA/security review pass. Default writers stay2. Foundation jj `zlorynyq`; Finite fixtures `pqkymstk`. |
 | profile-writers-migration | A2 capability editor and migration | Complete | Versioned pinned-target preview/editor APIs, explicit conversion approval, capability selection and symlink-preserving recovery implemented. CI115/full Nix checks, locked-target editing and immutable-source Finite home contracts pass; default generators remain schema2. jj `uvtpxqsw`. |
-| profile-host-composition | H1 form factor and hardware aspects | Not started | Next: separate laptop/desktop, Intel/AMD CPU and integrated/discrete GPU selections while preserving legacy hardware IDs and Bluefin ownership. Retain native lid behavior until a docking predicate and physical validation are available. |
+| profile-host-composition | H1 form factor and hardware aspects | Complete | Structured schema3 host and independent machine/CPU/GPU/model aspects implemented. CI124, nine pure host tests, nine actual Home Manager host cases, full Nix builds/checks and QA review pass. Native lid behavior retained. jj `ommsszxm`. |
+| profile-workstation-conversion | This workstation only | In progress | Broad Foundation refactor continues; migration limited to Dale's Dell. Candidate and custom GUI wrappers staged, dry-run evaluation and personal pin/asset preservation pass. Full build awaits capacity: 22.7GiB needed versus 9.6GiB free. No activation or new multi-version migration work. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release | Publication/activation | Not started | Separate release action after code review and validation; no automatic deployment. |
 
@@ -26,4 +27,7 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [A1 validation](../docs/qa-reports/QA-profile-application-contract.md),
 [F1b validation](../docs/qa-reports/QA-schema3-readers.md),
 [A2 editor](../docs/architecture/ARCH-profile-editor.md),
-[A2 validation](../docs/qa-reports/QA-profile-editor.md).
+[A2 validation](../docs/qa-reports/QA-profile-editor.md),
+[H1 contract](../docs/architecture/ARCH-host-composition.md),
+[H1 validation](../docs/qa-reports/QA-host-composition.md),
+[workstation conversion](../docs/plans/PLAN-workstation-conversion.md).

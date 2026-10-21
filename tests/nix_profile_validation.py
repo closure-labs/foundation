@@ -17,7 +17,7 @@ from test_profile_validation import profile
 
 def target(directory, *, normalizer, candidate=False, descriptor=True):
     directory.mkdir()
-    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "profile-capabilities.json"):
+    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "hosts.nix", "profile-capabilities.json"):
         shutil.copyfile(ROOT / "lib" / name, directory / name)
     shutil.copytree(ROOT / "lib/profile-drafts", directory / "profile-drafts")
     extension = '''// {
@@ -95,7 +95,9 @@ def main():
                              "capabilities": ["recording"], "custom": {"preserve": True}}
                     home.write_json(stage / "profile.json", value)
                     actual = home.validate_staged_profile(stage)
-                    assert actual == {**value, "roles": ["family", "creative"], "packages": ["jj", "uv"]}
+                    assert actual == {**value, "roles": ["family", "creative"], "packages": ["jj", "uv"],
+                        "host": {"system": "x86_64-linux", "formFactor": "generic", "cpu": "generic", "gpus": [],
+                                 "model": "generic", "camera": False, "fingerprint": False}}
                     assert home.read_json(stage / "profile.json") == value
                     assert stage.joinpath("flake.lock").read_bytes() == lock_bytes
                     print("Locked schema-3 reader preserves capabilities/extensions without writing", flush=True)

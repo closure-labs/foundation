@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Compose schema-3 hosts from independent machine, Intel/AMD CPU/GPU and model aspects, with camera-aware controls and laptop-only preferences. Focus conversion on the current Dell workstation.
+
 - Add a locked-source capability editor and explicit schema-2-to-3 conversion with application/provider previews, stale-preview protection, build-only checks and existing backup/recovery. Keep default generators on schema 2, preserve application data/unmanaged Flatpaks, and restore symlink entries after failed activation.
 - Read and compose explicitly supplied schema-3 profiles with lightweight Professional/Personal roles, optional capabilities and nixGL-wrapped graphical Nixpkgs apps. Preserve schema-2 composition and default writers; expose schema-aware catalogs and reject incomplete selector editing, silent schema changes and legacy personal nixGL input collisions.
 - Add an isolated schema-3 composition draft and migration preview: smaller role defaults, four Personal roles, optional capabilities, Nixpkgs/nixGL preference and verified Flathub exceptions. Production readers, writers and schema-2 application sets remain unchanged.

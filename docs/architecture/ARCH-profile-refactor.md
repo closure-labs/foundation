@@ -4,6 +4,9 @@ Status: classification, dependency/normalization and reader-readiness slices
 implemented. The [schema-3 contract](ARCH-profile-schema3.md) now has F1b dual
 readers/composition and actual nixGL wrappers. A2 adds negotiated capability
 editing and explicit reviewed conversion; default generators remain schema 2.
+H1 adds [structured host composition](ARCH-host-composition.md). The user's
+latest scope clarification keeps Foundation broad and limits migration to this
+workstation; earlier multi-consumer compatibility requirements are historical.
 Classification-first sequencing confirmed by the user on 2026-10-20.
 This document and the
 [implementation plan](../plans/PLAN-profile-refactor.md) supersede the rollout

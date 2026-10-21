@@ -409,6 +409,9 @@ def preview_summary(preview):
              "Optional packages: " + (", ".join(candidate["packages"]) or "none")]
     for label, field in (("Applications added", "addedApplications"), ("Applications no longer declared", "removedApplications")):
         lines.append(label + ": " + (", ".join(changes[field]) or "none"))
+    if "host" in candidate:
+        host = candidate["host"]
+        lines.insert(1, f"Host: {host['formFactor']}; CPU: {host['cpu']}; GPUs: {', '.join(host['gpus']) or 'none declared'}; model: {host['model']}")
     if changes["providerChanges"]:
         lines.append("Application source changes:")
         for row in changes["providerChanges"]:
@@ -461,8 +464,9 @@ def read_editor(root, *, migrate=False, preview=False, roles=None, packages=None
         require_helper_schema(submitted)
         if migrate and submitted.get("schema") != 2:
             raise ValueError("Explicit profile conversion requires a schema-2 source")
-        if migrate and "capabilities" in submitted:
-            raise ValueError("Existing custom capabilities field collides with schema 3; resolve it explicitly before migration")
+        for field in ("capabilities", "host"):
+            if migrate and field in submitted:
+                raise ValueError(f"Existing custom {field} field collides with schema 3; resolve it explicitly before migration")
         if capabilities is not None and submitted.get("schema") == 2 and not migrate:
             raise ValueError("Capabilities require explicit --migrate-profile conversion to schema 3")
         if preview:

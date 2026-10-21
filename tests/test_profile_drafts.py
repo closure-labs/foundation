@@ -30,7 +30,8 @@ class DraftContractTests(unittest.TestCase):
         value["identity"]["custom"] = "retain"
         actual = run_draft("normalize", value)
         self.assertEqual(actual, {**value, "roles": ["developer", "creative"],
-                                 "packages": ["jj", "uv"], "capabilities": ["office", "recording"]})
+                                 "packages": ["jj", "uv"], "capabilities": ["office", "recording"],
+                                 "host": evaluate(f'(import {ROOT}/lib/hosts.nix).defaults')})
         self.assertEqual(run_draft("normalize", actual), actual)
         self.assertNotIn("classifications", actual)
         self.assertNotIn("effectiveCapabilities", actual)

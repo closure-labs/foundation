@@ -16,13 +16,14 @@ existing selection. Schema 3 makes that boundary explicit; schema 2 keeps its
 existing application declarations and providers. No roles in schema 3 means
 shared essentials, rather than today's broad shared app bundle.
 
-Keep the current fields and add optional, explicitly selected `capabilities`:
+Schema 3 adds explicitly selected `capabilities` and the structured
+[H1 host declaration](ARCH-host-composition.md):
 
 ```json
 {
   "schema": 3,
   "foundation": "bluefin",
-  "hardware": "generic-x86_64",
+  "host": {"formFactor": "desktop", "cpu": "amd", "gpus": ["amd-integrated"]},
   "identity": {"username": "dale", "homeDirectory": "/var/home/dale"},
   "roles": ["developer", "creative"],
   "packages": ["jj"],
@@ -32,8 +33,8 @@ Keep the current fields and add optional, explicitly selected `capabilities`:
 
 Missing capabilities normalize to `[]`. Explicit selections must be valid and
 unique; normalization preserves unknown fields and sorts known selections by
-registry order. Account identity and hardware keep their current shapes. H1
-owns later form-factor, CPU/GPU and model decomposition.
+registry order. Account identity keeps its current shape. H1 normalizes host
+dimensions and derives the old hardware adapter; new declarations can omit it.
 
 Derive classifications from roles, and effective capabilities from shared
 defaults, declared hardware, roles and explicit capabilities. Persist neither
@@ -102,8 +103,9 @@ The five existing optional package IDs (`hack-font`, `herdr`, `jj`, `opencode`,
 Foundation helpers, Brew policy, shell/editor integration, fonts/XDG, generic
 Linux integration, role flags and Dell panel/IPU7/Firefox configuration.
 
-The Dell model supplies camera controls; generic hosts can select the capability
-explicitly. Pure evaluation does not probe the evaluating machine's camera.
+Declaring `host.camera = true` supplies camera controls on any equipped host;
+the capability can also be selected explicitly. Pure evaluation does not probe
+the evaluating machine's camera.
 Chromium is optional on every new profile. Schema 2 retains both applications
 as before. No role infers a server, account, sync root, game download or
 credential. Family does not imply a shared account or child-management policy.
@@ -157,8 +159,8 @@ application/session validation remains a rollout requirement:
    against `wrappedApplicationIds`; a synthetic app is built and launched through
    the pinned wrapper, with desktop, D-Bus and systemd paths checked. This does
    not establish physical rendering or every app's runtime compatibility.
-4. Leave Vulkan and discrete-GPU offload explicit until H1 supplies tested
-   choices. Do not export global graphics-library paths, install host drivers,
+4. Leave Vulkan and discrete-GPU offload explicit. H1 GPU declarations do not
+   enable either. Do not export global graphics-library paths, install host drivers,
    or add NVIDIA work.
 5. Validate Wayland/XWayland launches, browser-to-host viewers/`xdg-open`, media
    acceleration, cameras, recording and requested gaming paths in physical
@@ -219,6 +221,9 @@ undoes external provider effects.
 - **A2, implemented:** negotiated schema-3 editing/writing, explicit conversion,
   exact reviewed-preview binding and symlink-preserving recovery. The schema-3
   editor exposes Personal roles; default generators remain schema 2.
+- **H1, implemented:** independent host form factor, Intel/AMD CPU/GPU and model
+  aspects; camera presence and laptop-only preferences. Migration planning now
+  targets this workstation alone, while Foundation's refactor remains broad.
 
 The bridge advertises initialize schemas 1/2/3 and normalize schemas 2/3 with
 default write schema 2 and explicit `editSchemas = [2, 3]`. Schema 3 requires an explicit selected-source capability
@@ -233,4 +238,4 @@ requesting that format. Catalog schema remains 3 and compatibility remains 1.
 support the editor API; older targets require an input update first. Capability
 checkboxes reflect explicit selections, with defaults still derived. Legacy input adoption rejects
 a personal `nixGL` name collision before filtering or rebasing its pin/followers.
-Hardware schema refactoring remains separate.
+Host fields and model behavior follow the H1 contract linked above.

@@ -4,6 +4,7 @@
   applicationContract ? import ./contract.nix {inherit catalog;},
 }: let
   contract = applicationContract;
+  hosts = import ../hosts.nix;
   verification = builtins.fromJSON (builtins.readFile ./flathub-verification.json);
   fail = message: throw "Invalid Foundation profile: ${message}";
   unique = values:
@@ -35,15 +36,24 @@
     if !builtins.isAttrs profile || !builtins.isInt (profile.schema or null) || profile.schema != 3
     then fail "expected schema 3"
     else let
-      checked = draftBaseNormalize (profile // {schema = 2;});
+      host = hosts.normalize (profile.host or (hosts.fromHardware (profile.hardware or "generic-x86_64")));
+      hardware = hosts.hardwareFor host;
+      checked = draftBaseNormalize (profile
+        // {
+          schema = 2;
+          inherit hardware;
+        });
       requested = profile.capabilities or [];
     in
-      if !selection contract.capabilities requested
+      if profile ? host && profile ? hardware && profile.hardware != hardware
+      then fail "host contradicts the derived hardware adapter; omit hardware or use ${hardware}"
+      else if !selection contract.capabilities requested
       then fail "invalid or duplicate capabilities"
       else
         checked
         // {
           schema = 3;
+          inherit host;
           capabilities = ordered contract.capabilities requested;
         };
   declarationsFor = applications: ids:
@@ -52,7 +62,11 @@
     normalized = normalize profile;
     effectiveCapabilities = ordered contract.capabilities (unique (
       contract.commonCapabilities
-      ++ contract.hardwareCapabilities.${normalized.hardware}
+      ++ (
+        if normalized.host.camera
+        then ["camera-controls"]
+        else []
+      )
       ++ concatMap (name: contract.roles.${name}.capabilities) normalized.roles
       ++ normalized.capabilities
     ));
@@ -111,7 +125,8 @@ in {
     capabilities ? [],
   }: let
     old = resolveLegacy profile;
-    collision = builtins.hasAttr "capabilities" old.profile;
+    collisionFields = builtins.filter (field: builtins.hasAttr field old.profile) ["capabilities" "host"];
+    collision = collisionFields != [];
     candidate =
       old.profile
       // {
@@ -139,7 +154,7 @@ in {
     then {
       status = "blocked";
       activationAllowed = false;
-      reason = "Existing custom capabilities field collides with schema 3; resolve it explicitly before migration";
+      reason = "Existing custom ${builtins.head collisionFields} field collides with schema 3; resolve it explicitly before migration";
       source = old.profile;
       candidate = null;
     }

@@ -4,6 +4,7 @@
   lib,
   pkgs,
   foundationProfileSchema ? 2,
+  foundationHost ? null,
   ...
 }: let
   system = pkgs.stdenv.hostPlatform.system;
@@ -13,7 +14,11 @@
     # replaces V4L2 without a reliable fallback. Restrict it to the Dell IPU7
     # hardware, whose usable libcamera source is exposed through PipeWire.
     lib.optionalAttrs
-    ((config.home.sessionVariables.FINITE_HARDWARE or "") == "dell-xps-9350-intel")
+    (
+      if foundationHost != null
+      then foundationHost.model == "dell-xps-9350" && foundationHost.camera
+      else (config.home.sessionVariables.FINITE_HARDWARE or "") == "dell-xps-9350-intel"
+    )
     {
       Preferences."media.webrtc.camera.allow-pipewire" = {
         Value = true;

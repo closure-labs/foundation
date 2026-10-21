@@ -14,7 +14,7 @@
   };
   installed = map (p: p.outPath) c.home.packages;
   expectedFirefox = sources.nixpkgs-weekly.firefox.override {
-    extraPolicies = lib.optionalAttrs (profile.hardware == "dell-xps-9350-intel") {
+    extraPolicies = lib.optionalAttrs (plan.profile.host.model == "dell-xps-9350" && plan.profile.host.camera) {
       Preferences."media.webrtc.camera.allow-pipewire" = {
         Value = true;
         Status = "locked";

@@ -27,6 +27,7 @@
     };
 in {
   inherit catalog homeCatalog sourceInfo mkApplications normalizeProfile;
+  hosts = import ./hosts.nix;
   inherit (homeCatalog) profileCapabilities;
   profileDrafts = profileComposition;
   resolveProfile = profileComposition.resolve;
@@ -50,6 +51,7 @@ in {
       })
       // {
         capabilities = profileComposition.contract.capabilities;
+        hosts = (import ./hosts.nix).choices;
         profileSchema = 3;
       }
     else throw "Unsupported Foundation catalog profile schema";

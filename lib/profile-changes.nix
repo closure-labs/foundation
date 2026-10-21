@@ -14,7 +14,8 @@
     else composition.resolve value;
   old = resolve profile;
   source = old.profile;
-  collision = migrate && builtins.hasAttr "capabilities" source;
+  collisionFields = builtins.filter (field: builtins.hasAttr field source) ["capabilities" "host"];
+  collision = migrate && collisionFields != [];
   candidate =
     source
     // {
@@ -68,7 +69,7 @@ in
   then {
     status = "blocked";
     activationAllowed = false;
-    reason = "Existing custom capabilities field collides with schema 3; resolve it explicitly before migration";
+    reason = "Existing custom ${builtins.head collisionFields} field collides with schema 3; resolve it explicitly before migration";
     inherit source;
     candidate = null;
   }

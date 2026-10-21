@@ -12,6 +12,7 @@ esac
 PYTHONDONTWRITEBYTECODE=1 python3 tests/nix_profile_validation.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/nix_editor_validation.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/nix_schema3_validation.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/nix_host_validation.py
 nix flake check --no-update-lock-file --print-build-logs "${build_flags[@]}" path:.
 
 # Evaluate selectable modules too: the shipped profile has no roles enabled.
