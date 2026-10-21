@@ -20,7 +20,7 @@
   project = domainCatalog: import ./home-catalog.nix {inherit domainCatalog lib version;};
 in
   if schema == 2
-  then project domainCatalog
+  then (project domainCatalog) // {profileSchema = 2;}
   else if schema == 3
   then
     (project selected)

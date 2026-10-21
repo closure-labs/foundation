@@ -141,6 +141,7 @@ by the earlier research document.
 | A2 Writers and migration | After A1/F1b: implement selector/CLI migration and enable schema-3 writing only with verified reader/helper support. Keep source and profile rollback separate. | Both categories compose; update/build/activation and recovery fixtures pass for old and migrated consumers; unmanaged Flatpaks stay preserved; no silent schema rewrite. |
 | H1 Host composition | After D1 and the normalization bridge: add form-factor, CPU, integrated/discrete GPU and model selections; retain legacy hardware IDs/env/module adapters. Serialize shared-file edits with A1/A2. | Laptop/desktop and Intel/AMD/mixed-GPU evaluation passes; Dell panel/camera behavior preserved; no desktop-only home receives laptop power units; no Bluefin-owned drivers/PAM/services are installed by Home Manager. |
 | W3 Current profile generation | After the successful workstation conversion: default Foundation's generator/templates to schema 3 and share the current catalog projection across API and packaged tools. | JSON/YAML round trips, pure sandboxed validation, current catalog consistency and actual Home Manager checks pass. Existing consumer files/pin remain unchanged; no new migration matrix. |
+| F3 Finite writer readiness | Isolated Finite jj `wksovumv`: fresh-login schema negotiation and a schema3 seed writer using bundled pure Foundation validation. Existing source pins stay fixed; current source is an evaluation/build override only. | Both implemented writer branches pass real seed/ISO and first-login contracts; schema3 roles/capabilities/hosts, target identity, catalog restrictions and failed-publication recovery are checked. See [F3 QA](../qa-reports/QA-finite-profile-writers.md). |
 | U1 Update hardening | Implemented in isolated Finite jj `pmpytlzt`, workspace `/tmp/finite-profile-readers`: root-first check, scoped Bash startup hook, real Just delegation and private marker cleanup. No recipe-body extraction. | Ten update tests and hermetic home contracts pass; intentional skips and upstream conditional-pipeline behavior are preserved. See [U1 QA](../qa-reports/QA-update-integration.md). Not installed on the live OS. |
 
 Text dependency map: `P4 -> D1`; `P4 -> N1 -> F1a -> A1 -> F1b -> A2`;
@@ -198,7 +199,8 @@ preview binding and recovery.
   rollout check.
 - **New profile generation:** dual readers already precede current writers;
   validate the packaged generator and public catalog together. Finite adopts
-  the new default through its own reviewed pin/first-login changes later.
+  the new default through its own reviewed pin change. F3 prepares first-login
+  and seed writers without advancing that pin or changing existing consumers.
 - **Hardware scope:** preserve existing native lid/power behavior initially.
   AC plus external-input-only lid handling needs a separate, user-confirmed
   docking predicate and physical tests. Firmware has already been updated;

@@ -3,7 +3,9 @@
 W3 makes schema 3 the default for Foundation's new profiles, templates and
 catalog. Existing profiles retain their schema. The workstation conversion is
 already complete; this change leaves its live files and immutable source pin
-unchanged. Finite's first-login/cloud-init adoption remains a separate change.
+unchanged. Finite's first-login/cloud-init writer readiness is implemented in an
+[isolated follow-up](../qa-reports/QA-finite-profile-writers.md); its release pin
+and the running OS have not been advanced.
 
 ## Commands
 
@@ -72,6 +74,10 @@ mappings. Domains limited to the old roles or lacking the classification
 registry must request `schema = 2`; that view does not inject Personal roles.
 Likewise, `lib.homeCatalogForSchema 2` remains the six-role reader view used
 when editing an existing schema-2 profile.
+That view now declares `profileSchema = 2`, distinguishing its supported format
+from the source's preferred `writeSchema = 3`. Fresh writers must require a
+matching view and helper support, rather than infer their format from the
+catalog envelope version.
 
 The empty root and consumer-template profiles share the same generic host,
 empty selections and example account. Template users must supply their own

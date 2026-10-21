@@ -21,6 +21,7 @@ requested the first slice after the architecture and plan were presented.
 | profile-workstation-conversion | This workstation only | Complete | User approved and guarded activation succeeded on 2026-10-21. Live schema3/cache match candidate; personal modules preserved; helpers, selected Flatpaks and user services pass. Active nixGL probe confirms accelerated Intel OpenGL. Original configuration/generation retained. |
 | profile-current-generation | W3 schema-3 default generator/catalog | Complete | JSON/YAML generator, host flags, default templates and shared current catalog implemented. CI141, packaged sandbox test, catalog equality, eight actual schema3 cases, nine host cases, full Nix build/checks and immutable-source consumer-template build pass. CLI/library/security/QA reviews found no blockers. Active workstation files/pin unchanged. jj `oqosqtnt`. |
 | profile-update-integration | U1 Finite update hardening | Complete | Root-first guard, scoped Bash startup hook and private marker retain Just delegation and gate Foundation after successful update commands. Ten real-Just update tests pass; hermetic home check passes both 28-test runs, four maintenance tests, profile/template/seed ISO contracts and hook ShellCheck. Architecture/CLI/security/QA reviews pass. Isolated Finite jj `pmpytlzt`, workspace `/tmp/finite-profile-readers`; live files/pins unchanged. |
+| profile-finite-writers | F3 negotiated first-login and seed writers | Complete | Fresh selection negotiates schemas2/3; schema3 seeds share bundled validation, target identity and structured hosts; explicit schema2 catalogs identify their format. FoundationCI141/publicAPI pass; pinned2 home contracts pass; current3 passes ten seed tests,32integration,fourmaintenance. Catalog restrictions and publication cleanup regressions pass; architecture/CLI/library/security/QA approve. Finite jj `wksovumv`, workspace `/tmp/finite-profile-readers`; pins/live files unchanged. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release | Publication | Not started | No remote release published. This workstation's separately approved activation is complete. |
 
@@ -38,4 +39,5 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [workstation activation](../docs/qa-reports/QA-workstation-activation.md),
 [W3 generation](../docs/architecture/ARCH-profile-generation.md),
 [W3 validation](../docs/qa-reports/QA-profile-generation.md),
-[U1 update integration](../docs/qa-reports/QA-update-integration.md).
+[U1 update integration](../docs/qa-reports/QA-update-integration.md),
+[F3 writer readiness](../docs/qa-reports/QA-finite-profile-writers.md).

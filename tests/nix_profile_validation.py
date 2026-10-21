@@ -156,6 +156,7 @@ def main():
             catalogs = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
             assert catalogs["default"] == catalogs["current"]
             assert len(catalogs["legacy"]["roles"]) == 6
+            assert catalogs["legacy"]["profileSchema"] == 2
             assert len(catalogs["current"]["roles"]) == 10
             assert len(catalogs["current"]["capabilities"]) == 31
             assert catalogs["current"]["profileCapabilities"]["writeSchema"] == 3

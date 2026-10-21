@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Identify the represented profile format in schema-specific catalogs, allowing provisioning writers to distinguish an existing schema-2 reader view from a source's preferred schema-3 writer.
+
 - Generate new schema-3 profiles in JSON or YAML with Professional/Personal roles, optional capabilities and independent host selections. Default templates and catalogs now use schema 3; generation validates bundled rules without fetching inputs, building or changing a consumer. Existing profiles retain their format.
 
 - Accept explicitly pinned local Git Foundation inputs for workstation editing. Verify metadata from the locked source and report manual pin maintenance without checking or replacing it with a published release.

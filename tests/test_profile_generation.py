@@ -140,6 +140,7 @@ class ProfileGeneration(unittest.TestCase):
         self.assertEqual(current["classifications"]["personal"]["roles"], ["family", "media", "creative", "gaming"])
         self.assertEqual(current["foundations"]["bluefin"]["profiles"], {"generic-x86_64": "finite"})
         self.assertEqual(len(data["legacy"]["roles"]), 6)
+        self.assertEqual(data["legacy"]["profileSchema"], 2)
         self.assertIn("recording", current["capabilities"])
         self.assertIn("amd-discrete", current["hosts"]["gpus"])
 
