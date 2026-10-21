@@ -1,8 +1,13 @@
 # Foundation 0.3.0 release review
 
-Status: local release preparation, 2026-10-21. Publication requires a separately
-approved ship action. The prepared jj change is `ywyltuox`; the release bundle's
+Status: ship action approved by the user, 2026-10-21. Publication proceeds through
+the PR, required CI, tag and reviewed-draft workflow. The prepared jj change is `ywyltuox`; the release bundle's
 external manifest records its exact immutable candidate and checksums.
+
+Local preparation results are recorded in the
+[candidate validation report](../qa-reports/QA-release-0.3.0.md) and
+[manifest](0.3.0-candidate.json), in a separate documentation change after the
+frozen candidate. Publication remains pending.
 
 ## Shipped behavior
 

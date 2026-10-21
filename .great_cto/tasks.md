@@ -23,8 +23,8 @@ requested the first slice after the architecture and plan were presented.
 | profile-update-integration | U1 Finite update hardening | Complete | Root-first guard, scoped Bash startup hook and private marker retain Just delegation and gate Foundation after successful update commands. Ten real-Just update tests pass; hermetic home check passes both 28-test runs, four maintenance tests, profile/template/seed ISO contracts and hook ShellCheck. Architecture/CLI/security/QA reviews pass. Isolated Finite jj `pmpytlzt`, workspace `/tmp/finite-profile-readers`; live files/pins unchanged. |
 | profile-finite-writers | F3 negotiated first-login and seed writers | Complete | Fresh selection negotiates schemas2/3; schema3 seeds share bundled validation, target identity and structured hosts; explicit schema2 catalogs identify their format. FoundationCI141/publicAPI pass; pinned2 home contracts pass; current3 passes ten seed tests,32integration,fourmaintenance. Catalog restrictions and publication cleanup regressions pass; architecture/CLI/library/security/QA approve. Finite jj `wksovumv`, workspace `/tmp/finite-profile-readers`; pins/live files unchanged. |
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
-| profile-release-preparation | R1 Foundation0.3.0 candidate | Validation | Final release notes and matching metadata prepared in jj `ywyltuox`; immutable candidate CI/build/archive/Finite integration validation in progress. No remote release or pin adoption. |
-| profile-release | Publication | Awaiting prepared ship gate | No remote release published. Candidate preparation precedes approval; this workstation's separately approved activation remains unchanged. |
+| profile-release-preparation | R1 Foundation0.3.0 candidate | Complete | Frozen jj `ywyltuox`, commit `7953c60e`: CI143, full Nix suite, direct immutable flake checks, exact consumer template, release archive/checksum and Finite10+32+4+32 pass. Template owner-write/symlink regressions pass; QA/security and artifact identity approve. Live state/pins unchanged; evidence recorded separately after candidate. |
+| profile-release | Publication | Approved; PR/CI in progress | User approved the release PR, required CI, tag and reviewed publication. Final main/tag SHA and artifacts must be verified independently of the local candidate manifest. Finite adoption remains separate; live workstation unchanged. |
 
 Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [plan](../docs/plans/PLAN-profile-refactor.md),
@@ -41,4 +41,5 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [W3 generation](../docs/architecture/ARCH-profile-generation.md),
 [W3 validation](../docs/qa-reports/QA-profile-generation.md),
 [U1 update integration](../docs/qa-reports/QA-update-integration.md),
-[F3 writer readiness](../docs/qa-reports/QA-finite-profile-writers.md).
+[F3 writer readiness](../docs/qa-reports/QA-finite-profile-writers.md),
+[R1 release validation](../docs/qa-reports/QA-release-0.3.0.md).
