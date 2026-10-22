@@ -1,0 +1,44 @@
+{
+  "release": "v0.3.0",
+  "status": "published and independently verified",
+  "publishedAt": "2026-10-22T02:21:18Z",
+  "url": "https://github.com/closure-labs/foundation/releases/tag/v0.3.0",
+  "pullRequest": "https://github.com/closure-labs/foundation/pull/8",
+  "rev": "fdeb2ab7d88cb0ff69d25ed1a02589bc28ca7006",
+  "annotatedTagObject": "f42744c321c554cae3c2d3179321cba153a83db1",
+  "narHash": "sha256-hv23+Y9Z2/lwP6h/40zBcZYzT2p99WMoQwyMb2q2ZX4=",
+  "archive": {
+    "name": "foundation-v0.3.0.tar.gz",
+    "sha256": "9a6649f59161e9482408b365e9aa1891dd9518ad9ace35e29268e020bc96ff17",
+    "downloadedChecksumVerified": true,
+    "bytesMatchGitArchiveOfTaggedCommit": true,
+    "extractedNarMatchesSource": true,
+    "releaseNotesMatchTaggedChangelog": true
+  },
+  "checks": {
+    "mainCI": "https://github.com/closure-labs/foundation/actions/runs/39707448288",
+    "releaseValidation": "https://github.com/closure-labs/foundation/actions/runs/39708349096",
+    "stableChannel": "https://github.com/closure-labs/foundation/actions/runs/39710918850",
+    "stableChannelSecondEvent": "https://github.com/closure-labs/foundation/actions/runs/39710918651",
+    "workflowConclusions": "success",
+    "consumerTemplate": {
+      "output": "/nix/store/wgkpxpvj9b2g0kb76a0l3c9gkkwxdmps-foundation-consumer-0.3.0",
+      "lockMatchesPublishedSource": true
+    },
+    "finiteHomeContracts": {
+      "seedTests": 10,
+      "integrationTests": 32,
+      "integrationRuns": 2,
+      "maintenanceTests": 4,
+      "source": "temporary exact-published-revision override",
+      "status": "pass"
+    }
+  },
+  "latestRelease": {
+    "branch": "latest-release",
+    "rev": "fdeb2ab7d88cb0ff69d25ed1a02589bc28ca7006",
+    "verifiedAgainstRemote": true
+  },
+  "evidenceDirectory": "/tmp/foundation-publish-0.3.0",
+  "scope": "Foundation source publication; Finite adoption remains a separate reviewed change; no workstation activation performed"
+}

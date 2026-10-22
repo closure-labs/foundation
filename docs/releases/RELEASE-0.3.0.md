@@ -1,13 +1,18 @@
 # Foundation 0.3.0 release review
 
-Status: ship action approved by the user, 2026-10-21. Publication proceeds through
-the PR, required CI, tag and reviewed-draft workflow. The prepared jj change is `ywyltuox`; the release bundle's
-external manifest records its exact immutable candidate and checksums.
+Status: [v0.3.0 is published](https://github.com/closure-labs/foundation/releases/tag/v0.3.0),
+2026-10-21 in America/Chicago (2026-10-22 UTC). PR #8 merged at
+`fdeb2ab7d88cb0ff69d25ed1a02589bc28ca7006`; main CI, release validation and the
+stable-channel workflows passed. The annotated tag and `latest-release` select
+that commit. The [publication manifest](0.3.0-publication.json) records final
+source identity and verified artifacts separately from the local candidate.
 
 Local preparation results are recorded in the
 [candidate validation report](../qa-reports/QA-release-0.3.0.md) and
 [manifest](0.3.0-candidate.json), in a separate documentation change after the
-frozen candidate. Publication remains pending.
+frozen candidate. The published archive was independently reproduced from the
+final tagged commit; its checksum and release notes match. The final immutable
+consumer template and Finite home contracts also passed before publication.
 
 ## Shipped behavior
 
