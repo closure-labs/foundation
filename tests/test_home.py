@@ -1,8 +1,10 @@
 """Exercise consumer locks, migrations, transactional updates and notifications."""
 import copy
+import contextlib
 import hashlib
 import importlib.util
 import json
+import io
 import os
 import subprocess
 import tempfile
@@ -30,6 +32,10 @@ class ConsumerTests(unittest.TestCase):
         self.base = Path(self.tmp.name)
         self.root = self.base / "home-manager"
         home.make_template(ROOT, INFO, self.root, LOCK)
+        # These recovery/update fixtures deliberately model an existing schema-2 consumer.
+        value = home.read_json(self.root / "profile.json")
+        value = {key: item for key, item in value.items() if key not in ("host", "capabilities")}
+        home.write_json(self.root / "profile.json", {**value, "schema": 2, "hardware": "generic-x86_64"})
         self.activation = self.base / "generation"
         self.activation.mkdir()
         (self.activation / "activate").write_text("#!/bin/sh\nexit 0\n")
@@ -78,6 +84,44 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], INFO["rev"])
         self.assertEqual(len(home.REFERENCE.findall((ROOT / "templates/default/flake.nix").read_text())), 1)
 
+    def test_template_copies_are_editable_without_changing_sources_or_existing_files(self):
+        source = self.base / "read-only-source"
+        (source / "modules").mkdir(parents=True)
+        relatives = ("profile.json", "customize.nix", "modules/local.nix")
+        for relative in relatives:
+            path = source / relative
+            path.write_text("original\n")
+            path.chmod(0o444)
+        output = self.base / "editable-template"
+        home.make_template(source, INFO, output, LOCK)
+        for relative in relatives:
+            with self.subTest(relative=relative):
+                destination = output / relative
+                self.assertEqual(destination.stat().st_mode & 0o777, 0o644)
+                destination.write_text("personal\n")
+                destination.chmod(0o440)
+        home.make_template(source, INFO, output, LOCK)
+        for relative in relatives:
+            with self.subTest(relative=relative):
+                self.assertEqual((source / relative).read_text(), "original\n")
+                self.assertEqual((source / relative).stat().st_mode & 0o777, 0o444)
+                self.assertEqual((output / relative).read_text(), "personal\n")
+                self.assertEqual((output / relative).stat().st_mode & 0o777, 0o440)
+
+    def test_templates_preserve_dangling_personal_symlinks(self):
+        for relative in ("profile.json", "customize.nix", "modules/local.nix"):
+            destination = self.root / relative
+            destination.unlink()
+            destination.symlink_to(self.base / (destination.name + ".personal"))
+        home.make_template(ROOT, INFO, self.root, LOCK)
+        for relative in ("profile.json", "customize.nix", "modules/local.nix"):
+            destination = self.root / relative
+            target = self.base / (destination.name + ".personal")
+            with self.subTest(relative=relative):
+                self.assertTrue(destination.is_symlink())
+                self.assertEqual(destination.readlink(), target)
+                self.assertFalse(target.exists())
+
     def test_nh_lock_update_overrides_stale_cached_provenance_without_writes(self):
         candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
         home.write_json(self.root / "flake.lock", home.consumer_lock(LOCK, candidate))
@@ -86,6 +130,127 @@ class ConsumerTests(unittest.TestCase):
             self.assertEqual(home.installed_info(self.root), candidate)
         self.assertIn(candidate["rev"], capture.call_args.args[0][-1])
         self.assertEqual(home.tree_digest(self.root), before)
+
+    def local_pin(self, **changes):
+        lock = home.read_json(self.root / "flake.lock")
+        source = {**{key: INFO[key] for key in ("rev", "narHash", "lastModified")},
+                  "type": "git", "url": "file:///local/foundation", **changes}
+        lock["nodes"]["foundation"]["locked"] = source
+        lock["nodes"]["foundation"]["original"] = {"type": "git", "url": source["url"], "rev": source.get("rev")}
+        home.write_json(self.root / "flake.lock", lock)
+        return {"metadata": {key: INFO[key] for key in ("schema", "compatibility", "version")},
+                **{key: source[key] for key in ("rev", "narHash", "lastModified")}}
+
+    def test_local_pin_metadata_comes_from_the_locked_source_not_the_cache(self):
+        selected = self.local_pin()
+        selected["metadata"]["version"] = "0.3.0"
+        before = home.tree_digest(self.root)
+        with patch.object(home, "capture", return_value=json.dumps(selected)) as capture:
+            self.assertEqual(home.installed_info(self.root), {**INFO, "version": "0.3.0"})
+        command = capture.call_args.args[0]
+        self.assertIn("--no-update-lock-file", command)
+        self.assertIn("root.inputs.foundation", command[-1])
+        self.assertIn("path:" + str(self.root), command[-1])
+        self.assertNotIn("git+file:", command[-1])
+        self.assertEqual(home.tree_digest(self.root), before)
+
+    def test_local_pin_requires_explicit_revision_hash_and_local_file_url(self):
+        for changes in ({"rev": None}, {"rev": "HEAD"}, {"narHash": None}, {"narHash": "bad"},
+                        {"url": "git+https://example.com/foundation"}, {"url": "ssh://example.com/foundation"},
+                        {"url": "file://remote/local/foundation"}, {"url": "file:relative"},
+                        {"url": "file:///local/foundation?ref=main"}, {"url": "file:///local/foundation#fragment"}):
+            with self.subTest(changes=changes):
+                self.local_pin(**changes)
+                with patch.object(home, "capture") as capture:
+                    with self.assertRaises(ValueError):
+                        home.installed_info(self.root)
+                    capture.assert_not_called()
+        self.local_pin()
+        lock = home.read_json(self.root / "flake.lock")
+        lock["nodes"]["foundation"]["original"].pop("rev")
+        home.write_json(self.root / "flake.lock", lock)
+        with patch.object(home, "capture") as capture:
+            with self.assertRaisesRegex(ValueError, "explicitly pin"):
+                home.installed_info(self.root)
+            capture.assert_not_called()
+        lock["nodes"]["foundation"]["original"]["rev"] = "b" * 40
+        home.write_json(self.root / "flake.lock", lock)
+        with patch.object(home, "capture") as capture:
+            with self.assertRaisesRegex(ValueError, "explicitly pin"):
+                home.installed_info(self.root)
+            capture.assert_not_called()
+
+    def test_local_pin_rejects_selected_source_mismatch_or_invalid_metadata(self):
+        selected = self.local_pin()
+        cases = [{**selected, "rev": "b" * 40}, {**selected, "narHash": "sha256-" + "B" * 43 + "="},
+                 {**selected, "metadata": {**selected["metadata"], "compatibility": 2}},
+                 {**selected, "metadata": {**selected["metadata"], "version": "invalid"}}]
+        for value in cases:
+            with self.subTest(value=value), patch.object(home, "capture", return_value=json.dumps(value)):
+                with self.assertRaises(ValueError):
+                    home.installed_info(self.root)
+
+    def test_local_update_and_status_skip_release_network_and_configuration_changes(self):
+        selected = self.local_pin()
+        before = home.tree_digest(self.root)
+        output = io.StringIO()
+        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "published_releases") as releases, patch.object(home, "release_data") as release, patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit, contextlib.redirect_stdout(output):
+            self.assertEqual(home.available(self.root), (INFO, None, None))
+            home.update(self.root, check=True)
+            home.update(self.root)
+            home.status(self.root, notify=True)
+            home.status(self.root, machine=True)
+        for action in (releases, release, build, brew, commit):
+            action.assert_not_called()
+        self.assertIn("Advance the foundation input explicitly", output.getvalue())
+        self.assertIn("Published releases were not checked", output.getvalue())
+        result = json.loads(output.getvalue().splitlines()[-1])
+        self.assertEqual(result["source"], "local-git")
+        self.assertEqual(result["update_policy"], "manual-pin")
+        self.assertFalse(result["update_available"])
+        self.assertEqual(home.tree_digest(self.root), before)
+
+    def test_apply_accepts_a_local_pin_without_changing_its_declaration_or_lock(self):
+        selected = self.local_pin()
+        declaration = '{ inputs.foundation.url = "git+file:///local/foundation?rev=' + INFO["rev"] + '"; }\n'
+        (self.root / "flake.nix").write_text(declaration)
+        before = home.tree_digest(self.root)
+        def build(stage):
+            self.assertEqual((stage / "flake.nix").read_text(), declaration)
+            self.assertEqual((stage / "flake.lock").read_bytes(), (self.root / "flake.lock").read_bytes())
+            self.assertEqual(home.read_json(stage / "profile.json")["roles"], ["sales"])
+            self.assertEqual(home.read_json(stage / "foundation.json"), INFO)
+            return self.activation
+        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "build", side_effect=build) as built, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+            home.apply(self.root, roles="sales", check=True)
+            built.assert_called_once()
+            brew.assert_not_called(); commit.assert_not_called()
+        self.assertEqual(home.tree_digest(self.root), before)
+
+    def test_reviewed_customization_commit_preserves_personal_metadata(self):
+        stage = self.base / "candidate"
+        home.copy_configuration(self.root, stage)
+        (stage / "customize.nix").write_text("{ /* reviewed graphical bindings */ }")
+        (self.root / ".git").mkdir()
+        (self.root / ".git/user-metadata").write_text("retain")
+        original_module = (self.root / "modules/local.nix").read_bytes()
+        with patch.object(home, "previous_generation", return_value=None), patch.dict(os.environ, XDG_CONFIG_HOME=str(self.base / "config")):
+            home.commit_stage(self.root, stage, home.tree_digest(self.root), self.activation, replace_customization=True)
+        self.assertEqual((self.root / "customize.nix").read_bytes(), (stage / "customize.nix").read_bytes())
+        self.assertEqual((self.root / "modules/local.nix").read_bytes(), original_module)
+        self.assertEqual((self.root / ".git/user-metadata").read_text(), "retain")
+
+    def test_failed_reviewed_customization_commit_restores_original_tree(self):
+        stage = self.base / "candidate"
+        home.copy_configuration(self.root, stage)
+        (stage / "customize.nix").write_text("{ /* reviewed graphical bindings */ }")
+        home.write_json(stage / "profile.json", {**home.read_json(stage / "profile.json"), "schema": 3})
+        original = home.tree_digest(self.root)
+        (self.activation / "activate").write_text("#!/bin/sh\nexit 1\n")
+        with patch.object(home, "previous_generation", return_value=None):
+            with self.assertRaises(subprocess.CalledProcessError):
+                home.commit_stage(self.root, stage, original, self.activation, replace_customization=True)
+        self.assertEqual(home.tree_digest(self.root), original)
 
     def test_lock_repository_cannot_be_hidden_by_cached_provenance(self):
         lock = home.read_json(self.root / "flake.lock")
@@ -99,6 +264,12 @@ class ConsumerTests(unittest.TestCase):
 
     def test_fixed_commit_update_remains_fixed(self):
         self.check_successful_update(False)
+
+    def test_update_preserves_supplied_schema_three_and_capabilities(self):
+        value = {**home.read_json(self.root / "profile.json"), "schema": 3,
+                 "roles": ["family"], "capabilities": ["recording"], "custom": {"retain": True}}
+        home.write_json(self.root / "profile.json", value)
+        self.check_successful_update(True)
 
     def check_successful_update(self, tracking):
         if not tracking:
@@ -146,6 +317,14 @@ class ConsumerTests(unittest.TestCase):
             home.commit_stage(self.root, stage, digest, self.activation)
         self.assertEqual((self.root / "customize.nix").read_text(), "edited during build")
 
+    def test_personal_legacy_nixgl_pin_cannot_be_silently_adopted_as_core(self):
+        original = {"nixGL": {"url": "github:nix-community/nixGL/" + "a" * 40},
+                    "personal": {"url": "github:example/personal", "inputs": {"nixGL": {"follows": "nixGL"}}}}
+        before = json.dumps(original, sort_keys=True)
+        with self.assertRaisesRegex(ValueError, "nixGL.*personal pin"):
+            home.migrate_input_declarations(original)
+        self.assertEqual(json.dumps(original, sort_keys=True), before)
+
     def test_activation_failure_restores_files_and_previous_generation(self):
         digest = home.tree_digest(self.root)
         stage = self.base / "stage"
@@ -185,7 +364,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
-        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_profile"), patch.object(home, "catalog_data", return_value={}), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
             self.assertEqual(home.build(self.root), self.activation)
         command = capture.call_args.args[0]
         self.assertIn("MemoryMax=5G", command)

@@ -1,0 +1,23 @@
+{
+  "schema": 3,
+  "foundation": "bluefin-dx",
+  "host": {
+    "system": "x86_64-linux",
+    "formFactor": "laptop",
+    "cpu": "intel",
+    "gpus": ["intel-integrated"],
+    "model": "dell-xps-9350",
+    "camera": true,
+    "fingerprint": true
+  },
+  "packages": ["hack-font", "herdr", "jj", "uv"],
+  "roles": ["developer", "sales", "trainer", "support", "executive", "it"],
+  "capabilities": [
+    "team-chat", "file-sync", "notes", "playback", "chromium",
+    "web-apps", "desktop-comforts", "pdf-tools"
+  ],
+  "identity": {
+    "username": "dale",
+    "homeDirectory": "/var/home/dale"
+  }
+}

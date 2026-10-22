@@ -2,6 +2,8 @@
   inherit (inputs.nixpkgs) lib;
   version = lib.removeSuffix "\n" (builtins.readFile ../VERSION);
   catalog = import ./catalog.nix;
+  normalizeProfile = import ./normalize-profile.nix {inherit catalog;};
+  profileComposition = import ./profile-drafts {inherit catalog;};
   sourceInfo = {
     inherit version;
     compatibility = 1;
@@ -10,10 +12,12 @@
     narHash = inputs.self.narHash or null;
     lastModified = inputs.self.lastModified or 0;
   };
-  homeCatalog = import ./home-catalog.nix {
-    domainCatalog = catalog;
-    inherit lib version;
-  };
+  homeCatalogForSchema = schema:
+    import ./profile-catalog.nix {
+      domainCatalog = catalog;
+      inherit lib version schema;
+    };
+  homeCatalog = homeCatalogForSchema 3;
   mkApplications = {
     pkgs,
     releaseInfo ? sourceInfo,
@@ -24,24 +28,37 @@
       sourceInfo = releaseInfo;
     };
 in {
-  inherit catalog homeCatalog sourceInfo mkApplications;
-  mkHomeCatalog = {domainCatalog ? catalog}: import ./home-catalog.nix {inherit domainCatalog lib version;};
+  inherit catalog homeCatalog homeCatalogForSchema sourceInfo mkApplications normalizeProfile;
+  hosts = import ./hosts.nix;
+  inherit (homeCatalog) profileCapabilities;
+  profileDrafts = profileComposition;
+  resolveProfile = profileComposition.resolve;
+  profileChanges = {
+    schema = 1;
+    preview = import ./profile-changes.nix {inherit catalog;};
+  };
+  mkHomeCatalog = {
+    domainCatalog ? catalog,
+    schema ? 3,
+  }:
+    import ./profile-catalog.nix {inherit domainCatalog lib version schema;};
   compatibility = 1;
   mkHomeConfiguration = {
     profile,
     modules ? [],
     extraInputs ? {},
   }: let
+    normalized = normalizeProfile profile;
     evaluated = lib.evalModules {
       specialArgs = {
         inputs = inputs // extraInputs;
-        foundationProfile = profile;
+        foundationProfile = normalized;
         foundationModules = modules;
       };
       modules = [inputs.den.flakeModule ../modules/finite.nix];
     };
   in
-    evaluated.config.flake.homeConfigurations.${profile.identity.username};
+    evaluated.config.flake.homeConfigurations.${normalized.identity.username};
   mkConsumerTemplate = {
     pkgs,
     releaseInfo ? sourceInfo,

@@ -19,6 +19,10 @@
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
     nix-flatpak.url = "github:gmodena/nix-flatpak";
+    nixGL = {
+      url = "github:nix-community/nixGL";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs: let
@@ -46,6 +50,15 @@
             ${pkgs.lib.escapeShellArg home.config.home.profileDirectory}
           touch "$out"
         '';
+      nixgl-wrapper = import ./tests/nixgl-wrapper.nix {foundation = inputs.self;};
+      desktop-icons = import ./tests/icon-packages.nix {foundation = inputs.self;};
+      profile-generation =
+        pkgs.runCommand "foundation-profile-generation" {
+          nativeBuildInputs = with pkgs; [bash coreutils jq yq-go];
+        } ''
+          bash ${./tests/profile-generation.sh} ${applications.homeProfile}/bin/finite-home-profile ${applications.profileCatalog}
+          touch "$out"
+        '';
     };
     packages.${system} = {
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
@@ -62,7 +75,7 @@
       description = "Personal Home Manager flake importing Foundation";
     };
     devShells.${system}.ci = pkgs.mkShellNoCC {
-      packages = with pkgs; [bash jq python3 actionlint];
+      packages = with pkgs; [bash jq python3 actionlint yq-go];
     };
   };
 }

@@ -1,6 +1,7 @@
 {
   lib,
   pkgs,
+  foundationHost ? null,
   ...
 }: let
   panelPolicy = pkgs.writeShellApplication {
@@ -10,10 +11,13 @@
   };
 in {
   home.sessionVariables.FINITE_HARDWARE = "dell-xps-9350-intel";
-  xdg.configFile."finite/dell-xps-9350-panel.conf".source =
-    ./rootfs/usr/share/finite/dell-xps-9350-panel.conf;
-  xdg.configFile."wireplumber/wireplumber.conf.d/50-finite-dell-ipu7.conf".source =
-    ./dell-ipu7.conf;
+  xdg.configFile =
+    {
+      "finite/dell-xps-9350-panel.conf".source = ./rootfs/usr/share/finite/dell-xps-9350-panel.conf;
+    }
+    // lib.optionalAttrs (foundationHost == null || foundationHost.camera) {
+      "wireplumber/wireplumber.conf.d/50-finite-dell-ipu7.conf".source = ./dell-ipu7.conf;
+    };
   home.packages = [panelPolicy];
 
   systemd.user.services.finite-dell-xps-9350-panel = {

@@ -1,50 +1,99 @@
 set -euo pipefail
 
-current="${FINITE_HOME_PROFILE_PATH:-$HOME/.config/home-manager/profile.json}"
-if [[ ! -r "$current" ]]; then
-  zenity --error \
-    --title='Finite configuration' \
-    --text='The local Finite Home Manager profile is unavailable.'
-  exit 1
+migration=()
+case "${1:-}" in
+  '') [[ $# -eq 0 ]] || exit 2 ;;
+  --migrate-profile) [[ $# -eq 1 ]] || exit 2; migration+=(--migrate-profile) ;;
+  *) echo 'usage: finite-configure [--migrate-profile]' >&2; exit 2 ;;
+esac
+
+# The helper resolves the consumer's locked source; packaged catalogs can be stale.
+context=$(finite-home-apply --editor-context "${migration[@]}")
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+if ! jq -e '
+  .schema == 1 and (.profile.schema == 2 or .profile.schema == 3) and
+  (.catalog.roles | type == "object") and (.catalog.packages | type == "object") and
+  ((.catalog.classifications // {}) | type == "object") and
+  all(.catalog.roles[]; (.label | type == "string") and (.order | type == "number") and
+    (.classification == null or (.classification | type == "string"))) and
+  all(.catalog.packages[]; (.label | type == "string") and (.description | type == "string") and (.order | type == "number")) and
+  all((.catalog.classifications // {})[]; .label | type == "string")
+' <<<"$context" >/dev/null; then
+  echo 'The locked Foundation editor catalog is invalid.' >&2
+  exit 2
+fi
+jq '.catalog' <<<"$context" >"$work/catalog.json"
+jq '.profile' <<<"$context" >"$work/profile.json"
+catalog="$work/catalog.json"
+current="$work/profile.json"
+schema=$(jq -r '.catalog.profileSchema // .profile.schema' <<<"$context")
+if [[ "$schema" != 2 && "$schema" != 3 ]]; then
+  echo 'The locked Foundation editor format is unsupported.' >&2
+  exit 2
+fi
+if [[ "$schema" == 3 ]] && ! jq -e '
+  (.capabilities | type == "object") and
+  all(.capabilities[]; (.label | type == "string") and (.order | type == "number") and
+    (.applications | type == "array") and all(.applications[]; type == "string"))
+' "$catalog" >/dev/null; then
+  echo 'The locked Foundation capability catalog is invalid.' >&2
+  exit 2
 fi
 
-rows=()
-for entry in \
-  developer:Developer sales:Sales trainer:Trainer support:Support executive:Executive it:IT; do
-  role="${entry%%:*}"
-  label="${entry#*:}"
-  checked=FALSE
-  if jq -e --arg role "$role" '.roles | index($role) != null' "$current" >/dev/null; then
-    checked=TRUE
-  fi
-  rows+=("$checked" "$label" "$role")
-done
-
+role_rows=$(jq -ce --slurpfile profile "$current" '
+  . as $catalog |
+  [.roles | to_entries | sort_by(.value.order, .key)[] |
+    .key as $id | .value as $role |
+    [((($profile[0].roles | index($id)) != null) | if . then "TRUE" else "FALSE" end),
+     ($catalog.classifications[($role.classification // "")].label // ""), $role.label, $id]
+  ] | flatten
+' "$catalog")
+package_rows=$(jq -ce --slurpfile profile "$current" '
+  [.packages | to_entries | sort_by(.value.order, .key)[] |
+    .key as $id | .value as $package |
+    [(((($profile[0].packages // []) | index($id)) != null) | if . then "TRUE" else "FALSE" end),
+     $package.label, $package.description, $id]
+  ] | flatten
+' "$catalog")
+capability_rows='[]'
+if [[ "$schema" == 3 ]]; then
+  capability_rows=$(jq -ce --slurpfile profile "$current" '
+    [.capabilities | to_entries | sort_by(.value.order, .key)[] |
+      .key as $id | .value as $capability |
+      [(((($profile[0].capabilities // []) | index($id)) != null) | if . then "TRUE" else "FALSE" end),
+       $capability.label, ($capability.applications | join(", ")), $id]
+    ] | flatten
+  ' "$catalog")
+fi
+mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$role_rows")
 roles=$(zenity --list --checklist \
-  --title='Configure Finite' \
-  --text='Select any roles to compose in this Home Manager configuration.' \
-  --column='Use' --column='Role' --column='id' \
-  --hide-column=3 --print-column=3 --separator=, "${rows[@]}") || exit 0
-
-rows=()
-while IFS='|' read -r package label description; do
-  checked=FALSE
-  if jq -e --arg package "$package" '(.packages // []) | index($package) != null' "$current" >/dev/null; then
-    checked=TRUE
-  fi
-  rows+=("$checked" "$label" "$description" "$package")
-done <<'EOF'
-hack-font|Hack Nerd Font|Hack font patched with Nerd Fonts glyphs
-herdr|Herdr|Terminal process manager
-jj|Jujutsu|Jujutsu version-control system (jj)
-opencode|OpenCode|Open-source coding agent
-uv|uv|Python package and project manager
-EOF
-
+  --title='Configure Finite' --text='Select roles for this Home Manager configuration.' \
+  --column='Use' --column='Classification' --column='Role' --column='id' \
+  --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
+mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$package_rows")
 packages=$(zenity --list --checklist \
-  --title='Configure Finite packages' \
-  --text='Select optional Nix packages. Finite builds the complete Home Manager generation before changing your profile.' \
+  --title='Configure Finite packages' --text='Select optional Nix packages.' \
   --column='Use' --column='Package' --column='Description' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
-
-exec finite-home-apply --roles "$roles" --packages "$packages"
+if [[ "$schema" == 2 ]]; then
+  finite-home-apply --roles "$roles" --packages "$packages"
+  exit $?
+fi
+mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$capability_rows")
+capabilities=$(zenity --list --checklist \
+  --title='Additional capabilities' \
+  --text='Role and hardware defaults are included automatically. Select additional capabilities to keep independently of your roles.' \
+  --column='Use' --column='Capability' --column='Applications' --column='id' \
+  --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
+change=("${migration[@]}" --roles "$roles" --packages "$packages" --capabilities "$capabilities")
+preview=$(finite-home-apply "${change[@]}" --preview)
+if ! jq -e '.schema == 1 and .preview.status == "preview" and .preview.activationAllowed == false and
+  (.summary | type == "string") and (.approvalToken | type == "string" and test("^[a-f0-9]{64}$"))' <<<"$preview" >/dev/null; then
+  jq -r '.preview.reason // "Unable to preview this profile change."' <<<"$preview" >&2
+  exit 2
+fi
+jq -r '.summary' <<<"$preview" >"$work/preview.txt"
+zenity --text-info --title='Review profile changes' --filename="$work/preview.txt" \
+  --width=760 --height=560 --ok-label='Build and apply' --cancel-label='Cancel' || exit 0
+finite-home-apply "${change[@]}" --approve-preview "$(jq -r '.approvalToken' <<<"$preview")"

@@ -6,6 +6,18 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+- Generate new schema-3 profiles in JSON or YAML with six Professional roles and four lightweight Personal roles: Family, Media, Creative and Gaming. Optional capabilities select larger applications without enabling an entire role.
+- Default new templates and catalogs to schema 3. Existing schema-2 profiles retain their applications, providers and graphics backend; conversion remains explicit.
+- Make newly copied personal profile and module files editable when generated from an immutable source, preserving existing personal files and permissions.
+- Prefer graphical Nixpkgs applications wrapped with nixGL Mesa for schema 3, retaining verified Flathub exceptions where a matching Nix package is unavailable. Clean icon build files that otherwise collide in wrapped desktop packages.
+- Compose laptop/desktop hosts independently from Intel/AMD CPU, integrated/discrete GPU and model aspects, with camera-aware controls and laptop-only preferences. Bluefin continues to own drivers, firmware, authentication and power/lid policy.
+- Edit roles, packages and capabilities through the locked Foundation revision. Explicit schema-2-to-3 conversion previews application/provider changes, binds approval to the reviewed state, preserves unmanaged Flatpaks and data, and retains build-only checks, backup and activation recovery.
+- Share pure Nix profile validation across composition, generation and staged writes. Reject duplicate/unknown selections, unsupported reader/writer combinations, silent format changes and conflicting legacy personal nixGL inputs; preserve symlink entries during failed operations.
+- Expose format-specific catalogs, host choices and initializer/editor capabilities. Explicit schema-2 reader views identify their format independently of the source's preferred writer.
+- Accept explicitly pinned local Git Foundation inputs for workstation editing, verify locked-source metadata, and report manual pin maintenance without replacing them with published releases.
+- Update Den to the reviewed October revision and align gen with its tested CI pin, preserving unrelated package sources and current profile composition.
 - Select Herdr from a separately locked `nixpkgs-unstable` input so terminal fixes can be updated without moving shared desktop dependencies.
 - Export the managed Zsh executable to terminal multiplexers, including sessions whose account login shell is Bash.
 - Keep desktop data search paths stable across user service manager reloads while retaining Flatpak exports.
@@ -60,7 +72,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/closure-labs/foundation/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/closure-labs/foundation/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/closure-labs/foundation/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/closure-labs/foundation/releases/tag/v0.2.0

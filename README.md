@@ -28,9 +28,10 @@ inputs.foundation.lib.mkHomeConfiguration {
 }
 ```
 
-Use schema 2 profiles with Bluefin or Bluefin DX, generic or Dell XPS 9350 Intel
-hardware, and any combination of the roles and optional packages in
-`lib.catalog`. Account identity must match the desktop user. Keep
+New profiles use schema 3 with Bluefin or Bluefin DX, independent host hardware,
+Professional/Personal roles and optional capabilities. Generate JSON or YAML
+with `finite-home-profile`; see the [generation guide](docs/architecture/ARCH-profile-generation.md).
+Account identity must match the desktop user. Keep
 `home.stateVersion` unchanged when updating.
 
 ## Updates and migration
@@ -78,6 +79,59 @@ Backups remain next to the configuration as `home-manager.previous.*`.
 and applies those profile changes using the same transaction. `nh home build`
 and `nh home switch` remain available for direct use.
 
+Staged builds validate and order selections using the locked Foundation
+revision's `lib.normalizeProfile` API. Older releases use their own catalog with
+a schema-2 compatibility validator. Account and running-image checks still run
+locally. Initialization explicitly converts schema 1 to schema 2 and rejects
+unsupported versions; it does not overwrite a newer schema version.
+`finite-home-init --capabilities` reports the executing helper's supported
+initialization, normalization and catalog schemas without accessing a consumer.
+The catalog and `lib.profileCapabilities` expose the selected source's support;
+staging requires both sides to understand the input. Foundation's generator and
+new templates emit schema 3; existing profiles retain their format.
+
+The [schema-3 composition contract](docs/architecture/ARCH-profile-schema3.md)
+now has production readers and Home Manager composition for explicitly supplied
+profiles. It provides smaller Professional/Personal defaults, optional
+capabilities and graphical Nixpkgs apps wrapped with nixGL Mesa. Verified Flathub
+exceptions remain where matching Nix packages are unavailable. Existing schema-2
+profiles keep their current applications, providers and graphics backend.
+
+`lib.homeCatalog` and `lib.homeCatalogForSchema 3` expose the same
+ten-role/capability catalog. `lib.homeCatalogForSchema 2` retains the six-role
+view for existing profiles.
+Schema-3 profiles also accept independent laptop/desktop, Intel/AMD CPU,
+integrated/discrete GPU, model, camera and fingerprint declarations. See
+[host composition](docs/architecture/ARCH-host-composition.md) and the
+[Dell workstation candidate](examples/workstations/dale-xps-9350.json).
+
+`lib.resolveProfile` resolves schema-3 composition. `lib.profileChanges` provides
+the versioned change-preview API; the older draft preview remains available.
+`finite-configure` edits schema 3 with Personal roles and additional capabilities.
+Use `finite-configure --migrate-profile` to explicitly review conversion from
+schema 2. Generating a new profile does not convert an existing consumer.
+Validate physical graphics/app behavior before
+migrating a workstation. Legacy configurations with a personal input named
+`nixGL` require manual migration to preserve its pin and followers.
+
+For the CLI, run `finite-home-apply --migrate-profile --preview` with the desired
+`--roles`, `--packages` and `--capabilities`, then repeat those selections with
+`--approve-preview TOKEN` from the review. `--check` builds without installing.
+On an existing schema-3 profile, omitted capabilities are preserved and
+`--capabilities ''` clears explicit additions. The editor uses the consumer's
+locked catalog and requires editing support in both the helper and selected
+Foundation. See the [editor and recovery contract](docs/architecture/ARCH-profile-editor.md).
+
+Developer, Sales, Trainer, Support, Executive, and IT are classified as
+**Professional** in the selector and catalog. They remain individually
+selectable with their existing applications. **Personal** is registered as a
+peer category, with Family, Media, Creative and Gaming available to explicitly
+supplied or explicitly converted schema-3 profiles. Schema-2 editing retains six
+Professional roles.
+These categories do not change schema-2 profiles or the Bluefin/DX image choice.
+See the [Personal profiles](docs/PERSONAL-PROFILES.md) for Family,
+Media, Creative and Gaming compositions and optional applications.
+
 The flake and its lock determine the Home Manager package set. Activation adds
 that already-built set to the user Nix profile, which exposes its commands on
 `PATH`; this step does not select new package versions. Foundation uses
@@ -95,11 +149,26 @@ and use the checkout's `modules/finite-home-apply` helper to provision shared Br
 tools and activate. Standalone maintainers update their Git checkout explicitly;
 release-update commands target importing personal flakes.
 
+A personal flake can pin this local jj checkout with a
+`git+file:///absolute/path/to/foundation?rev=FULL_COMMIT` Foundation input.
+The declaration and lock must select the same immutable commit. Editing uses
+that locked source; update/status report manual pin maintenance and skip
+published releases. Advance the input explicitly, then run `finite-home-apply`.
+No helper changes jj history or advances a local pin automatically.
+
 The Support role's Espanso backend requires administrator-managed keyboard access.
-On non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper after first
-activation as described by Home Manager. Foundation never grants keyboard access.
+For schema 2 on non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper
+after first activation as described by Home Manager. Schema 3 uses nixGL Mesa
+instead. Foundation never grants keyboard access.
 
 ## Maintain the repository
+
+See the [profile architecture and workstation review](docs/PROFILE-ARCHITECTURE.md)
+for the proposed professional/personal profile composition, recent Den findings,
+hardware boundaries, and the original staged migration plan. Current schema-3
+composition and host behavior are documented in the contracts linked above.
+The [refactor implementation plan](docs/plans/PLAN-profile-refactor.md) records
+the implemented classification slice and the later application/hardware work.
 
 Use `jj status`, `jj diff` and `jj describe` to review and record changes. This
 repository has its own `flake.lock`; update dependencies intentionally:
@@ -122,7 +191,8 @@ bash tests/check.sh
 CI runs those fixtures, workflow lint, release metadata checks, and
 `nix flake check`, which builds the configured Home Manager activation package.
 It also evaluates all roles and optional packages with Dell hardware on both
-foundations. CI never activates a configuration. Run the full checks on a host
+foundations and checks locked legacy, bridge and candidate validation targets.
+CI never activates a configuration. Run the full checks on a host
 with enough memory and disk space for the desktop package set:
 
 ```bash

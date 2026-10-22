@@ -3,29 +3,18 @@
   finiteHomeAssets,
   lib,
   pkgs,
+  foundationProfileSchema ? 2,
   ...
 }: let
-  ghostty = pkgs.symlinkJoin {
-    name = "finite-ghostty-${pkgs.ghostty.version}";
-    paths = [pkgs.ghostty];
-    postBuild = ''
-      desktop="$out/share/applications/com.mitchellh.ghostty.desktop"
-      desktop_source=$(readlink -f "$desktop")
-      install -m 0444 "$desktop_source" "$desktop.new"
-      substituteInPlace "$desktop.new" \
-        --replace-fail 'DBusActivatable=true' 'DBusActivatable=false'
-      mv -f "$desktop.new" "$desktop"
-    '';
-    meta.mainProgram = "ghostty";
-  };
+  ghostty = import ../../../../lib/ghostty-package.nix {inherit pkgs;};
 in {
-  home.packages = with pkgs; [
+  home.packages = lib.optionals (foundationProfileSchema == 2) (with pkgs; [
     ghostty
     ansible
     openbao
     opentofu
     packer
-  ];
+  ]);
 
   # Terminal multiplexers inherit SHELL even when Ghostty starts Zsh directly.
   home.sessionVariables.SHELL = lib.mkDefault "${config.programs.zsh.package}/bin/zsh";

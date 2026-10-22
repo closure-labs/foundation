@@ -24,5 +24,12 @@ PY
 bash tests/brew-providers.sh
 bash tests/dell-panel-policy.sh
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_home.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_classification.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_validation.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_capabilities.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_drafts.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_editor.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_host_profiles.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_profile_generation.py
 for aspect in tests/aspects-*.sh; do bash "$aspect"; done
 printf 'Foundation checks passed\n'
