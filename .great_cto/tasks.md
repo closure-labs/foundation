@@ -27,6 +27,7 @@ requested the first slice after the architecture and plan were presented.
 | profile-release | Publication | Complete | PR #8 merged; main and release CI pass at `fdeb2ab7d88cb0ff69d25ed1a02589bc28ca7006`. Published `v0.3.0` archive/checksum and notes independently verified against that tag; `latest-release` selects the same commit. See the final publication manifest. Finite adoption remains separate; live workstation unchanged. |
 | profile-release-workstation | Published release activation | Complete | User authorized v0.3.0 activation on 2026-10-22. Immutable release and unrelated personal pins verified; schema3 profile and six Professional roles preserved. Firefox157, user services and post-reboot generation checks pass; user confirmed both password-manager extensions healthy. Previous configuration/generation retained. |
 | profile-build-budget | Post-release build reliability | Complete | Isolated follow-up fix raises the staged builder's default from3G to the successfully tested5G, preserves explicit overrides and other resource limits, and diagnoses direct SIGKILL without claiming OOM or retrying. All147 pinned CI tests, packaged helper smoke check and CLI/QA/security review pass. Unreleased; live consumer remains published0.3.0. |
+| profile-home-manager-modules | Shared configuration organization | Complete | Private browser/desktop/Homebrew/shell/legacy modules retain the base aspect and schema3 composition. Six actual before/after comparisons, exact symbolic inventory and collision-checking workstation package build pass; shell and Flatpak ordering preserved. All147 pinned CI tests and full Nix suite pass, including eight schema3 and nine host cases plus both foundations/schemas with all work roles. Architecture/QA/security approve. No disk preflight or live activation. |
 
 Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [plan](../docs/plans/PLAN-profile-refactor.md),
@@ -50,3 +51,7 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 Post-release evidence:
 [workstation activation](../docs/qa-reports/QA-workstation-release-0.3.0.md),
 [build budget](../docs/qa-reports/QA-home-build-budget.md).
+
+Current shared configuration:
+[module ownership](../docs/architecture/ARCH-home-manager-modules.md),
+[verification](../docs/qa-reports/QA-home-manager-modules.md).
