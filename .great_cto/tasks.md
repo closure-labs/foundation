@@ -25,6 +25,8 @@ requested the first slice after the architecture and plan were presented.
 | profile-personal-proposal | Personal role recommendations | Complete | User confirmed lightweight defaults and optional larger apps/launchers; Family, Media, Creative and Gaming proposed without moving apps/enabling roles. |
 | profile-release-preparation | R1 Foundation0.3.0 candidate | Complete | Frozen jj `ywyltuox`, commit `7953c60e`: CI143, full Nix suite, direct immutable flake checks, exact consumer template, release archive/checksum and Finite10+32+4+32 pass. Template owner-write/symlink regressions pass; QA/security and artifact identity approve. Live state/pins unchanged; evidence recorded separately after candidate. |
 | profile-release | Publication | Complete | PR #8 merged; main and release CI pass at `fdeb2ab7d88cb0ff69d25ed1a02589bc28ca7006`. Published `v0.3.0` archive/checksum and notes independently verified against that tag; `latest-release` selects the same commit. See the final publication manifest. Finite adoption remains separate; live workstation unchanged. |
+| profile-release-workstation | Published release activation | Complete | User authorized v0.3.0 activation on 2026-10-22. Immutable release and unrelated personal pins verified; schema3 profile and six Professional roles preserved. Firefox157, user services and post-reboot generation checks pass; user confirmed both password-manager extensions healthy. Previous configuration/generation retained. |
+| profile-build-budget | Post-release build reliability | Complete | Isolated follow-up fix raises the staged builder's default from3G to the successfully tested5G, preserves explicit overrides and other resource limits, and diagnoses direct SIGKILL without claiming OOM or retrying. All147 pinned CI tests, packaged helper smoke check and CLI/QA/security review pass. Unreleased; live consumer remains published0.3.0. |
 
 Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [plan](../docs/plans/PLAN-profile-refactor.md),
@@ -44,3 +46,7 @@ Artifacts: [architecture](../docs/architecture/ARCH-profile-refactor.md),
 [F3 writer readiness](../docs/qa-reports/QA-finite-profile-writers.md),
 [R1 release validation](../docs/qa-reports/QA-release-0.3.0.md),
 [published0.3.0 manifest](../docs/releases/0.3.0-publication.json).
+
+Post-release evidence:
+[workstation activation](../docs/qa-reports/QA-workstation-release-0.3.0.md),
+[build budget](../docs/qa-reports/QA-home-build-budget.md).

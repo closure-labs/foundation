@@ -6,6 +6,7 @@ import importlib.util
 import json
 import io
 import os
+import signal
 import subprocess
 import tempfile
 import unittest
@@ -363,14 +364,61 @@ class ConsumerTests(unittest.TestCase):
                 home.update(self.root)
         self.assertEqual(home.tree_digest(self.root), digest)
 
-    def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
-        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="5G"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+    def test_default_build_budget_supports_full_schema_three_profiles(self):
+        with patch.dict(os.environ), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+            os.environ.pop("FOUNDATION_BUILD_MEMORY_MAX", None)
             self.assertEqual(home.build(self.root), self.activation)
         command = capture.call_args.args[0]
         self.assertIn("MemoryMax=5G", command)
+        self.assertIn("CPUQuota=100%", command)
         self.assertIn("MemorySwapMax=512M", command)
         self.assertEqual(command[command.index("--max-jobs") + 1], "1")
         self.assertEqual(command[command.index("--cores") + 1], "1")
+
+    def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
+        for budget in ("6G", "4096M"):
+            with self.subTest(budget=budget), patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX=budget), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+                self.assertEqual(home.build(self.root), self.activation)
+            command = capture.call_args.args[0]
+            self.assertIn("MemoryMax=" + budget, command)
+            self.assertIn("CPUQuota=100%", command)
+            self.assertIn("MemorySwapMax=512M", command)
+            self.assertEqual(command[command.index("--max-jobs") + 1], "1")
+            self.assertEqual(command[command.index("--cores") + 1], "1")
+
+    def test_killed_build_reports_used_budget_without_retrying(self):
+        failure = subprocess.CalledProcessError(-signal.SIGKILL, ["nix", "build"])
+        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="4096M"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture:
+            with self.assertRaisesRegex(ValueError, "SIGKILL.*MemoryMax=4096M") as raised:
+                home.build(self.root)
+        self.assertIs(raised.exception.__cause__, failure)
+        self.assertIn("FOUNDATION_BUILD_MEMORY_MAX", str(raised.exception))
+        self.assertIn("journal", str(raised.exception))
+        capture.assert_called_once()
+
+    def test_other_build_failures_keep_their_original_error(self):
+        for code in (1, 137, -signal.SIGTERM, -signal.SIGINT):
+            failure = subprocess.CalledProcessError(code, ["nix", "build"])
+            with self.subTest(code=code), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture:
+                with self.assertRaises(subprocess.CalledProcessError) as raised:
+                    home.build(self.root)
+                self.assertIs(raised.exception, failure)
+                capture.assert_called_once()
+
+    def test_killed_update_build_keeps_live_configuration_and_skips_provisioning(self):
+        digest = home.tree_digest(self.root)
+        candidate = {**INFO, "version": "0.3.0", "rev": "b" * 40}
+        def lock_update(command, **kwargs):
+            stage = Path(command[-1].removeprefix("path:"))
+            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate))
+        failure = subprocess.CalledProcessError(-signal.SIGKILL, ["nix", "build"])
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+            with self.assertRaisesRegex(ValueError, "SIGKILL"):
+                home.update(self.root)
+            capture.assert_called_once()
+            brew.assert_not_called()
+            commit.assert_not_called()
+        self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_invalid_build_budget_fails_before_evaluation(self):
         for budget in ("0G", "infinity", "-1G", "5G; anything"):

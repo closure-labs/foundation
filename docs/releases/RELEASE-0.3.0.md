@@ -82,3 +82,9 @@ qualified source `7eed78af`, not this release candidate. This preparation does
 not activate the candidate. Camera/fingerprint, suspend/docking and media/game
 behavior remain the documented hands-on checks. A Foundation source release
 does not establish graphical first-login activation or qualify a new OS image.
+
+Post-publication update, 2026-10-22: the user authorized activation of the final
+published release on this workstation and confirmed both Firefox password-manager
+extensions healthy after a full reboot. The [activation report](../qa-reports/QA-workstation-release-0.3.0.md)
+records the preserved schema-3 Professional profile, Firefox version and service
+checks separately from candidate preparation and remaining physical hardware tests.
