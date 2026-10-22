@@ -22,7 +22,9 @@ See the [changelog](../../CHANGELOG.md), [generation guide](../architecture/ARCH
 
 The default format/catalog changes fit the repository's documented `0.x` minor
 version policy. Release compatibility stays 1; `home.stateVersion` is unchanged.
-The dependency lock is unchanged during preparation.
+The original local candidate kept its dependency lock unchanged during
+preparation. Integration with current `main` retains that branch's subsequent
+dependency and workflow updates; the integrated source requires fresh validation.
 
 Finite's guarded `ujust update` integration and negotiated first-login/seed
 writers are prepared in a separate workspace. They are not installed by this
@@ -51,8 +53,10 @@ CI gate at the eventual reviewed main/tag commit.
 ## Publication and adoption order
 
 1. Review the candidate, release notes and validation evidence.
-2. Approve shipping, then merge the preparation through the protected branch
-   workflow and wait for CI at the selected immutable commit.
+2. Approve shipping, then merge the preparation through a pull request and wait
+   for CI at the selected immutable commit. This repository currently has no
+   enforced main protection; the release operator must check the CI gate before
+   merging and tagging.
 3. Tag that reviewed commit as `v0.3.0`. The release workflow checks ancestry,
    runs validation and prepares a draft with source/checksum assets.
 4. Review the workflow-created assets, then publish the approved draft. The
