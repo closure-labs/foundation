@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Organize shared Home Manager settings into private browser, desktop, Homebrew, shell and legacy application modules while retaining the base aspect, application selection, providers and ordered startup behavior.
+
 - Raise the default staged Home Manager build memory limit to 5 GiB after the full schema-3 workstation exceeded the prior 3 GiB limit. Preserve explicit budgets and existing CPU/job/core/swap limits; report killed builds with journal and budget guidance without retrying or activating a candidate.
 
 ## [0.3.0] - 2026-10-21
