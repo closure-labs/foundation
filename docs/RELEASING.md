@@ -59,8 +59,9 @@ review and passing CI.
    on the resulting `main` commit. Record any manual host validation in the PR.
    A build does not activate a profile or validate physical Dell hardware.
 
-The current candidate is `0.3.0`; see its
-[release review](releases/RELEASE-0.3.0.md). Assert that `foundation.json.version`
+Release `0.3.0` is published; see its
+[release review](releases/RELEASE-0.3.0.md) and
+[publication manifest](releases/0.3.0-publication.json). For each release, assert that `foundation.json.version`
 matches `VERSION` as well as checking the tag/changelog. Confirm the changelog
 date if publication occurs after the prepared date.
 

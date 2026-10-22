@@ -54,14 +54,17 @@ Foundation commands read the selected version from `flake.lock` even when an NH
 update leaves the cached `foundation.json` at an older version.
 
 `finite-home-update --check` reports published releases. `finite-home-update`
-stages a new release, builds with a 3 GiB memory limit, provisions required shared
+stages a new release, builds with a 5 GiB memory limit, provisions required shared
 Homebrew tools, backs up the configuration and activates the generation. Finite
 also includes this step in explicit `ujust update` runs. Background checks only
 notify. Root execution is rejected.
 
 Set an explicit build budget when a larger profile needs it, for example
-`FOUNDATION_BUILD_MEMORY_MAX=5G finite-home-update`. This keeps the one-job,
-one-core and 512 MiB swap limits; the default remains 3 GiB.
+`FOUNDATION_BUILD_MEMORY_MAX=6G finite-home-update`. This keeps the one-job,
+one-core and 512 MiB swap limits; the default is 5 GiB. The same budget applies
+to `finite-home-apply`, initialization and migration builds. A killed build
+reports the budget used and suggests checking the user journal before retrying;
+it does not activate the candidate or automatically increase the limit.
 
 Personal inputs and modules remain local. Release metadata and `flake.lock` pin
 the exact source and dependency closure. Unsupported compatibility versions or

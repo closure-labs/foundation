@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Raise the default staged Home Manager build memory limit to 5 GiB after the full schema-3 workstation exceeded the prior 3 GiB limit. Preserve explicit budgets and existing CPU/job/core/swap limits; report killed builds with journal and budget guidance without retrying or activating a candidate.
+
 ## [0.3.0] - 2026-10-21
 
 - Generate new schema-3 profiles in JSON or YAML with six Professional roles and four lightweight Personal roles: Family, Media, Creative and Gaming. Optional capabilities select larger applications without enabling an entire role.
