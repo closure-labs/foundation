@@ -11,6 +11,8 @@ import os
 import re
 import signal
 import shutil
+import selectors
+import time
 import subprocess
 import sys
 import tempfile
@@ -32,6 +34,99 @@ def run(command, **kwargs):
 
 def capture(command):
     return run(command, stdout=subprocess.PIPE).stdout.strip()
+
+
+
+def download_retryable(output):
+    """416 is transient only after this command interrupted the same URL."""
+    output = re.sub(r"\x1b\[[0-9;]*m", "", output)
+    terminal = (r"HTTP (?:error |response:? )?4(?!(?:08|16|29)\b)[0-9]{2}\b|"
+                r"hash mismatch|NAR hash mismatch|signature.*(?:invalid|failed)|does not match expected hash|"
+                r"error:[^\n]*\b(?:signature|hash|authentication)\b|"
+                r"(?:not signed|no signatures|untrusted public key)|"
+                r"unauthorized|forbidden|permission denied|"
+                r"syntax error|undefined variable|attribute .* missing|infinite recursion|assertion .* failed|"
+                r"evaluation (?:aborted|failed)|cannot evaluate|Reason: builder failed|"
+                r"builder (?:for .*? failed|failed) with exit code")
+    if re.search(terminal, output, re.I):
+        return False
+    interrupted = re.compile(r"unable to download '([^'\n]+)': [^\n]*"
+                             r"(?:partial file|receiving data|sending data)[^\n]*"
+                             r"retrying from offset [1-9][0-9]*", re.I)
+    ranges = list(re.finditer(r"unable to download '([^'\n]+)': HTTP error 416\b", output, re.I))
+    if re.search(r"HTTP (?:error |response:? )?416\b", output, re.I):
+        return bool(ranges) and all(any(previous[1] == failure[1]
+            for previous in interrupted.finditer(output[:failure.start()])) for failure in ranges)
+    return bool(re.search(r"HTTP (?:error |response:? )?(?:408|429|500|502|503|504)\b|"
+                          r"(?:could not|couldn't) resolve (?:host|hostname)|"
+                          r"(?:connection|network) (?:reset|timed out|is unreachable)|"
+                          r"Transferred a partial file|Failure when receiving data|"
+                          r"Temporary failure in name resolution|TLS connect error", output, re.I))
+
+
+def build_attempt(command, timeout):
+    """Stream diagnostics and bound the whole process group, including nested retries."""
+    captured = {"stdout": bytearray(), "stderr": bytearray()}
+    with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True) as process:
+        with selectors.DefaultSelector() as ready:
+            ready.register(process.stdout, selectors.EVENT_READ, "stdout")
+            ready.register(process.stderr, selectors.EVENT_READ, "stderr")
+            deadline = time.monotonic() + timeout
+            try:
+                while ready.get_map():
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    for key, _ in ready.select(min(remaining, 1)):
+                        chunk = os.read(key.fileobj.fileno(), 65536)
+                        if not chunk:
+                            ready.unregister(key.fileobj)
+                            continue
+                        name = key.data
+                        captured[name].extend(chunk)
+                        if name == "stderr":
+                            sys.stderr.write(chunk.decode("utf-8", errors="replace"))
+                            sys.stderr.flush()
+                            # Lack of retained proof makes an old 416 terminal.
+                            del captured[name][:-8 * 1024 * 1024]
+                        elif len(captured[name]) > 65536:
+                            raise ValueError("Oversized realization output")
+                status = process.wait(timeout=max(0.001, deadline - time.monotonic()))
+            except BaseException:
+                # systemd-run --scope and its Nix descendants share this new
+                # process group. Never leave inner download retries running.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+                raise
+    return subprocess.CompletedProcess(command, status,
+        captured["stdout"].decode("utf-8", errors="replace"),
+        captured["stderr"].decode("utf-8", errors="replace"))
+
+
+def capture_build(command, *, clock=None, sleep=None, execute=None):
+    """Retry realization only; configuration generation and activation run once."""
+    clock, sleep, execute = clock or time.monotonic, sleep or time.sleep, execute or build_attempt
+    deadline = clock() + 900
+    for attempt in range(1, 4):
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(command, 900)
+        result = execute(command, remaining)
+        if clock() > deadline:
+            raise subprocess.TimeoutExpired(command, 900)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        if result.returncode < 0 or attempt == 3 or not download_retryable(result.stderr):
+            raise subprocess.CalledProcessError(result.returncode, command, result.stdout, result.stderr)
+        delay = 2 * attempt
+        if clock() + delay >= deadline:
+            raise subprocess.TimeoutExpired(command, 900)
+        print(f"Foundation: transient realization download failure; retry {attempt + 1}/3 in {delay}s", file=sys.stderr)
+        sleep(delay)
+    raise AssertionError("Unreachable realization retry state")
 
 
 def read_json(path):
@@ -498,7 +593,7 @@ def build(stage):
     command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
     try:
-        paths = capture(command).splitlines()
+        paths = capture_build(command).splitlines()
     except subprocess.CalledProcessError as error:
         if error.returncode != -signal.SIGKILL:
             raise
@@ -579,7 +674,7 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
         if previous is not None:
             try:
                 run([str(previous / "activate")])
-            except (OSError, subprocess.CalledProcessError) as error:
+            except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 print(f"Previous-generation activation also failed: {error}", file=sys.stderr)
         raise
     finite = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "finite"
@@ -1002,7 +1097,7 @@ def main():
         else:
             status(root, args.json, args.notify, args.review)
         return 0
-    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         print(f"Foundation: {error}", file=sys.stderr)
         return 2
 

@@ -365,7 +365,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_default_build_budget_supports_full_schema_three_profiles(self):
-        with patch.dict(os.environ), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+        with patch.dict(os.environ), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", return_value=str(self.activation)) as capture:
             os.environ.pop("FOUNDATION_BUILD_MEMORY_MAX", None)
             self.assertEqual(home.build(self.root), self.activation)
         command = capture.call_args.args[0]
@@ -377,7 +377,7 @@ class ConsumerTests(unittest.TestCase):
 
     def test_explicit_build_budget_retains_job_core_and_swap_limits(self):
         for budget in ("6G", "4096M"):
-            with self.subTest(budget=budget), patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX=budget), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", return_value=str(self.activation)) as capture:
+            with self.subTest(budget=budget), patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX=budget), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", return_value=str(self.activation)) as capture:
                 self.assertEqual(home.build(self.root), self.activation)
             command = capture.call_args.args[0]
             self.assertIn("MemoryMax=" + budget, command)
@@ -388,7 +388,7 @@ class ConsumerTests(unittest.TestCase):
 
     def test_killed_build_reports_used_budget_without_retrying(self):
         failure = subprocess.CalledProcessError(-signal.SIGKILL, ["nix", "build"])
-        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="4096M"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture:
+        with patch.dict(os.environ, FOUNDATION_BUILD_MEMORY_MAX="4096M"), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", side_effect=failure) as capture:
             with self.assertRaisesRegex(ValueError, "SIGKILL.*MemoryMax=4096M") as raised:
                 home.build(self.root)
         self.assertIs(raised.exception.__cause__, failure)
@@ -399,7 +399,7 @@ class ConsumerTests(unittest.TestCase):
     def test_other_build_failures_keep_their_original_error(self):
         for code in (1, 137, -signal.SIGTERM, -signal.SIGINT):
             failure = subprocess.CalledProcessError(code, ["nix", "build"])
-            with self.subTest(code=code), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture:
+            with self.subTest(code=code), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", side_effect=failure) as capture:
                 with self.assertRaises(subprocess.CalledProcessError) as raised:
                     home.build(self.root)
                 self.assertIs(raised.exception, failure)
@@ -412,7 +412,7 @@ class ConsumerTests(unittest.TestCase):
             stage = Path(command[-1].removeprefix("path:"))
             home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate))
         failure = subprocess.CalledProcessError(-signal.SIGKILL, ["nix", "build"])
-        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture", side_effect=failure) as capture, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", side_effect=failure) as capture, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "SIGKILL"):
                 home.update(self.root)
             capture.assert_called_once()

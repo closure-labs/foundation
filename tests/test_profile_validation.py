@@ -144,13 +144,13 @@ class StagedValidationTests(unittest.TestCase):
         def capture(command):
             self.assertEqual(home.read_json(self.stage / "profile.json"), normalized)
             return str(activation)
-        with patch.object(home, "validate_staged_profile", return_value=normalized), patch.object(home, "capture", side_effect=capture):
+        with patch.object(home, "validate_staged_profile", return_value=normalized), patch.object(home, "capture_build", side_effect=capture):
             self.assertEqual(home.build(self.stage), activation)
 
     def test_build_preserves_bytes_when_profile_is_already_normalized(self):
         self.stage.joinpath("profile.json").write_text(json.dumps(self.value, separators=(",", ":")))
         before = self.stage.joinpath("profile.json").read_bytes()
-        with patch.object(home, "validate_staged_profile", return_value=self.value), patch.object(home, "capture", side_effect=ValueError("stop after validation")):
+        with patch.object(home, "validate_staged_profile", return_value=self.value), patch.object(home, "capture_build", side_effect=ValueError("stop after validation")):
             with self.assertRaisesRegex(ValueError, "stop after validation"):
                 home.build(self.stage)
         self.assertEqual(self.stage.joinpath("profile.json").read_bytes(), before)
@@ -162,7 +162,7 @@ class StagedValidationTests(unittest.TestCase):
         self.stage.joinpath("profile.json").unlink()
         self.stage.joinpath("profile.json").symlink_to(linked)
         normalized = {**self.value, "roles": ["developer", "it"], "packages": ["jj", "uv"]}
-        with patch.object(home, "validate_staged_profile", return_value=normalized), patch.object(home, "capture", side_effect=ValueError("build failed")):
+        with patch.object(home, "validate_staged_profile", return_value=normalized), patch.object(home, "capture_build", side_effect=ValueError("build failed")):
             with self.assertRaisesRegex(ValueError, "build failed"):
                 home.build(self.stage)
         self.assertEqual(linked.read_bytes(), before)
