@@ -10,6 +10,9 @@ HTTP 416 is retried only when the same command previously logged an interrupted
 transfer and a positive resume offset for that exact URL. A bare 416, different
 URL, authorization, hash/signature, evaluation, builder or signal failure stays
 terminal. Recovery never removes personal configuration or shared caches. The
+only retryable process status is Nix's ordinary failure exit 1; wrapper exits
+such as 137, usage failures and negative signal statuses remain terminal even
+when the same log contains a transient transfer diagnostic. The
 latest build memory policy and out-of-memory diagnostics remain enforced.
 
 Run the Python regressions with:

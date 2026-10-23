@@ -6,6 +6,11 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-23
+
+- Keep wrapper, signal and usage exits terminal even when a transient download diagnostic precedes them. Retry only Nix's ordinary failure exit 1 with verified transport diagnostics, within the existing attempt and deadline limits.
+- Include the interrupted-download recovery, realization memory budget and private module refactor prepared for 0.3.1. That tagged preparation remains unpublished because release review found the wrapper-exit regression before publication.
+
 ## [0.3.1] - 2026-10-23
 
 - Retry interrupted Home Manager realization downloads within one 15-minute deadline, with at most three attempts and two/four-second backoff. Retry HTTP 416 only after interrupted-resume evidence for the same URL. Keep authorization, integrity, evaluation and build failures terminal; preserve existing configuration and retry neither initialization nor activation.
@@ -80,7 +85,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/closure-labs/foundation/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/closure-labs/foundation/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/closure-labs/foundation/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/closure-labs/foundation/compare/v0.2.1...v0.2.2
