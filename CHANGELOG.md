@@ -6,6 +6,10 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-23
+
+- Retry interrupted Home Manager realization downloads within one 15-minute deadline, with at most three attempts and two/four-second backoff. Retry HTTP 416 only after interrupted-resume evidence for the same URL. Keep authorization, integrity, evaluation and build failures terminal; preserve existing configuration and retry neither initialization nor activation.
+
 - Organize shared Home Manager settings into private browser, desktop, Homebrew, shell and legacy application modules while retaining the base aspect, application selection, providers and ordered startup behavior.
 
 - Raise the default staged Home Manager build memory limit to 5 GiB after the full schema-3 workstation exceeded the prior 3 GiB limit. Preserve explicit budgets and existing CPU/job/core/swap limits; report killed builds with journal and budget guidance without retrying or activating a candidate.
@@ -76,7 +80,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/closure-labs/foundation/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/closure-labs/foundation/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/closure-labs/foundation/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/closure-labs/foundation/compare/v0.2.0...v0.2.1

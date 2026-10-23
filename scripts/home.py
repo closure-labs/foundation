@@ -54,14 +54,29 @@ def download_retryable(output):
                              r"(?:partial file|receiving data|sending data)[^\n]*"
                              r"retrying from offset [1-9][0-9]*", re.I)
     ranges = list(re.finditer(r"unable to download '([^'\n]+)': HTTP error 416\b", output, re.I))
+    transient = (r"HTTP (?:error |response:? )?(?:408|429|500|502|503|504)\b|"
+                 r"(?:could not|couldn't) resolve (?:host|hostname)|"
+                 r"(?:connection|network) (?:reset|timed out|is unreachable)|"
+                 r"Transferred a partial file|Failure when receiving data|"
+                 r"Temporary failure in name resolution|TLS connect error")
+    # A transient transfer elsewhere in the log must not hide an evaluation,
+    # local-store or unrelated build error. Permit only transfer diagnostics and
+    # Nix's known substitute/dependency cascade; unknown root errors fail closed.
+    for error in re.finditer(r"^[ \t]*error: ([^\n]*(?:\n[ \t]+(?![ \t]*error:)[^\n]*)*)", output, re.M | re.I):
+        message = error[1]
+        if re.match(r"unable to download\b", message, re.I):
+            if re.search(transient, message, re.I) or re.search(r"HTTP error 416\b", message, re.I):
+                continue
+        elif (re.fullmatch(r"path '[^'\n]+' is required, but there is no substituter that can build it", message)
+              or re.fullmatch(r"some substitutes for the outputs of derivation '[^'\n]+' failed \(usually happens due to networking issues\); try '--fallback' to build derivation from source", message)
+              or (re.match(r"Cannot build '[^'\n]+\.drv'\.\n", message)
+                  and re.search(r"^\s+Reason: [1-9][0-9]* dependenc(?:y|ies) failed\.$", message, re.M))):
+            continue
+        return False
     if re.search(r"HTTP (?:error |response:? )?416\b", output, re.I):
         return bool(ranges) and all(any(previous[1] == failure[1]
             for previous in interrupted.finditer(output[:failure.start()])) for failure in ranges)
-    return bool(re.search(r"HTTP (?:error |response:? )?(?:408|429|500|502|503|504)\b|"
-                          r"(?:could not|couldn't) resolve (?:host|hostname)|"
-                          r"(?:connection|network) (?:reset|timed out|is unreachable)|"
-                          r"Transferred a partial file|Failure when receiving data|"
-                          r"Temporary failure in name resolution|TLS connect error", output, re.I))
+    return bool(re.search(transient, output, re.I))
 
 
 def build_attempt(command, timeout):
