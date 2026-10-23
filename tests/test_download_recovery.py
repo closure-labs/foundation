@@ -75,6 +75,22 @@ class Recovery(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError): self.realize()
         self.assertEqual(self.delays, [])
 
+    def test_wrapper_and_usage_exits_are_terminal_even_with_transient_diagnostics(self):
+        for status in (-9, -15, 2, 126, 127, 128, 130, 137, 143, 255):
+            self.setUp()
+            self.results = [(status, INTERRUPTED + RANGE)]
+            with self.subTest(status=status), self.assertRaises(subprocess.CalledProcessError): self.realize()
+            self.assertEqual(len(self.calls), 1)
+            self.assertEqual(self.delays, [])
+
+    def test_kill_diagnostics_are_terminal_even_if_wrapper_uses_exit_one(self):
+        for diagnostic in ('Killed', 'SIGKILL', 'terminated by signal 9', 'Out of memory', 'oom-killed'):
+            self.setUp()
+            self.results = [(1, INTERRUPTED + RANGE + diagnostic)]
+            with self.subTest(diagnostic=diagnostic), self.assertRaises(subprocess.CalledProcessError): self.realize()
+            self.assertEqual(len(self.calls), 1)
+            self.assertEqual(self.delays, [])
+
     def test_resume_proof_must_precede_the_same_url_failure(self):
         self.assertFalse(home.download_retryable(RANGE + INTERRUPTED))
         self.assertFalse(home.download_retryable(INTERRUPTED + RANGE + RANGE.replace(URL, URL + '-unverified')))

@@ -1,6 +1,9 @@
 # Foundation 0.3.1 release preparation
 
-Status: preparation for review; no tag or release has been created. This patch
+Status: tagged preparation remains unpublished. Release review reproduced a
+terminal exit 137 being retried when a transient download diagnostic preceded
+it. Preserve the shared `v0.3.1` tag; the corrected 0.3.2 preparation supersedes
+these bytes. No consumer should adopt this unpublished preparation. This patch
 release includes the merged download recovery from
 [PR 11](https://github.com/closure-labs/foundation/pull/11), the 5 GiB default
 realization budget from PR 9 and the private module refactor from PR 10.

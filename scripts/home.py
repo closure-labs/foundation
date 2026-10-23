@@ -45,6 +45,7 @@ def download_retryable(output):
                 r"error:[^\n]*\b(?:signature|hash|authentication)\b|"
                 r"(?:not signed|no signatures|untrusted public key)|"
                 r"unauthorized|forbidden|permission denied|"
+                r"\b(?:SIGKILL|SIGTERM|SIGINT|Killed|Out of memory|oom-kill(?:ed)?|terminated by signal)\b|"
                 r"syntax error|undefined variable|attribute .* missing|infinite recursion|assertion .* failed|"
                 r"evaluation (?:aborted|failed)|cannot evaluate|Reason: builder failed|"
                 r"builder (?:for .*? failed|failed) with exit code")
@@ -134,7 +135,7 @@ def capture_build(command, *, clock=None, sleep=None, execute=None):
             raise subprocess.TimeoutExpired(command, 900)
         if result.returncode == 0:
             return result.stdout.strip()
-        if result.returncode < 0 or attempt == 3 or not download_retryable(result.stderr):
+        if result.returncode != 1 or attempt == 3 or not download_retryable(result.stderr):
             raise subprocess.CalledProcessError(result.returncode, command, result.stdout, result.stderr)
         delay = 2 * attempt
         if clock() + delay >= deadline:
