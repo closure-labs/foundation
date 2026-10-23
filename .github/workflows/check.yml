@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    # Feature changes are validated by pull_request; main validates the merge.
+    # Tag preparation still calls this workflow for the exact release source.
+    branches: [main]
   pull_request:
   merge_group:
   workflow_dispatch:

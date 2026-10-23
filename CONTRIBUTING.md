@@ -34,6 +34,12 @@ bash tests/nix-check.sh
 Use `bash tests/nix-check.sh --no-build` to evaluate the same profiles without
 building packages. CI and release validation always perform the full build.
 
+Pull requests run the complete CI workflow. Push CI runs on `main` to validate
+the merged source; feature-branch pushes rely on their PR run instead of starting
+an overlapping build. Merge-group and manual runs remain available. Release tag
+preparation calls the complete CI workflow with the exact tagged commit before
+creating a draft release.
+
 These checks build configurations without activating Home Manager. Changes to
 activation behavior should also be tested deliberately on a suitable host.
 Record commands and results in the pull request, including any checks that
