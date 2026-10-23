@@ -79,6 +79,17 @@ class Recovery(unittest.TestCase):
         self.assertFalse(home.download_retryable(RANGE + INTERRUPTED))
         self.assertFalse(home.download_retryable(INTERRUPTED + RANGE + RANGE.replace(URL, URL + '-unverified')))
 
+    def test_transient_diagnostics_never_hide_other_root_errors(self):
+        for error in ("error: expected a set but found a string", "       error: expected a set but found a string", "error: disk full",
+                      "error: unable to download 'https://other': SSL certificate problem",
+                      "error: Cannot build '/nix/store/other.drv'.\n       Reason: builder failed with exit code 1."):
+            with self.subTest(error=error):
+                self.assertFalse(home.download_retryable(INTERRUPTED + RANGE + error))
+        cascade = ("error: path '/nix/store/package' is required, but there is no substituter that can build it\n"
+                   "error: some substitutes for the outputs of derivation '/nix/store/package.drv' failed (usually happens due to networking issues); try '--fallback' to build derivation from source\n"
+                   "error: Cannot build '/nix/store/home.drv'.\n       Reason: 1 dependency failed.\n       Output paths:\n         /nix/store/home\n")
+        self.assertTrue(home.download_retryable(INTERRUPTED + RANGE + cascade))
+
     def test_actual_subprocess_streams_errors_and_deadline_kills_its_group(self):
         result = home.build_attempt([sys.executable, '-c', "import sys; print('path'); print('diagnostic', file=sys.stderr); sys.exit(1)"], 5)
         self.assertEqual(result.stdout, 'path\n')

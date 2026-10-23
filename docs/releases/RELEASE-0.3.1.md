@@ -5,6 +5,8 @@ release includes the merged download recovery from
 [PR 11](https://github.com/closure-labs/foundation/pull/11), the 5 GiB default
 realization budget from PR 9 and the private module refactor from PR 10.
 Dependency pins, profile schemas and release compatibility remain unchanged.
+This preparation also makes unknown root errors terminal when a transient
+download diagnostic appears elsewhere in the same realization log.
 
 The [download recovery](../download-recovery.md) affects only realization.
 Configuration generation, provisioning and activation are never retried.
