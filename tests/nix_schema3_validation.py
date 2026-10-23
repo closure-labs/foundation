@@ -28,6 +28,7 @@ def main():
         if result.returncode:
             raise RuntimeError(f"Schema-3 {name}: {result.stderr}")
         actual = json.loads(result.stdout)
+        assert actual["homeManagerCliInstalled"] is True, (name, "Home Manager CLI missing from installed packages")
         assert actual["gpu"] is False and actual["nixgl"] is True and actual["vulkan"] is False
         assert actual["firefoxWrapped"] is True
         assert actual["firefoxRecipePreserved"] is True
