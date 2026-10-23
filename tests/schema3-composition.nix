@@ -48,6 +48,7 @@
 in {
   drv = home.activationPackage.drvPath;
   inherit packages;
+  homeManagerCliInstalled = builtins.elem c.programs.home-manager.package.outPath installed;
   gpu = c.targets.genericLinux.gpu.enable;
   nixgl = c.targets.genericLinux.nixGL.packages != null;
   vulkan = c.targets.genericLinux.nixGL.vulkan.enable;

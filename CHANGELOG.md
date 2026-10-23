@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Install the Home Manager CLI alongside NH in the shared base configuration so new Finite homes can run `home-manager switch`.
+
 ## [0.3.2] - 2026-10-23
 
 - Keep wrapper, signal and usage exits terminal even when a transient download diagnostic precedes them. Retry only Nix's ordinary failure exit 1 with verified transport diagnostics, within the existing attempt and deadline limits.

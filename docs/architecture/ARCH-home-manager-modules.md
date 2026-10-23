@@ -10,7 +10,7 @@ Home Manager settings independently of role and host selection.
 | `browser.nix` | Weekly Firefox package, schema-dependent nixGL wrapper and existing Dell/camera policy |
 | `desktop.nix` | Generic Linux/nixGL backend, fontconfig, XDG search paths, Flatpak service policy and activation service timeout |
 | `homebrew.nix` | Shared CLI provider helper, Brew policy/Brewfile and pre-write-boundary activation check |
-| `shell.nix` | Shared Fzf, Git, NH and Zsh enablement |
+| `shell.nix` | Shared Fzf, Git, Home Manager CLI, NH and Zsh enablement |
 | `legacy-applications.nix` | Explicit schema-2 Nix and Flatpak application declarations |
 
 Schema-3 application membership remains in the pure profile resolver and
