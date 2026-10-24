@@ -32,13 +32,18 @@ bash tests/nix-check.sh
 ```
 
 Use `bash tests/nix-check.sh --no-build` to evaluate the same profiles without
-building packages. CI and release validation always perform the full build.
+building packages. Local runs default to the complete matrix. Evaluation batches
+contain at most two profiles; `--batch-size 1` evaluates them individually.
 
-Pull requests run the complete CI workflow. Push CI runs on `main` to validate
-the merged source; feature-branch pushes rely on their PR run instead of starting
-an overlapping build. Merge-group and manual runs remain available. Release tag
-preparation calls the complete CI workflow with the exact tagged commit before
-creating a draft release.
+All pull requests run fixtures, workflow lint and metadata checks. With a
+verified green base commit, documentation changes skip the Nix job and known
+isolated changes select affected profile cases. Shared code, flake wiring,
+dependencies, tests, CI changes and unknown paths run the full suite. Push CI
+runs on `main`; feature-branch pushes rely on their PR run. Merge-group, manual
+and release runs always validate the full matrix, including all declared build
+checks. The required **CI gate** validates the plan and every expected result.
+See [CI selection and derivation reuse](docs/CI.md) for the selection rules,
+fallbacks and local commands.
 
 These checks build configurations without activating Home Manager. Changes to
 activation behavior should also be tested deliberately on a suitable host.
