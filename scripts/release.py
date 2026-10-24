@@ -3,6 +3,7 @@
 
 import argparse
 from datetime import date
+import json
 from pathlib import Path
 import re
 
@@ -16,6 +17,10 @@ def release_metadata(root: Path, tag: str | None = None) -> tuple[str, str]:
         raise ValueError("VERSION must contain MAJOR.MINOR.PATCH without leading zeroes")
     if tag is not None and tag != f"v{version}":
         raise ValueError(f"Tag must match VERSION: expected v{version}, got {tag}")
+
+    metadata = json.loads((root / "foundation.json").read_text())
+    if not isinstance(metadata, dict) or metadata.get("schema") != 1 or metadata.get("version") != version:
+        raise ValueError("foundation.json must use schema 1 and its version must match VERSION")
 
     changelog = (root / "CHANGELOG.md").read_text()
     headings = list(re.finditer(r"^## \[([^\]]+)\](.*)$", changelog, re.MULTILINE))

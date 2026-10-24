@@ -1,9 +1,9 @@
 # Releasing Foundation
 
 `VERSION` contains the version without a `v` prefix. Git tags use `vMAJOR.MINOR.PATCH`.
-The release workflow validates the tag against `VERSION` and `CHANGELOG.md`,
-checks that it belongs to `main`, runs CI at that exact commit, and prepares a
-draft release with a source archive and SHA-256 checksums. A maintainer reviews
+The release workflow validates the tag against `VERSION`, `foundation.json`
+and `CHANGELOG.md`, checks that it belongs to `main`, runs CI at that exact
+commit, and prepares a draft release with a source archive and SHA-256 checksums. A maintainer reviews
 and publishes the draft separately.
 
 Foundation is intended to be Finite's default Home Manager flake, with standalone
@@ -42,8 +42,9 @@ review and passing CI.
 
 ## Prepare a version
 
-1. Choose the version and update `VERSION`. Move the corresponding `Unreleased`
-   entries into a dated `## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md`, leaving
+1. Choose the version and update `VERSION` and `foundation.json.version` together.
+   Move the corresponding `Unreleased` entries into a dated
+   `## [X.Y.Z] - YYYY-MM-DD` section in `CHANGELOG.md`, leaving
    an empty `Unreleased` section and updating its comparison link.
 2. Review dependencies, provenance and third-party notices. Keep `flake.lock`
    committed and check the README's setup and activation instructions.
@@ -59,11 +60,13 @@ review and passing CI.
    on the resulting `main` commit. Record any manual host validation in the PR.
    A build does not activate a profile or validate physical Dell hardware.
 
-Release `0.3.0` is published; see its
-[release review](releases/RELEASE-0.3.0.md) and
-[publication manifest](releases/0.3.0-publication.json). For each release, assert that `foundation.json.version`
-matches `VERSION` as well as checking the tag/changelog. Confirm the changelog
-date if publication occurs after the prepared date.
+Release `0.3.2` is published. The [0.3.3 preparation](releases/RELEASE-0.3.3.md)
+records the next candidate's scope and validation. The release validator requires
+`foundation.json` schema 1 and a version matching `VERSION`, in addition to the
+tag/changelog checks. Confirm the changelog date if publication occurs after the
+prepared date. The historical [0.3.0 release review](releases/RELEASE-0.3.0.md)
+and [publication manifest](releases/0.3.0-publication.json) retain that release's
+evidence.
 
 ## Tag and review the draft
 
@@ -74,8 +77,8 @@ jj git fetch --remote origin
 jj log -r 'main@origin'
 jj git export
 release_commit=$(jj log -r 'main@origin' --no-graph -T commit_id)
-git tag -a v0.3.0 "$release_commit" -m "Foundation v0.3.0"
-git push origin refs/tags/v0.3.0
+git tag -a v0.3.3 "$release_commit" -m "Foundation v0.3.3"
+git push origin refs/tags/v0.3.3
 ```
 
 Confirm `release_commit` is the reviewed, green `main` commit. This checkout uses
@@ -85,7 +88,7 @@ but `jj git push` pushes bookmarks; the explicit Git tag push is used here.
 Do not move a released tag.
 
 The tag push starts the release workflow. To retry, run the **Prepare release** workflow
-manually with the existing tag, such as `v0.3.0`. Confirm the run checked the
+manually with the existing tag, such as `v0.3.3`. Confirm the run checked the
 expected commit, all required checks passed, release notes match the changelog,
 and the source archive and checksum assets are attached. Download the assets
 and verify them using `sha256sum -c` from the same directory.

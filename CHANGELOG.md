@@ -6,7 +6,10 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-23
+
 - Install the Home Manager CLI alongside NH in the shared base configuration so new Finite homes can run `home-manager switch`.
+- Reject release preparation when `foundation.json` is missing, invalid or disagrees with `VERSION`, catching metadata errors before publication and stable-channel advancement.
 
 ## [0.3.2] - 2026-10-23
 
@@ -87,7 +90,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/closure-labs/foundation/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/closure-labs/foundation/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/closure-labs/foundation/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/closure-labs/foundation/compare/v0.2.2...v0.3.0

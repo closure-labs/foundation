@@ -82,6 +82,10 @@ Backups remain next to the configuration as `home-manager.previous.*`.
 and applies those profile changes using the same transaction. `nh home build`
 and `nh home switch` remain available for direct use.
 
+The standalone Home Manager CLI is installed alongside NH. Run
+`home-manager switch --flake ~/.config/home-manager` to activate your personal
+flake directly.
+
 Staged builds validate and order selections using the locked Foundation
 revision's `lib.normalizeProfile` API. Older releases use their own catalog with
 a schema-2 compatibility validator. Account and running-image checks still run
