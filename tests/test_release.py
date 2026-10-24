@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -15,6 +16,7 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         (self.root / "VERSION").write_text("0.1.0\n")
+        (self.root / "foundation.json").write_text(json.dumps({"schema": 1, "compatibility": 1, "version": "0.1.0"}))
         self.changelog = """# Changelog
 
 ## [Unreleased]
@@ -55,6 +57,28 @@ class ReleaseMetadataTests(unittest.TestCase):
             (self.root / "VERSION").write_text(version)
             with self.subTest(version=version), self.assertRaises(ValueError):
                 release.release_metadata(self.root)
+
+    def test_rejects_mismatched_foundation_version(self):
+        (self.root / "foundation.json").write_text(json.dumps({"schema": 1, "version": "0.0.1"}))
+        with self.assertRaisesRegex(ValueError, "version must match VERSION"):
+            release.release_metadata(self.root, "v0.1.0")
+
+    def test_rejects_invalid_foundation_metadata(self):
+        for metadata in ({"schema": 2, "version": "0.1.0"}, {"schema": 1}, [], None):
+            with self.subTest(metadata=metadata):
+                (self.root / "foundation.json").write_text(json.dumps(metadata))
+                with self.assertRaisesRegex(ValueError, "foundation.json"):
+                    release.release_metadata(self.root)
+
+    def test_rejects_missing_foundation_metadata(self):
+        (self.root / "foundation.json").unlink()
+        with self.assertRaises(FileNotFoundError):
+            release.release_metadata(self.root)
+
+    def test_rejects_malformed_foundation_metadata(self):
+        (self.root / "foundation.json").write_text("{")
+        with self.assertRaises(json.JSONDecodeError):
+            release.release_metadata(self.root)
 
     def test_rejects_missing_duplicate_undated_and_empty_sections(self):
         variants = (
