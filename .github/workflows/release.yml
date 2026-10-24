@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  checks: read
 
 concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
@@ -48,6 +49,7 @@ jobs:
     uses: ./.github/workflows/check.yml
     with:
       ref: ${{ needs.metadata.outputs.sha }}
+      full: true
 
   draft:
     name: Create draft release

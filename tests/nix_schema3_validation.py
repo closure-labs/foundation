@@ -1,12 +1,10 @@
-"""Evaluate actual schema-3 composition sequentially; never activate a home."""
-import json
-import subprocess
+"""Evaluate actual schema-3 composition in bounded batches; never activate."""
 
-from test_home import ROOT, home
+from nix_matrix import arguments, evaluate
 from test_profile_validation import profile
 
 
-def main():
+def cases():
     base = {**profile(), "schema": 3, "roles": [], "packages": []}
     cases = {
         "minimal": {},
@@ -20,14 +18,13 @@ def main():
                 "capabilities": ["team-chat", "file-sync", "notes", "chromium", "camera-controls", "web-apps", "desktop-comforts", "pdf-tools", "painting", "video-editing", "modeling", "recording", "jellyfin", "audio-player", "steam", "heroic", "lutris"],
                 "packages": ["hack-font", "herdr", "jj", "opencode", "uv"]},
     }
-    for name, changes in cases.items():
-        value = {**base, **changes}
-        expression = f'import {ROOT}/tests/schema3-composition.nix {{ foundation = builtins.getFlake '
-        expression += home.nix_value("path:" + str(ROOT)) + '; profile = builtins.fromJSON ' + home.nix_value(json.dumps(value)) + '; }'
-        result = subprocess.run(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression], text=True, capture_output=True)
-        if result.returncode:
-            raise RuntimeError(f"Schema-3 {name}: {result.stderr}")
-        actual = json.loads(result.stdout)
+    return {name: {**base, **changes} for name, changes in cases.items()}
+
+
+def main():
+    profiles = cases()
+    args = arguments(profiles)
+    for name, value, actual in evaluate("schema3-composition.nix", profiles, args.selected, args.batch_size):
         assert actual["homeManagerCliInstalled"] is True, (name, "Home Manager CLI missing from installed packages")
         assert actual["gpu"] is False and actual["nixgl"] is True and actual["vulkan"] is False
         assert actual["firefoxWrapped"] is True

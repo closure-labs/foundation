@@ -1,12 +1,12 @@
-"""Evaluate current host compositions sequentially; no activation or cross-version matrix."""
+"""Evaluate current host compositions in bounded batches; never activate."""
 import json
-import subprocess
 
-from test_home import ROOT, home
+from test_home import ROOT
 from test_profile_validation import profile
+from nix_matrix import arguments, evaluate
 
 
-def main():
+def cases():
     base = {key: value for key, value in profile().items() if key != "hardware"}
     base.update(schema=3, roles=[], packages=[])
     dell = {"formFactor": "laptop", "cpu": "intel", "gpus": ["intel-integrated"], "model": "dell-xps-9350", "camera": True}
@@ -21,14 +21,14 @@ def main():
         "dell-camera-disabled": {**dell, "camera": False},
         "workstation": None,
     }
-    for name, host in cases.items():
-        value = {**base, "host": host} if host is not None else json.loads((ROOT / "examples/workstations/dale-xps-9350.json").read_text())
-        expression = f'import {ROOT}/tests/host-composition.nix {{ foundation = builtins.getFlake '
-        expression += home.nix_value("path:" + str(ROOT)) + '; profile = ' + home.nix_value(value) + '; }'
-        result = subprocess.run(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression], text=True, capture_output=True)
-        if result.returncode:
-            raise RuntimeError(f"Host {name}: {result.stderr}")
-        actual = json.loads(result.stdout)
+    return {name: {**base, "host": host} if host is not None else
+            json.loads((ROOT / "examples/workstations/dale-xps-9350.json").read_text()) for name, host in cases.items()}
+
+
+def main():
+    profiles = cases()
+    args = arguments(profiles)
+    for name, value, actual in evaluate("host-composition.nix", profiles, args.selected, args.batch_size):
         declared = actual["host"]
         laptop = declared["formFactor"] == "laptop"
         is_dell = declared["model"] == "dell-xps-9350"
