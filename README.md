@@ -17,7 +17,7 @@ Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation works as a stand
 Use a regular desktop account with Nix flakes enabled, Homebrew at `/home/linuxbrew/.linuxbrew`, and a graphical session. If you already have a Foundation configuration at `~/.config/home-manager`, open its selector:
 
 ```sh
-finite-configure
+foundation home configure
 ```
 
 For a new home configuration, generate a profile, check the build, then activate it:
@@ -37,12 +37,25 @@ Choose `bluefin-dx` if that is your installed foundation. Initialization creates
 
 Follow [Getting started](docs/GETTING-STARTED.md) for prerequisites, hardware choices and checkout-based setup.
 
+## Run the Foundation command
+
+After activation, use `foundation home <action>`. `foundation home check` builds without activating; `foundation home apply` builds and activates.
+
+From a reviewed source checkout, the native flake app exposes the same interface:
+
+```sh
+nix run path:. -- home --help
+nix run path:.#foundation -- home check
+```
+
+Use `foundation home --help` to list actions. Native apps such as `#home-update` and `#home-profile` also remain available. See [Migration](docs/MIGRATION.md#adopt-the-foundation-command-interface) when updating older command integrations.
+
 ## Make it yours
 
 ```sh
-finite-home-apply --roles developer,creative --capabilities recording --preview
-finite-home-apply --roles developer,creative --capabilities recording --check
-finite-home-apply --roles developer,creative --capabilities recording
+foundation home apply --roles developer,creative --capabilities recording --preview
+foundation home check --roles developer,creative --capabilities recording
+foundation home apply --roles developer,creative --capabilities recording
 ```
 
 These commands replace the named selections; omitted selections stay unchanged. Use [Configuration](docs/CONFIGURATION.md) for personal Nix settings and [Profiles and hardware](docs/PROFILES.md) for available choices. For older configurations, start with [Migration](docs/MIGRATION.md).
@@ -50,8 +63,8 @@ These commands replace the named selections; omitted selections stay unchanged. 
 ## Keep it current
 
 ```sh
-finite-home-update --check
-finite-home-update
+foundation home update --check
+foundation home update
 ```
 
 The first command reports available published releases. The second builds and activates an update while preserving personal configuration. See [Activation, updates and recovery](docs/ACTIVATION.md) for build limits, backups and direct Home Manager commands.
@@ -60,4 +73,4 @@ The first command reports available published releases. The second builds and ac
 
 [All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. The installed `finite-*` commands retain their names for compatibility; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).
+Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. Use `foundation home <action>` to manage your configuration; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).

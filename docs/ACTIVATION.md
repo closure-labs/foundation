@@ -7,8 +7,8 @@ Run these commands as your desktop user. Foundation's staged commands build a ca
 After editing your personal files:
 
 ```sh
-finite-home-apply --check
-finite-home-apply
+foundation home check
+foundation home apply
 ```
 
 The check builds without installing. Apply provisions shared Homebrew tools, backs up the configuration and activates the built generation. Preview role or capability changes with `--preview`; see [Configuration](CONFIGURATION.md).
@@ -16,8 +16,8 @@ The check builds without installing. Apply provisions shared Homebrew tools, bac
 ## Update Foundation
 
 ```sh
-finite-home-update --check
-finite-home-update
+foundation home update --check
+foundation home update
 ```
 
 The first command reports available published releases. The second stages, builds and activates an update while preserving personal modules and additional inputs. Consumer flakes normally track `github:closure-labs/foundation/latest-release`; `flake.lock` records the exact selected revision.
@@ -41,7 +41,7 @@ These use the direct build/activation path. Foundation's staged commands additio
 ## Recover from a failure
 
 - **Build failure:** the candidate is not activated. Read the error, correct the configuration or retry after a network outage, then run `--check` again.
-- **Memory limit:** staged builds default to 5 GiB, one job, one core and 512 MiB swap. If your host has capacity, retry explicitly with `FOUNDATION_BUILD_MEMORY_MAX=6G finite-home-apply --check`. A killed build does not automatically increase its budget.
+- **Memory limit:** staged builds default to 5 GiB, one job, one core and 512 MiB swap. If your host has capacity, retry explicitly with `FOUNDATION_BUILD_MEMORY_MAX=6G foundation home check`. A killed build does not automatically increase its budget.
 - **Interrupted download:** realization retries eligible transport failures up to three attempts within one 15-minute deadline. Authorization, integrity, evaluation, builder and signal failures are terminal; activation is never retried by this downloader.
 - **Activation failure:** Foundation restores configuration entries and attempts to reactivate the previous generation. Inspect the error and retained `home-manager.previous.*` backups next to your configuration before another attempt.
 

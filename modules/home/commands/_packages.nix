@@ -22,16 +22,46 @@
       inherit (pkgs) lib;
       version = pkgs.lib.removeSuffix "\n" (builtins.readFile ../../../VERSION);
     }));
-in {
+in rec {
   profileCatalog = homeCatalog;
   homeProfile = import ../../../lib/profile.nix {
     inherit pkgs;
     source = helperSource;
   };
-  homeInit = command "finite-home-init" "init";
-  homeBootstrap = command "finite-home-bootstrap" "init";
-  homeApply = command "finite-home-apply" "apply";
-  homeUpdate = command "finite-home-update" "update";
-  homeMigrate = command "finite-home-migrate" "migrate";
-  appStatus = command "finite-app-status" "status";
+  homeInit = command "foundation-home-init" "init";
+  homeBootstrap = command "foundation-home-bootstrap" "init";
+  homeApply = command "foundation-home-apply" "apply";
+  homeUpdate = command "foundation-home-update" "update";
+  homeMigrate = command "foundation-home-migrate" "migrate";
+  configure = pkgs.writeShellApplication {
+    name = "foundation-configure";
+    runtimeInputs = with pkgs; [coreutils jq zenity homeApply];
+    text = builtins.readFile ./_assets/foundation-configure;
+  };
+  foundation = pkgs.writeShellApplication {
+    name = "foundation";
+    text = ''
+      usage() {
+        echo 'Usage: foundation home <check|apply|update|init|profile|configure|migrate|status> [arguments]'
+      }
+      case "''${1:-}" in
+        -h|--help) usage; exit 0 ;;
+        home) shift ;;
+        *) usage >&2; exit 2 ;;
+      esac
+      case "''${1:-}" in
+        -h|--help) usage; exit 0 ;;
+        check) shift; exec ${homeApply}/bin/foundation-home-apply --check "$@" ;;
+        apply) shift; exec ${homeApply}/bin/foundation-home-apply "$@" ;;
+        update) shift; exec ${homeUpdate}/bin/foundation-home-update "$@" ;;
+        init) shift; exec ${homeInit}/bin/foundation-home-init "$@" ;;
+        profile) shift; exec ${homeProfile}/bin/foundation-home-profile "$@" ;;
+        configure) shift; exec ${configure}/bin/foundation-configure "$@" ;;
+        migrate) shift; exec ${homeMigrate}/bin/foundation-home-migrate "$@" ;;
+        status) shift; exec ${appStatus}/bin/foundation-app-status "$@" ;;
+        *) usage >&2; exit 2 ;;
+      esac
+    '';
+  };
+  appStatus = command "foundation-app-status" "status";
 }

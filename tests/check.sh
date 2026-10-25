@@ -6,7 +6,7 @@ while IFS= read -r -d '' file; do
   nix-instantiate --parse "$file" >/dev/null
 done < <(find . -path ./.git -prune -o -path ./.jj -prune -o -name '*.nix' -type f -print0)
 
-for file in modules/home/commands/_assets/finite-* modules/hosts/models/dell-xps-9350/_assets/dell-xps-9350-panel-policy tests/*.sh; do
+for file in modules/home/commands/_assets/finite-* modules/home/commands/_assets/foundation-* modules/hosts/models/dell-xps-9350/_assets/dell-xps-9350-panel-policy tests/*.sh; do
   bash -n "$file"
 done
 

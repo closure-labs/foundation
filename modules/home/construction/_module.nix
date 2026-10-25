@@ -28,13 +28,7 @@
     inherit pkgs;
     source = ../../..;
   };
-  homeApply = applications.homeApply;
-  configure = pkgs.writeShellApplication {
-    name = "finite-configure";
-    runtimeInputs = with pkgs; [coreutils jq zenity homeApply];
-    runtimeEnv.FINITE_FOUNDATION_CATALOG = applications.profileCatalog;
-    text = builtins.readFile ../commands/_assets/finite-configure;
-  };
+
 in {
   imports = [./_aspects.nix];
   den.homes.${system}.${vars.identity.username} = {
@@ -80,7 +74,7 @@ in {
           username = lib.mkForce vars.identity.username;
           homeDirectory = lib.mkForce vars.identity.homeDirectory;
           packages =
-            [configure homeApply applications.homeUpdate applications.homeMigrate applications.appStatus]
+            [applications.foundation]
             ++ lib.optionals (vars.schema == 2) selectedPackages;
           sessionVariables = {
             FINITE_FOUNDATION = vars.foundation;
@@ -92,7 +86,6 @@ in {
         imports = foundationModules;
         programs = {
           nh.homeFlake = "path:${vars.identity.homeDirectory}/.config/home-manager";
-          zsh.shellAliases.finite-configure = "${configure}/bin/finite-configure";
         };
       };
     };

@@ -2,13 +2,14 @@ set -euo pipefail
 
 migration=()
 case "${1:-}" in
+  -h|--help) echo 'Usage: foundation home configure [--migrate-profile]'; exit 0 ;;
   '') [[ $# -eq 0 ]] || exit 2 ;;
   --migrate-profile) [[ $# -eq 1 ]] || exit 2; migration+=(--migrate-profile) ;;
-  *) echo 'usage: finite-configure [--migrate-profile]' >&2; exit 2 ;;
+  *) echo 'usage: foundation home configure [--migrate-profile]' >&2; exit 2 ;;
 esac
 
 # The helper resolves the consumer's locked source; packaged catalogs can be stale.
-context=$(finite-home-apply --editor-context "${migration[@]}")
+context=$(foundation-home-apply --editor-context "${migration[@]}")
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 if ! jq -e '
@@ -68,16 +69,16 @@ if [[ "$schema" == 3 ]]; then
 fi
 mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$role_rows")
 roles=$(zenity --list --checklist \
-  --title='Configure Finite' --text='Select roles for this Home Manager configuration.' \
+  --title='Configure Foundation' --text='Select roles for this Home Manager configuration.' \
   --column='Use' --column='Classification' --column='Role' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
 mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$package_rows")
 packages=$(zenity --list --checklist \
-  --title='Configure Finite packages' --text='Select optional Nix packages.' \
+  --title='Configure Foundation packages' --text='Select optional Nix packages.' \
   --column='Use' --column='Package' --column='Description' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
 if [[ "$schema" == 2 ]]; then
-  finite-home-apply --roles "$roles" --packages "$packages"
+  foundation-home-apply --roles "$roles" --packages "$packages"
   exit $?
 fi
 mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$capability_rows")
@@ -87,7 +88,7 @@ capabilities=$(zenity --list --checklist \
   --column='Use' --column='Capability' --column='Applications' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
 change=("${migration[@]}" --roles "$roles" --packages "$packages" --capabilities "$capabilities")
-preview=$(finite-home-apply "${change[@]}" --preview)
+preview=$(foundation-home-apply "${change[@]}" --preview)
 if ! jq -e '.schema == 1 and .preview.status == "preview" and .preview.activationAllowed == false and
   (.summary | type == "string") and (.approvalToken | type == "string" and test("^[a-f0-9]{64}$"))' <<<"$preview" >/dev/null; then
   jq -r '.preview.reason // "Unable to preview this profile change."' <<<"$preview" >&2
@@ -96,4 +97,4 @@ fi
 jq -r '.summary' <<<"$preview" >"$work/preview.txt"
 zenity --text-info --title='Review profile changes' --filename="$work/preview.txt" \
   --width=760 --height=560 --ok-label='Build and apply' --cancel-label='Cancel' || exit 0
-finite-home-apply "${change[@]}" --approve-preview "$(jq -r '.approvalToken' <<<"$preview")"
+foundation-home-apply "${change[@]}" --approve-preview "$(jq -r '.approvalToken' <<<"$preview")"

@@ -810,7 +810,7 @@ def update(root, check=False):
         if info is None:
             if local_foundation_source(foundation_source(root)):
                 print(f"Foundation {installed['version']} is pinned to a local checkout ({installed['rev'][:12]}). "
-                      "Advance the foundation input explicitly, then run finite-home-apply. No published-release update applied.")
+                      "Advance the foundation input explicitly, then run foundation home apply. No published-release update applied.")
             else:
                 print(f"Foundation {installed['version']} is current")
             return
@@ -855,7 +855,7 @@ def migrate(root, info, lock, check=False):
         if root.is_symlink() or (root / ".git").exists() or (root / ".jj").exists():
             raise ValueError("Migrate a personal configuration directory, not a Git checkout or symlink; keep the checkout for manual review")
         if (root / "foundation.json").exists():
-            raise ValueError("Already a Foundation consumer; use finite-home-update")
+            raise ValueError("Already a Foundation consumer; use foundation home update")
         manifest = read_json(source_root() / "legacy-managed.json")
         for relative, hashes in manifest["files"].items():
             path = root / relative
@@ -901,7 +901,7 @@ def migrate(root, info, lock, check=False):
 
 def initialize(root, profile_path, check=False):
     if root.exists():
-        raise ValueError("Configuration already exists; use finite-home-migrate or finite-home-apply")
+        raise ValueError("Configuration already exists; use foundation home migrate or foundation home apply")
     metadata = os.environ.get("FINITE_FOUNDATION_METADATA")
     info = read_json(metadata) if metadata else {}
     profile = json.loads(capture(["yq", "-o=json", ".", str(profile_path)]))
@@ -939,7 +939,7 @@ def apply(root, roles=None, packages=None, check=False, capabilities=None, migra
     lock = read_json(root / "flake.lock")
     importing = "foundation" in lock["nodes"][lock["root"]].get("inputs", {})
     if not importing and not (root / "foundation.json").exists():
-        raise ValueError("Legacy configuration: run finite-home-migrate first")
+        raise ValueError("Legacy configuration: run foundation home migrate first")
     with locked(root):
         original = tree_digest(root)
         raw_hash = profile_hash(root)
@@ -981,16 +981,16 @@ def status(root, machine=False, notify=False, review=False):
     lock = read_json(root / "flake.lock")
     if "foundation" not in lock["nodes"][lock["root"]].get("inputs", {}):
         result = {"migration_required": True, "update_available": False}
-        print(json.dumps(result) if machine else "Legacy Home Manager configuration: run finite-home-migrate to adopt Foundation")
+        print(json.dumps(result) if machine else "Legacy Home Manager configuration: run foundation home migrate to adopt Foundation")
         return
     installed, candidate, _ = available(root)
     result = {"migration_required": False, "installed_version": installed["version"], "installed_rev": installed["rev"],
               "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None}
-    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']}\nRun ujust update or finite-home-update to build and apply it." if candidate else "No newer published Foundation release is available.")
+    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']}\nRun ujust update or foundation home update to build and apply it." if candidate else "No newer published Foundation release is available.")
     if local_foundation_source(foundation_source(root)):
         result.update(source="local-git", update_policy="manual-pin")
         text = (f"Installed Foundation: {installed['version']} ({installed['rev'][:12]})\n"
-                "Pinned local checkout. Advance the foundation input explicitly, then run finite-home-apply. "
+                "Pinned local checkout. Advance the foundation input explicitly, then run foundation home apply. "
                 "Published releases were not checked.")
     print(json.dumps(result) if machine else text)
     if notify and candidate:

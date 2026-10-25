@@ -17,7 +17,7 @@ Keep account identity consistent with your login and leave `home.stateVersion` u
 Open the selector:
 
 ```sh
-finite-configure
+foundation home configure
 ```
 
 Review the choices and preview, then choose **Build and apply**. Cancelling leaves the configuration unchanged. Schema 3 supports both Professional and Personal roles, plus additional capabilities.
@@ -25,9 +25,9 @@ Review the choices and preview, then choose **Build and apply**. Cancelling leav
 For the command line:
 
 ```sh
-finite-home-apply --roles developer,creative --packages jj --capabilities recording --preview
-finite-home-apply --roles developer,creative --packages jj --capabilities recording --check
-finite-home-apply --roles developer,creative --packages jj --capabilities recording
+foundation home apply --roles developer,creative --packages jj --capabilities recording --preview
+foundation home check --roles developer,creative --packages jj --capabilities recording
+foundation home apply --roles developer,creative --packages jj --capabilities recording
 ```
 
 `--preview` shows the proposed change. `--check` builds without activation. The final command applies the selections. Supplied lists replace those selections; omitted options preserve them. `--capabilities ''` clears explicit capabilities, but applications supplied by a role remain enabled.
