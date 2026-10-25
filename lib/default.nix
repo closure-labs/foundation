@@ -24,7 +24,7 @@
   }:
     import ./applications.nix {
       inherit pkgs;
-      source = ../.;
+      source = ..;
       sourceInfo = releaseInfo;
     };
 in {
@@ -55,7 +55,7 @@ in {
         foundationProfile = normalized;
         foundationModules = modules;
       };
-      modules = [inputs.den.flakeModule ../modules/finite.nix];
+      modules = [inputs.den.flakeModule ../modules/_legacy/finite.nix];
     };
   in
     evaluated.config.flake.homeConfigurations.${normalized.identity.username};
@@ -66,6 +66,6 @@ in {
     metadata = pkgs.writeText "foundation-source.json" (builtins.toJSON releaseInfo);
   in
     pkgs.runCommand "foundation-consumer-${version}" {nativeBuildInputs = [pkgs.python3];} ''
-      python3 ${../scripts/home.py} template --source ${../.} --metadata ${metadata} --output "$out"
+      python3 ${../scripts/home.py} template --source ${..} --metadata ${metadata} --output "$out"
     '';
 }

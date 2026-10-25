@@ -48,9 +48,9 @@ def make_plan(paths, full=False, baseline=None):
             schema3.add("all")
             if parts[3] == "developer":
                 schema3.add("dell-mixed")
-        elif path.startswith("modules/aspects/capabilities/devops/"):
+        elif path.startswith("modules/_legacy/aspects/capabilities/devops/"):
             schema3.update(["capabilities", "dell-mixed", "all"])
-        elif path.startswith("modules/aspects/hardware/dell-xps-9350-intel/"):
+        elif path.startswith("modules/_legacy/aspects/hardware/dell-xps-9350-intel/"):
             schema3.update(["minimal", "dell-mixed"])
             hosts.update(["generic", "dell-camera-disabled"])
         elif path in RECIPE_CASES:

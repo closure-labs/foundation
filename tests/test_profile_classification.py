@@ -152,7 +152,7 @@ else:
 
     def run_selector(self, *arguments, **overrides):
         before = self.profile.read_bytes()
-        result = subprocess.run(["bash", str(ROOT / "modules/finite-configure"), *arguments],
+        result = subprocess.run(["bash", str(ROOT / "modules/_legacy/finite-configure"), *arguments],
                                 env={**self.env, **overrides}, text=True, capture_output=True)
         self.assertEqual(self.profile.read_bytes(), before)
         events = [json.loads(x) for x in self.log.read_text().splitlines()] if self.log.exists() else []

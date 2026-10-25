@@ -6,7 +6,7 @@
   foundationProfileSchema ? 2,
   ...
 }: let
-  ghostty = import ../../../../lib/ghostty-package.nix {inherit pkgs;};
+  ghostty = import ../../../../../lib/ghostty-package.nix {inherit pkgs;};
 in {
   home.packages = lib.optionals (foundationProfileSchema == 2) (with pkgs; [
     ghostty

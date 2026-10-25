@@ -25,7 +25,7 @@ let
       then values
       else [];
     lib.mkAfter = values: values;
-    finiteHomeAssets.devops = ../modules/aspects/capabilities/devops/rootfs/usr/share/finite;
+    finiteHomeAssets.devops = ../modules/_legacy/aspects/capabilities/devops/rootfs/usr/share/finite;
     inputs = {
       determinate.homeManagerModules.default = {};
       nix-flatpak.homeManagerModules.nix-flatpak = {};
@@ -33,7 +33,7 @@ let
       devenv.packages.fixture.devenv = applications.devenv.declaration;
     };
   };
-  features = (import ../modules/aspects.nix {den.aspects = {inherit features;};}).den.aspects.features;
+  features = (import ../modules/_legacy/aspects.nix {den.aspects = {inherit features;};}).den.aspects.features;
   moduleDeclarations = module:
     builtins.filter (value: value != "infrastructure:brew-provider-policy") (module.home.packages or [])
     ++ map (id: "flatpak:flathub:${id}") (module.services.flatpak.packages or [])

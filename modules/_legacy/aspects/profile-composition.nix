@@ -19,7 +19,7 @@
     app = plan.applications.${name};
     package =
       if (app.recipe or null) == "finite-ghostty"
-      then import ../../lib/ghostty-package.nix {inherit pkgs;}
+      then import ../../../lib/ghostty-package.nix {inherit pkgs;}
       else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.input};
     wrapped = config.lib.nixGL.wrap package;
   in
@@ -27,7 +27,7 @@
     then
       if app.removeIconBuildFiles or false
       then
-        import ../../lib/without-icon-build-files.nix {
+        import ../../../lib/without-icon-build-files.nix {
           inherit pkgs;
           package = wrapped;
         }

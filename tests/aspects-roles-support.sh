@@ -2,7 +2,7 @@
 set -euo pipefail
 
 aspect_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-module="modules/aspects/roles/support/home.nix"
+module="modules/_legacy/aspects/roles/support/home.nix"
 
 grep -qF 'espanso = pkgs.espanso-wayland' "${module}"
 if grep -qF 'espanso = pkgs.espanso;' "${module}"; then

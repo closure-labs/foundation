@@ -26,14 +26,14 @@ class CiPlanTests(unittest.TestCase):
 
     def test_unknown_shared_and_dependency_changes_are_full(self):
         for path in ("flake.nix", "flake.lock", "VERSION", "foundation.json", "lib/catalog.nix",
-                     "modules/aspects/base/shell.nix", "modules/aspects/host.nix", "tests/nix_matrix.py",
+                     "modules/_legacy/aspects/base/shell.nix", "modules/_legacy/aspects/host.nix", "tests/nix_matrix.py",
                      "scripts/ci_plan.py", ".github/workflows/check.yml", "new-runtime.nix", "docs/code.nix",
-                     "modules/aspects/roles/new-role/home.nix", "modules/aspects/roles/developer.nix"):
+                     "modules/_legacy/aspects/roles/new-role/home.nix", "modules/_legacy/aspects/roles/developer.nix"):
             with self.subTest(path=path):
                 self.assertEqual(ci.make_plan([path])["mode"], "full")
 
     def test_isolated_role_covers_legacy_and_workstation(self):
-        plan = ci.make_plan(["modules/aspects/roles/support/home.nix"])
+        plan = ci.make_plan(["modules/_legacy/aspects/roles/support/home.nix"])
         self.assertEqual(plan["mode"], "focused")
         self.assertEqual(plan["schema3"], ["all"])
         self.assertEqual(plan["hosts"], ["workstation"])
@@ -41,8 +41,8 @@ class CiPlanTests(unittest.TestCase):
         self.assertFalse(plan["contracts"])
 
     def test_union_of_affected_paths_includes_assets(self):
-        plan = ci.make_plan(["README.md", "modules/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/aliases.zsh",
-                             "modules/aspects/hardware/dell-xps-9350-intel/dell-ipu7.conf"])
+        plan = ci.make_plan(["README.md", "modules/_legacy/aspects/capabilities/devops/rootfs/usr/share/finite/zsh/aliases.zsh",
+                             "modules/_legacy/aspects/hardware/dell-xps-9350-intel/dell-ipu7.conf"])
         self.assertEqual(plan["schema3"], ["minimal", "capabilities", "dell-mixed", "all"])
         self.assertEqual(plan["hosts"], ["generic", "dell-camera-disabled", "workstation"])
         self.assertEqual(plan["mode"], "focused")

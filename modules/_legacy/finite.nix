@@ -2,22 +2,22 @@
   den,
   inputs,
   lib,
-  foundationProfile ? builtins.fromJSON (builtins.readFile ../profile.json),
-  foundationModules ? [../customize.nix ./local.nix],
+  foundationProfile ? builtins.fromJSON (builtins.readFile ../../profile.json),
+  foundationModules ? [../../customize.nix ../local.nix],
   ...
 }: let
   # The version-controlled profile selects the account, roles and packages.
-  vars = (import ../lib/normalize-profile.nix {inherit catalog;}) foundationProfile;
+  vars = (import ../../lib/normalize-profile.nix {inherit catalog;}) foundationProfile;
   system =
     if vars.schema == 3
     then vars.host.system
     else "x86_64-linux";
-  catalog = import ../lib/catalog.nix;
+  catalog = import ../../lib/catalog.nix;
   canonicalRoles = vars.roles;
   canonicalPackages = vars.packages;
   composition =
     if vars.schema == 3
-    then (import ../lib/profile-drafts {inherit catalog;}).resolve vars
+    then (import ../../lib/profile-drafts {inherit catalog;}).resolve vars
     else null;
   pkgs = import inputs.nixpkgs {
     inherit system;
@@ -31,9 +31,9 @@
     inherit (pkgs) opencode uv;
   };
   selectedPackages = map (name: optionalPackages.${name}) canonicalPackages;
-  applications = import ../lib/applications.nix {
+  applications = import ../../lib/applications.nix {
     inherit pkgs;
-    source = ../.;
+    source = ../..;
   };
   homeApply = applications.homeApply;
   configure = pkgs.writeShellApplication {
