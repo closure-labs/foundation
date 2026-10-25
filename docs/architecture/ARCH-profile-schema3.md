@@ -4,7 +4,7 @@ Status: F1b readers, A2 editing, H1 host composition and W3 default generation
 implemented, 2026-10-21. The public
 normalizer and constructor accept schema 3, backed by the
 [composition resolver](../../lib/profile-drafts/default.nix) and
-[application module](../../modules/aspects/profile-composition.nix). New
+[application module](../../modules/profiles/composition/_home.nix). New
 profiles/templates and the default catalog use schema 3; existing profile
 conversion is explicitly reviewed. Follow
 [the staged plan](../plans/PLAN-profile-refactor.md) for rollout.

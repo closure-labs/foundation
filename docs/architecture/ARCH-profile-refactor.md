@@ -69,7 +69,7 @@ Source boundaries: [domain catalog](../../lib/catalog.nix),
 
 Expose the already generated catalog store file from `lib/applications.nix` as
 `profileCatalog`. Pass its path to `finite-configure` with the packaged
-`FINITE_FOUNDATION_CATALOG` environment variable in `modules/finite.nix`.
+`FINITE_FOUNDATION_CATALOG` environment variable in `modules/home/construction/_module.nix`.
 
 Build role rows from that catalog, ordered by `order`; show the classification
 alongside each role, using the Professional label for all six current rows.

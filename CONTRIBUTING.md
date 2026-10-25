@@ -61,3 +61,5 @@ maintainer setup and release steps.
 
 Contributions are provided under the repository's [Apache-2.0 license](LICENSE).
 Bundled third-party material keeps its own stated license.
+
+Module layout, feature registration, generated inputs and graph updates are documented in [docs/MODULES.md](docs/MODULES.md). Regenerate both artifacts before requesting review.
