@@ -19,6 +19,8 @@ def main():
         # Copy only the pure API so old/new capability cases are independent of
         # package builds, mutable caller catalogs or the test host's account.
         shutil.copytree(ROOT / "lib", source / "lib")
+        shutil.copytree(ROOT / "modules", source / "modules")
+        shutil.copyfile(ROOT / "VERSION", source / "VERSION")
         source.joinpath("flake.nix").write_text('''{
           outputs = _: let
             lib = { inherit (builtins) mapAttrs; genAttrs = names: f: builtins.listToAttrs (map (name: {inherit name; value=f name;}) names); };

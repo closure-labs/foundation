@@ -5,20 +5,9 @@ from test_profile_validation import profile
 
 
 def cases():
-    base = {**profile(), "schema": 3, "roles": [], "packages": []}
-    cases = {
-        "minimal": {},
-        "family": {"roles": ["family"]},
-        "media": {"roles": ["media"]},
-        "creative": {"roles": ["creative"]},
-        "gaming": {"roles": ["gaming"]},
-        "capabilities": {"capabilities": ["devops", "support-tools", "trainer-links", "executive-links", "chromium"], "packages": ["jj"]},
-        "dell-mixed": {"foundation": "bluefin-dx", "hardware": "dell-xps-9350-intel", "roles": ["developer", "creative"]},
-        "all": {"roles": ["developer", "sales", "trainer", "support", "executive", "it", "family", "media", "creative", "gaming"],
-                "capabilities": ["team-chat", "file-sync", "notes", "chromium", "camera-controls", "web-apps", "desktop-comforts", "pdf-tools", "painting", "video-editing", "modeling", "recording", "jellyfin", "audio-player", "steam", "heroic", "lutris"],
-                "packages": ["hack-font", "herdr", "jj", "opencode", "uv"]},
-    }
-    return {name: {**base, **changes} for name, changes in cases.items()}
+    import json
+    from test_home import ROOT
+    return json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())["schema3"]
 
 
 def main():

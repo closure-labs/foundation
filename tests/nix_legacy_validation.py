@@ -6,19 +6,9 @@ from test_home import ROOT
 
 
 def cases():
-    base = json.loads((ROOT / "profile.json").read_text())
-    base.pop("host", None)
-    base.update(hardware="dell-xps-9350-intel",
-                roles=["developer", "sales", "trainer", "support", "executive", "it"],
-                packages=["hack-font", "herdr", "jj", "opencode", "uv"])
-    result = {}
-    for schema in (2, 3):
-        for foundation in ("bluefin", "bluefin-dx"):
-            value = {**base, "schema": schema, "foundation": foundation}
-            if schema == 2:
-                value.pop("capabilities", None)
-            result[f"schema{schema}-{foundation}"] = value
-    return result
+    import json
+    from test_home import ROOT
+    return json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())["legacy"]
 
 
 def main():

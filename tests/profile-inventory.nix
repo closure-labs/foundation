@@ -24,8 +24,9 @@ let
       if condition
       then values
       else [];
+    lib.mkOrder = _: values: values;
     lib.mkAfter = values: values;
-    finiteHomeAssets.devops = ../modules/_legacy/aspects/capabilities/devops/rootfs/usr/share/finite;
+    finiteHomeAssets.devops = ../modules/capabilities/devops/_assets/rootfs/usr/share/finite;
     inputs = {
       determinate.homeManagerModules.default = {};
       nix-flatpak.homeManagerModules.nix-flatpak = {};
@@ -33,7 +34,7 @@ let
       devenv.packages.fixture.devenv = applications.devenv.declaration;
     };
   };
-  features = (import ../modules/_legacy/aspects.nix {den.aspects = {inherit features;};}).den.aspects.features;
+  loader = import ../modules/flake/features/_loader.nix {};
   moduleDeclarations = module:
     builtins.filter (value: value != "infrastructure:brew-provider-policy") (module.home.packages or [])
     ++ map (id: "flatpak:flathub:${id}") (module.services.flatpak.packages or [])
@@ -47,15 +48,14 @@ let
     # declaration is defined directly in its aspect entry point.
     ++ builtins.concatLists (map (entry:
       moduleDeclarations (
-        if builtins.isAttrs entry
-        then entry
-        else import entry args
+        if builtins.isAttrs entry then entry else if builtins.isFunction entry then entry args else import entry args
       )) (module.imports or []));
-  aspectDeclarations = aspect:
-    builtins.concatLists (map (path: moduleDeclarations (import path args)) (aspect.homeManager.imports or []))
-    ++ builtins.concatLists (map aspectDeclarations (aspect.includes or []));
+  aspectDeclarations = id: builtins.concatLists (map (name: let
+    descriptor = loader.features.${name};
+    module = if descriptor ? configuration then descriptor.configuration 2 else {};
+  in moduleDeclarations (if builtins.isFunction module then module args else module)) (loader.closure 2 [id]));
   sorted = values: builtins.sort builtins.lessThan values;
 in {
-  common = sorted (aspectDeclarations features.base);
-  roles = builtins.mapAttrs (_: aspect: sorted (aspectDeclarations aspect)) features.roles;
+  common = sorted (aspectDeclarations "home/base");
+  roles = builtins.listToAttrs (map (name: { inherit name; value = sorted (aspectDeclarations "roles/${name}"); }) catalog.roleNames);
 }

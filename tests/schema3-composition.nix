@@ -26,14 +26,14 @@
     lib.mapAttrs (_: app: let
       raw =
         if (app.recipe or null) == "finite-ghostty"
-        then import ../lib/ghostty-package.nix {pkgs = home.pkgs;}
+        then import ../modules/apps/ghostty/_package.nix {pkgs = home.pkgs;}
         else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.input};
       expected =
         if app.graphical
         then
           if app.removeIconBuildFiles or false
           then
-            import ../lib/without-icon-build-files.nix {
+            import ../modules/providers/graphics/_without-icon-build-files.nix {
               pkgs = home.pkgs;
               package = c.lib.nixGL.wrap raw;
             }

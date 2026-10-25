@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-panel_helper="modules/_legacy/aspects/hardware/dell-xps-9350-intel/dell-xps-9350-panel-policy"
-panel_config="modules/_legacy/aspects/hardware/dell-xps-9350-intel/rootfs/usr/share/finite/dell-xps-9350-panel.conf"
+panel_helper="modules/hosts/models/dell-xps-9350/_assets/dell-xps-9350-panel-policy"
+panel_config="modules/hosts/models/dell-xps-9350/_assets/rootfs/usr/share/finite/dell-xps-9350-panel.conf"
 test_root="$(mktemp -d)"
 trap 'rm -rf -- "${test_root}"' EXIT
 

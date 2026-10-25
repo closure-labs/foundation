@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-status_script="${1:-modules/_legacy/finite-brew-migration-status}"
+status_script="${1:-modules/home/commands/_assets/finite-brew-migration-status}"
 test_root=$(mktemp -d)
 trap 'rm -rf -- "$test_root"' EXIT
 export FINITE_BREW_JQ FINITE_BREW_READLINK
