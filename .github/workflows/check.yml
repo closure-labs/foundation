@@ -43,13 +43,13 @@ jobs:
           ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - uses: DeterminateSystems/determinate-nix-action@e847f25223456b3058e12f7fc9d777b6a6f25060 # v3.23.2
       - name: Plan affected Nix checks
         id: plan
         env:
           CI_FULL: ${{ inputs.full || inputs.ref != '' }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/ci_plan.py plan
-      - uses: DeterminateSystems/determinate-nix-action@e847f25223456b3058e12f7fc9d777b6a6f25060 # v3.23.2
       - name: Run fixtures, workflow lint, and release metadata checks
         run: nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
 
