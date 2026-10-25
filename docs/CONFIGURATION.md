@@ -32,7 +32,7 @@ finite-home-apply --roles developer,creative --packages jj --capabilities record
 
 `--preview` shows the proposed change. `--check` builds without activation. The final command applies the selections. Supplied lists replace those selections; omitted options preserve them. `--capabilities ''` clears explicit capabilities, but applications supplied by a role remain enabled.
 
-See [Profiles and hardware](PROFILES.md) for the available choices and [Activation](ACTIVATION.md#convert-an-existing-profile) for schema-2 conversion.
+See [Profiles and hardware](PROFILES.md) for the available choices and [Migration](MIGRATION.md) for older profiles.
 
 ## Add personal Nix settings
 
@@ -45,12 +45,7 @@ Add settings to an existing module, or replace the empty `modules/local.nix` wit
 }
 ```
 
-Then build and apply:
-
-```sh
-finite-home-apply --check
-finite-home-apply
-```
+Then [build and activate](ACTIVATION.md#build-then-activate) the updated configuration.
 
 Home Manager merges these modules with Foundation's defaults. Review settings that override package providers or desktop launchers. Keep credentials outside Nix source files: fetched sources and generated configuration can enter the Nix store.
 
@@ -73,8 +68,6 @@ Replace the path and commit with real values, then update the lock from your per
 ```sh
 cd ~/.config/home-manager
 nix flake update foundation
-finite-home-apply --check
-finite-home-apply
 ```
 
-The URL and lock must select the same immutable commit. Local Git sources use manual pin maintenance; `finite-home-update` does not replace them with a published release. The checkout and commit must be available when rebuilding elsewhere.
+Then [build and activate](ACTIVATION.md#build-then-activate). The URL and lock must select the same immutable commit. Local Git sources use manual pin maintenance; the published-release updater does not replace them with a published release. The checkout and commit must be available when rebuilding elsewhere.

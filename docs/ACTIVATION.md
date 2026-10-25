@@ -22,48 +22,9 @@ finite-home-update
 
 The first command reports available published releases. The second stages, builds and activates an update while preserving personal modules and additional inputs. Consumer flakes normally track `github:closure-labs/foundation/latest-release`; `flake.lock` records the exact selected revision.
 
-To move a fixed-commit consumer onto that channel, change its Foundation URL in `flake.nix`, then update the input and apply:
-
-```sh
-cd ~/.config/home-manager
-nix flake update foundation
-finite-home-apply --check
-finite-home-apply
-```
-
 Explicit local Git pins remain manually maintained. See [pinning a checkout](CONFIGURATION.md#pin-a-source-checkout).
 
-## Convert an existing profile
-
-Schema-2 profiles remain supported. To review a conversion to schema 3:
-
-```sh
-finite-configure --migrate-profile
-```
-
-Or preview and build from the CLI:
-
-```sh
-finite-home-apply --migrate-profile --roles developer,creative --capabilities recording --preview
-finite-home-apply --migrate-profile --roles developer,creative --capabilities recording --check
-```
-
-To activate, repeat the same selections with `--approve-preview TOKEN`, replacing `TOKEN` with `approvalToken` from a fresh preview. The token binds the exact source, configuration and selections. Request another preview if any of them change; keep saved previews outside the consumer directory.
-
-Review provider changes before conversion. Unmanaged Flatpaks and their data remain in place; application data is not copied to native packages automatically. Verify exports, account sync and desktop defaults for affected applications before removing an old provider yourself.
-
-## Adopt Foundation in a legacy configuration
-
-This is separate from changing the profile schema:
-
-```sh
-finite-home-migrate --check
-finite-home-migrate
-```
-
-If the helpers are not installed, run `nix run github:closure-labs/foundation/latest-release#home-migrate -- --check` first, then repeat without `--check` to migrate.
-
-Migration adopts Foundation's dependency pins while preserving your profile, personal modules and additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration.
+For older configurations and profile formats, follow [Migration](MIGRATION.md).
 
 ## Use Home Manager directly
 

@@ -4,7 +4,7 @@
 
 Foundation manages your applications, shell and desktop settings with Nix Home Manager. Combine work and personal roles, add the tools you need, and keep your choices in a small configuration you own.
 
-Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation supports Finite and standalone setups. It manages your home environment; the operating system owns drivers, firmware and system services.
+Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation works as a standalone home configuration or as part of Finite. It manages your home environment; the operating system owns drivers, firmware and system services.
 
 ## What you get
 
@@ -14,7 +14,7 @@ Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation supports Finite 
 
 ## Start here
 
-Use a regular desktop account with Nix flakes enabled, Homebrew at `/home/linuxbrew/.linuxbrew`, and a graphical session. If Finite has already created `~/.config/home-manager`, skip initialization and configure it:
+Use a regular desktop account with Nix flakes enabled, Homebrew at `/home/linuxbrew/.linuxbrew`, and a graphical session. If you already have a Foundation configuration at `~/.config/home-manager`, open its selector:
 
 ```sh
 finite-configure
@@ -45,7 +45,7 @@ finite-home-apply --roles developer,creative --capabilities recording --check
 finite-home-apply --roles developer,creative --capabilities recording
 ```
 
-These commands replace the named selections; omitted selections stay unchanged. Use [Configuration](docs/CONFIGURATION.md) for personal Nix settings and [Profiles and hardware](docs/PROFILES.md) for available choices. Existing schema-2 profiles need an [explicit conversion](docs/ACTIVATION.md#convert-an-existing-profile) before using Personal roles or capabilities.
+These commands replace the named selections; omitted selections stay unchanged. Use [Configuration](docs/CONFIGURATION.md) for personal Nix settings and [Profiles and hardware](docs/PROFILES.md) for available choices. For older configurations, start with [Migration](docs/MIGRATION.md).
 
 ## Keep it current
 
@@ -60,4 +60,4 @@ The first command reports available published releases. The second builds and ac
 
 [All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-Foundation is independent of a Finite checkout. Its retained `finite-*` command names reflect its [origin](ORIGIN.md). Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).
+Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. The installed `finite-*` commands retain their names for compatibility; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).

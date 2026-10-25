@@ -2,7 +2,7 @@
 
 Roles provide useful defaults. Capabilities add specific tools. Hardware settings describe the machine independently of either choice.
 
-New profiles use schema 3. Every schema-3 home includes browser, credential and editor essentials plus desktop utilities. Shared applications are installed once even when several selections need them. Existing schema-2 profiles keep their original application sets until [explicitly converted](ACTIVATION.md#convert-an-existing-profile).
+New profiles use schema 3. Every schema-3 home includes browser, credential and editor essentials plus desktop utilities. Shared applications are installed once even when several selections need them. For older profiles, see [Migration](MIGRATION.md).
 
 ## Choose roles
 
@@ -36,12 +36,15 @@ Examples of capabilities you can add without selecting another role:
 
 Optional package IDs are `hack-font`, `herdr`, `jj`, `opencode` and `uv`.
 
-Use `finite-configure` to browse the catalog for your locked Foundation release. Contributors can inspect the complete [capability declarations](../modules/capabilities/) and [application declarations](../modules/apps/). Removing an explicit capability does not remove an application still required by a role.
+Use the [configuration selector](CONFIGURATION.md#change-roles-and-applications) to browse the catalog for your locked Foundation release. Contributors can inspect the complete [capability declarations](../modules/capabilities/) and [application declarations](../modules/apps/). Removing an explicit capability does not remove an application still required by a role.
 
 ## Generate a profile
 
 ```sh
-finite-home-profile --foundation bluefin-dx --roles developer,creative   --packages jj --capabilities recording   --form-factor laptop --cpu intel --gpus intel-integrated --format json
+nix run github:closure-labs/foundation/latest-release#home-profile -- \
+  --foundation bluefin-dx --roles developer,creative \
+  --packages jj --capabilities recording \
+  --form-factor laptop --cpu intel --gpus intel-integrated --format json
 ```
 
 The generator supplies your account identity and prints JSON or YAML; it does not activate changes. `--foundation` is required. Selections must be known and unique; empty role, package and capability lists are valid. Follow [Getting started](GETTING-STARTED.md) to initialize the generated profile.
