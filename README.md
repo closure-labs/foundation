@@ -152,7 +152,7 @@ sources or workstation matchfiles.
 
 The repository root still exports `homeConfigurations` from its own profile and
 personal modules. Set `profile.json` to your account, build before activation,
-and use the checkout's `modules/finite-home-apply` helper to provision shared Brew
+and use the checkout's `modules/home/commands/_assets/finite-home-apply` helper to provision shared Brew
 tools and activate. Standalone maintainers update their Git checkout explicitly;
 release-update commands target importing personal flakes.
 
@@ -218,3 +218,5 @@ GitHub Actions updates.
 Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The bundled Zsh
 assets retain their original MIT license. See [CHANGELOG.md](CHANGELOG.md) for
 release notes and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+Foundation’s internal architecture is described in [Feature-owned modules](docs/MODULES.md) and the [generated dependency diagram](docs/ARCHITECTURE.md).

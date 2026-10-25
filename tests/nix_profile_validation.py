@@ -17,9 +17,12 @@ from test_profile_validation import profile
 
 def target(directory, *, normalizer, candidate=False, descriptor=True):
     directory.mkdir()
-    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "hosts.nix", "profile-capabilities.json"):
-        shutil.copyfile(ROOT / "lib" / name, directory / name)
-    shutil.copytree(ROOT / "lib/profile-drafts", directory / "profile-drafts")
+    shutil.copytree(ROOT / "lib", directory / "lib")
+    shutil.copytree(ROOT / "modules", directory / "modules")
+    shutil.copyfile(ROOT / "VERSION", directory / "VERSION")
+    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "hosts.nix"):
+        (directory / name).write_text("import ./lib/" + name + "\n")
+    shutil.copyfile(ROOT / "lib/profile-capabilities.json", directory / "profile-capabilities.json")
     extension = '''// {
       rolesByName = base.rolesByName // { future = { name = "future"; label = "Future"; order = 5; }; };
       roleNames = ["future"] ++ base.roleNames;
@@ -170,7 +173,7 @@ def main():
 
             selected = base / "old-schema2-source"
             target(selected, normalizer=True)
-            selected.joinpath("normalize-profile.nix").write_text((ROOT / "lib/normalize-profile-v2.nix").read_text())
+            selected.joinpath("normalize-profile.nix").write_text("import ./lib/normalize-profile-v2.nix\n")
             home.write_json(selected / "profile-capabilities.json", {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2], "writeSchema": 2})
             home.write_json(selected / "profile.json", {**profile(), "schema": 3, "capabilities": []})
             home.run(["nix", "flake", "lock", "path:" + str(selected)])

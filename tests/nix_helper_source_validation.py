@@ -21,7 +21,7 @@ def evaluate(source, checks=True):
 def main():
     with tempfile.TemporaryDirectory(prefix="foundation-helper-source-") as temporary:
         source = Path(temporary)
-        for directory in ("lib", "scripts", "modules", "templates", "tests"):
+        for directory in ("lib", "scripts", "modules", "templates", "tests", "docs"):
             shutil.copytree(ROOT / directory, source / directory, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         for name in ("flake.nix", "flake.lock", "VERSION", "foundation.json", "profile.json", "customize.nix",
                      "finite-template.json", "legacy-managed.json", "LICENSE", "NOTICE", "ORIGIN.md", "README.md"):
@@ -32,7 +32,7 @@ def main():
                      "flake.lock", "profile.json", "customize.nix", "modules/local.nix", "legacy-managed.json", "VERSION",
                      "foundation.json", "LICENSE", "NOTICE", "ORIGIN.md"):
             assert (helper / name).is_file(), name
-        for name in ("flake.nix", "README.md", "tests", "templates", "scripts/ci_plan.py", "modules/aspects"):
+        for name in ("flake.nix", "README.md", "tests", "templates", "scripts/ci_plan.py", "modules/ci"):
             assert not (helper / name).exists(), name
         source.joinpath("README.md").write_text("Documentation-only change.\n")
         flake = source / "flake.nix"
@@ -40,11 +40,14 @@ def main():
         source.joinpath("scripts/ci_plan.py").write_text("# CI-only change.\n")
         after = evaluate(source)
         assert after["helper"] == before["helper"]
-        assert after["checks"] == before["checks"], (before["checks"], after["checks"])
+        assert {k:v for k,v in after["checks"].items() if k not in ("check-flake-file", "ci-graph")} == {k:v for k,v in before["checks"].items() if k not in ("check-flake-file", "ci-graph")}, (before["checks"], after["checks"])
         assert before["metadata"]["narHash"] == before["narHash"]
         assert after["metadata"]["narHash"] == after["narHash"]
         assert before["narHash"] != after["narHash"]
         assert before["init"] != after["init"], "Published initializer must retain exact full-source provenance"
+        settings = source / "modules/apps/espanso/_settings.nix"
+        settings.write_text(settings.read_text() + "\n# Unselected home settings.\n")
+        assert evaluate(source, checks=False)["helper"] == after["helper"]
         script = source / "scripts/home.py"
         script.write_text(script.read_text() + "\n# Runtime helper change.\n")
         assert evaluate(source, checks=False)["helper"] != after["helper"]

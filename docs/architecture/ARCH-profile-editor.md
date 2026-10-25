@@ -135,7 +135,7 @@ One implementation writer owns each task in order; specialists review read-only.
 | --- | --- | --- |
 | Pure change contract | `lib/profile-changes.nix`, public export, manifest and retained draft adapter | Source/candidate comparisons preserve fields and correctly show package/provider removals. |
 | Controller transaction | `scripts/home.py` | Negotiated editing, deterministic preview binding, no-write preview and failure recovery tests pass. |
-| Selector | `modules/finite-configure` | Locked catalog, explicit capabilities, cancellation and reviewed single-apply behavior pass. |
+| Selector | `modules/home/commands/_assets/finite-configure` | Locked catalog, explicit capabilities, cancellation and reviewed single-apply behavior pass. |
 | Integration/docs | Editor fixtures, existing test entry points, README/CHANGELOG and plan/task docs | Pinned CI, locked-target contracts, current Nix builds and Finite compatibility checks pass; no host activation. |
 
 See [A2 validation](../qa-reports/QA-profile-editor.md) for measured results and

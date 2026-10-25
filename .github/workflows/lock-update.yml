@@ -39,6 +39,8 @@ jobs:
           add-paths: |
             flake.nix
             flake.lock
+            modules/
+            docs/ARCHITECTURE.md
           branch: automation/flake-lock
           delete-branch: true
           commit-message: 'chore(deps): update Nix flake inputs'

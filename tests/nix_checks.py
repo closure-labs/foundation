@@ -33,15 +33,19 @@ def main():
 
     print(f"Nix validation plan: {plan['mode']}", flush=True)
     if plan["contracts"]:
-        for script in ("nix_profile_validation.py", "nix_editor_validation.py", "nix_helper_source_validation.py"):
+        for script in ("nix_feature_validation.py", "nix_profile_validation.py", "nix_editor_validation.py", "nix_helper_source_validation.py"):
             run([sys.executable, "tests/" + script])
     matrix("nix_schema3_validation.py", plan["schema3"])
     matrix("nix_host_validation.py", plan["hosts"])
-    # Always validate the flake and request every declared build check. Its
-    # derivation identities and the binary cache decide what needs building;
-    # no PR-controlled cache marker is accepted as evidence of success.
-    run(["nix", "flake", "check", "--no-update-lock-file", "--print-build-logs",
-         *(["--no-build"] if args.no_build else []), "path:."])
+    if plan["mode"] == "full":
+        run(["nix", "flake", "check", "--no-update-lock-file", "--print-build-logs",
+             *(["--no-build"] if args.no_build else []), "path:."])
+    elif args.no_build:
+        for check in plan["checks"]:
+            run(["nix", "eval", "--raw", "--no-update-lock-file", f"path:.#checks.x86_64-linux.{check}.drvPath"])
+    elif plan["checks"]:
+        run(["nix", "build", "--no-link", "--no-update-lock-file", "--print-build-logs",
+             *[f"path:.#checks.x86_64-linux.{check}" for check in plan["checks"]]])
     matrix("nix_legacy_validation.py", plan["legacy"])
     print("All planned Nix checks passed", flush=True)
 

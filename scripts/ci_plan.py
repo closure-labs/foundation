@@ -11,65 +11,113 @@ import sys
 import urllib.request
 
 
-SCHEMA3 = ["minimal", "family", "media", "creative", "gaming", "capabilities", "dell-mixed", "all"]
-HOSTS = ["generic", "amd-laptop", "intel-laptop", "intel-desktop-amd-discrete",
-         "amd-desktop-intel-discrete", "amd-integrated-and-discrete", "intel-integrated-and-discrete",
-         "dell-camera-disabled", "workstation"]
-LEGACY = [f"schema{schema}-{foundation}" for schema in (2, 3) for foundation in ("bluefin", "bluefin-dx")]
-ROLES = {"developer", "sales", "trainer", "support", "executive", "it"}
-RECIPE_CASES = {
-    "lib/ghostty-package.nix": ["capabilities", "dell-mixed", "all"],
-    "lib/without-icon-build-files.nix": ["all"],
-}
+ROOT = Path(__file__).resolve().parents[1]
+GRAPH_PATH = "modules/ci/_graph.json"
+CASE_PROFILES = json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())
+SCHEMA3, HOSTS, LEGACY = (list(CASE_PROFILES[group]) for group in ("schema3", "hosts", "legacy"))
+FULL_CHECKS = ["home", "profile-command", "nixgl-wrapper", "desktop-icons", "profile-generation", "check-flake-file", "ci-graph"]
+
+
+def closure(graph, schema, roots):
+    visited = set()
+    def visit(name, trail):
+        if name in trail:
+            raise ValueError("Dependency cycle")
+        if name not in graph["features"]:
+            raise ValueError("Missing dependency")
+        if name in visited:
+            return
+        feature = graph["features"][name]
+        for dependency in feature["dependencies"] + feature["schemaDependencies"].get(str(schema), []):
+            visit(dependency, trail | {name})
+        visited.add(name)
+    for name in roots:
+        visit(name, set())
+    return visited
+
+
+def load_graph(path=None, validate_sources=False):
+    graph = json.loads((Path(path) if path else ROOT / GRAPH_PATH).read_text())
+    if type(graph.get("schema")) is not int or graph["schema"] != 1:
+        raise ValueError("Unsupported dependency graph")
+    if graph["fullChecks"] != FULL_CHECKS or set(graph["checks"]) != set(FULL_CHECKS):
+        raise ValueError("Unsupported check set")
+    owners = set()
+    for name, feature in graph["features"].items():
+        directory = "modules/" + name + "/"
+        if feature["directory"] != directory or not feature["files"]:
+            raise ValueError("Invalid feature ownership")
+        for file in feature["files"]:
+            if not file.startswith(directory) or ".." in PurePosixPath(file).parts or file in owners:
+                raise ValueError("Ambiguous feature ownership")
+            owners.add(file)
+    for schema in (2, 3):
+        closure(graph, schema, graph["features"])
+    for group, profiles in CASE_PROFILES.items():
+        if set(graph["cases"][group]) != set(profiles):
+            raise ValueError("Stale profile cases")
+        for case in graph["cases"][group].values():
+            closure(graph, case["schema"], case["roots"])
+    for check in graph["checks"].values():
+        closure(graph, check["schema"], check["roots"])
+    if validate_sources:
+        generated = subprocess.check_output(
+            ["nix-instantiate", "--store", "dummy://", "--eval", "--strict", "--json", str(ROOT / "modules/ci/_graph.nix")],
+            text=True, stderr=subprocess.PIPE)
+        if graph != json.loads(generated):
+            raise ValueError("Stale dependency graph")
+    return graph
+
+
+def graph_digest(graph):
+    import hashlib
+    return hashlib.sha256(json.dumps(graph, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def documentation(path):
+    if path == "docs/ARCHITECTURE.md":
+        return False
     return (path in {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"}
             or (path.startswith("docs/") and path.endswith((".md", ".txt", ".json")))
             or (path.startswith(".great_cto/") and path.endswith(".md")))
 
 
-def make_plan(paths, full=False, baseline=None):
+def make_plan(paths, full=False, baseline=None, graph=None):
     if paths is not None:
         if (not isinstance(paths, list) or any(not isinstance(p, str) or not p
                 or PurePosixPath(p).is_absolute() or ".." in PurePosixPath(p).parts for p in paths)):
             raise ValueError("Invalid changed paths")
         paths = sorted(set(paths))
-    plan = {"schema": 1, "mode": "full", "paths": paths, "schema3": list(SCHEMA3),
-            "hosts": list(HOSTS), "legacy": list(LEGACY), "contracts": True, "baseline": None}
-    if full or not paths:
+    plan = {"schema": 2, "mode": "full", "paths": paths, "schema3": list(SCHEMA3),
+            "hosts": list(HOSTS), "legacy": list(LEGACY), "contracts": True,
+            "checks": list(FULL_CHECKS), "baseline": None, "graph": None}
+    if full or not paths or not isinstance(baseline, str) or not re.fullmatch(r"[a-f0-9]{40}", baseline):
         return plan
-    schema3, hosts, legacy = set(), set(), set()
-    for path in paths:
-        if documentation(path):
-            continue
-        parts = PurePosixPath(path).parts
-        if (len(parts) >= 5 and parts[:3] == ("modules", "aspects", "roles") and parts[3] in ROLES):
-            schema3.add("all")
-            if parts[3] == "developer":
-                schema3.add("dell-mixed")
-        elif path.startswith("modules/aspects/capabilities/devops/"):
-            schema3.update(["capabilities", "dell-mixed", "all"])
-        elif path.startswith("modules/aspects/hardware/dell-xps-9350-intel/"):
-            schema3.update(["minimal", "dell-mixed"])
-            hosts.update(["generic", "dell-camera-disabled"])
-        elif path in RECIPE_CASES:
-            schema3.update(RECIPE_CASES[path])
-        else:
-            return plan
-        # Exercise legacy module selection on both foundations and the real
-        # schema-3 workstation, including their interactions with shared policy.
-        legacy.update(LEGACY[:2])
-        hosts.add("workstation")
-    plan.update(mode="focused" if schema3 or hosts or legacy else "docs", contracts=False, baseline=baseline,
-                schema3=[name for name in SCHEMA3 if name in schema3],
-                hosts=[name for name in HOSTS if name in hosts],
-                legacy=[name for name in LEGACY if name in legacy])
-    return plan
+    try:
+        graph = graph if graph is not None else load_graph()
+        owners = {file: name for name, feature in graph["features"].items() for file in feature["files"]}
+        affected = set()
+        for path in paths:
+            if path in owners:
+                affected.add(owners[path])
+            elif not documentation(path):
+                return plan
+        selections = {group: [name for name, case in graph["cases"][group].items()
+                       if affected & closure(graph, case["schema"], case["roots"])]
+                      for group in ("schema3", "hosts", "legacy")}
+        checks = [name for name in FULL_CHECKS if affected & closure(
+            graph, graph["checks"][name]["schema"], graph["checks"][name]["roots"])]
+        if affected:
+            checks += [name for name in ("check-flake-file", "ci-graph") if name not in checks]
+        plan.update(mode="focused" if affected else "docs", contracts=False, baseline=baseline,
+                    graph=graph_digest(graph), checks=checks, **selections)
+        return plan
+    except (OSError, ValueError, KeyError, TypeError):
+        return plan
 
 
 def validate_plan(plan):
-    if (not isinstance(plan, dict) or type(plan.get("schema")) is not int or plan.get("schema") != 1
+    if (not isinstance(plan, dict) or type(plan.get("schema")) is not int or plan.get("schema") != 2
             or type(plan.get("contracts")) is not bool or not isinstance(plan.get("mode"), str)
             or plan.get("mode") not in {"docs", "focused", "full"}):
         raise ValueError("Missing or unsupported CI plan")
@@ -121,12 +169,18 @@ def baseline_green(repository, sha, token=None):
 
 
 def with_baseline(plan, sha, repository, token=None):
-    if plan["mode"] == "full":
-        return plan
-    if baseline_green(repository, sha, token):
-        return validate_plan({**plan, "baseline": sha})
-    print("No verified successful base CI gate; running full validation.", file=sys.stderr)
-    return make_plan(plan["paths"], full=True)
+    if not plan.get("paths") or not baseline_green(repository, sha, token):
+        return make_plan(plan.get("paths"), full=True)
+    try:
+        graph = load_graph(validate_sources=True)
+        base_graph = json.loads(subprocess.check_output(
+            ["git", "show", f"{sha}:{GRAPH_PATH}"], cwd=ROOT, text=True, stderr=subprocess.PIPE))
+        if base_graph != graph:
+            raise ValueError("Dependency graph changed since base")
+        return validate_plan(make_plan(plan["paths"], baseline=sha, graph=graph))
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        print("No unchanged validated graph; running full validation.", file=sys.stderr)
+        return make_plan(plan["paths"], full=True)
 
 
 def check_gate(plan, fixtures, nix, *, full=False):
@@ -156,7 +210,8 @@ def main():
         base = (event.get("pull_request", {}).get("base", {}).get("sha")
                 if os.environ.get("GITHUB_EVENT_NAME") == "pull_request" else event.get("before"))
         plan = make_plan(changed_paths(base, os.environ.get("GITHUB_SHA")), full=full)
-        plan = with_baseline(plan, base, os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GH_TOKEN"))
+        if not full:
+            plan = with_baseline(plan, base, os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GH_TOKEN"))
         validate_plan(plan)
         encoded = json.dumps(plan, separators=(",", ":"))
         print(json.dumps(plan, indent=2))

@@ -632,9 +632,9 @@ def previous_generation():
 def provision_brew(stage):
     # Use the policy and installer from the selected Foundation release.
     expression = 'let root = builtins.getFlake ' + json.dumps("path:" + str(stage)) + '''; f = root.inputs.foundation or root; in {
-      bootstrap = builtins.readFile (f.outPath + "/modules/finite-brew-bootstrap");
-      status = builtins.readFile (f.outPath + "/modules/finite-brew-migration-status");
-      policy = builtins.readFile (f.outPath + "/modules/aspects/base/brew-packages.json");
+      bootstrap = builtins.readFile (f.outPath + "/modules/home/commands/_assets/finite-brew-bootstrap");
+      status = builtins.readFile (f.outPath + "/modules/home/commands/_assets/finite-brew-migration-status");
+      policy = builtins.readFile (f.outPath + "/modules/providers/homebrew/_assets/brew-packages.json");
     }'''
     # nix eval --impure only permits the staged local flake reference; its lock is immutable.
     data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))

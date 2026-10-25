@@ -7,22 +7,9 @@ from nix_matrix import arguments, evaluate
 
 
 def cases():
-    base = {key: value for key, value in profile().items() if key != "hardware"}
-    base.update(schema=3, roles=[], packages=[])
-    dell = {"formFactor": "laptop", "cpu": "intel", "gpus": ["intel-integrated"], "model": "dell-xps-9350", "camera": True}
-    cases = {
-        "generic": {},
-        "amd-laptop": {"formFactor": "laptop", "cpu": "amd", "gpus": ["amd-integrated"], "camera": True},
-        "intel-laptop": {"formFactor": "laptop", "cpu": "intel", "gpus": ["intel-integrated"]},
-        "intel-desktop-amd-discrete": {"formFactor": "desktop", "cpu": "intel", "gpus": ["amd-discrete"], "camera": True},
-        "amd-desktop-intel-discrete": {"formFactor": "desktop", "cpu": "amd", "gpus": ["intel-discrete"]},
-        "amd-integrated-and-discrete": {"formFactor": "desktop", "cpu": "amd", "gpus": ["amd-integrated", "amd-discrete"]},
-        "intel-integrated-and-discrete": {"formFactor": "desktop", "cpu": "intel", "gpus": ["intel-integrated", "intel-discrete"]},
-        "dell-camera-disabled": {**dell, "camera": False},
-        "workstation": None,
-    }
-    return {name: {**base, "host": host} if host is not None else
-            json.loads((ROOT / "examples/workstations/dale-xps-9350.json").read_text()) for name, host in cases.items()}
+    import json
+    from test_home import ROOT
+    return json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())["hosts"]
 
 
 def main():

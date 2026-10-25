@@ -1,0 +1,429 @@
+{
+  "schema3": {
+    "minimal": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "family": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [
+        "family"
+      ],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "media": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [
+        "media"
+      ],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "creative": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [
+        "creative"
+      ],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "gaming": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [
+        "gaming"
+      ],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "capabilities": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [],
+      "packages": [
+        "jj"
+      ],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "capabilities": [
+        "devops",
+        "support-tools",
+        "trainer-links",
+        "executive-links",
+        "chromium"
+      ]
+    },
+    "dell-mixed": {
+      "schema": 3,
+      "foundation": "bluefin-dx",
+      "hardware": "dell-xps-9350-intel",
+      "roles": [
+        "developer",
+        "creative"
+      ],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    },
+    "all": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "hardware": "generic-x86_64",
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it",
+        "family",
+        "media",
+        "creative",
+        "gaming"
+      ],
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "opencode",
+        "uv"
+      ],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "capabilities": [
+        "team-chat",
+        "file-sync",
+        "notes",
+        "chromium",
+        "camera-controls",
+        "web-apps",
+        "desktop-comforts",
+        "pdf-tools",
+        "painting",
+        "video-editing",
+        "modeling",
+        "recording",
+        "jellyfin",
+        "audio-player",
+        "steam",
+        "heroic",
+        "lutris"
+      ]
+    }
+  },
+  "hosts": {
+    "generic": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {}
+    },
+    "amd-laptop": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "laptop",
+        "cpu": "amd",
+        "gpus": [
+          "amd-integrated"
+        ],
+        "camera": true
+      }
+    },
+    "intel-laptop": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "laptop",
+        "cpu": "intel",
+        "gpus": [
+          "intel-integrated"
+        ]
+      }
+    },
+    "intel-desktop-amd-discrete": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "desktop",
+        "cpu": "intel",
+        "gpus": [
+          "amd-discrete"
+        ],
+        "camera": true
+      }
+    },
+    "amd-desktop-intel-discrete": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "desktop",
+        "cpu": "amd",
+        "gpus": [
+          "intel-discrete"
+        ]
+      }
+    },
+    "amd-integrated-and-discrete": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "desktop",
+        "cpu": "amd",
+        "gpus": [
+          "amd-integrated",
+          "amd-discrete"
+        ]
+      }
+    },
+    "intel-integrated-and-discrete": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "desktop",
+        "cpu": "intel",
+        "gpus": [
+          "intel-integrated",
+          "intel-discrete"
+        ]
+      }
+    },
+    "dell-camera-disabled": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "roles": [],
+      "packages": [],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      },
+      "host": {
+        "formFactor": "laptop",
+        "cpu": "intel",
+        "gpus": [
+          "intel-integrated"
+        ],
+        "model": "dell-xps-9350",
+        "camera": false
+      }
+    },
+    "workstation": {
+      "schema": 3,
+      "foundation": "bluefin-dx",
+      "host": {
+        "system": "x86_64-linux",
+        "formFactor": "laptop",
+        "cpu": "intel",
+        "gpus": [
+          "intel-integrated"
+        ],
+        "model": "dell-xps-9350",
+        "camera": true,
+        "fingerprint": true
+      },
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "uv"
+      ],
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it"
+      ],
+      "capabilities": [
+        "team-chat",
+        "file-sync",
+        "notes",
+        "playback",
+        "chromium",
+        "web-apps",
+        "desktop-comforts",
+        "pdf-tools"
+      ],
+      "identity": {
+        "username": "dale",
+        "homeDirectory": "/var/home/dale"
+      }
+    }
+  },
+  "legacy": {
+    "schema2-bluefin": {
+      "schema": 2,
+      "foundation": "bluefin",
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "opencode",
+        "uv"
+      ],
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it"
+      ],
+      "identity": {
+        "username": "finite",
+        "homeDirectory": "/var/home/finite"
+      },
+      "hardware": "dell-xps-9350-intel"
+    },
+    "schema2-bluefin-dx": {
+      "schema": 2,
+      "foundation": "bluefin-dx",
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "opencode",
+        "uv"
+      ],
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it"
+      ],
+      "identity": {
+        "username": "finite",
+        "homeDirectory": "/var/home/finite"
+      },
+      "hardware": "dell-xps-9350-intel"
+    },
+    "schema3-bluefin": {
+      "schema": 3,
+      "foundation": "bluefin",
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "opencode",
+        "uv"
+      ],
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it"
+      ],
+      "capabilities": [],
+      "identity": {
+        "username": "finite",
+        "homeDirectory": "/var/home/finite"
+      },
+      "hardware": "dell-xps-9350-intel"
+    },
+    "schema3-bluefin-dx": {
+      "schema": 3,
+      "foundation": "bluefin-dx",
+      "packages": [
+        "hack-font",
+        "herdr",
+        "jj",
+        "opencode",
+        "uv"
+      ],
+      "roles": [
+        "developer",
+        "sales",
+        "trainer",
+        "support",
+        "executive",
+        "it"
+      ],
+      "capabilities": [],
+      "identity": {
+        "username": "finite",
+        "homeDirectory": "/var/home/finite"
+      },
+      "hardware": "dell-xps-9350-intel"
+    }
+  }
+}

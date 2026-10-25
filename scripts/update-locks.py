@@ -11,9 +11,12 @@ expression = 'let f = builtins.getFlake ' + json.dumps("path:" + str(root)) + ';
 rev = subprocess.run(["nix", "eval", "--impure", "--raw", "--no-update-lock-file", "--expr", expression], check=True, text=True, capture_output=True).stdout.strip()
 if not re.fullmatch(r"[a-f0-9]{40}", rev):
     raise ValueError("Den does not advertise a valid tested gen revision")
-path = root / "flake.nix"
+path = root / "modules/flake/framework/default.nix"
 text, count = re.subn(r'gen.url = "github:sini/gen/[a-f0-9]{40}";', f'gen.url = "github:sini/gen/{rev}";', path.read_text())
 if count != 1:
     raise ValueError("Expected one explicit gen input")
 path.write_text(text)
+subprocess.run(["nix", "run", "path:.#write-flake"], cwd=root, check=True)
 subprocess.run(["nix", "flake", "update", "gen"], cwd=root, check=True)
+
+subprocess.run(["nix", "run", "path:.#write-ci-graph"], cwd=root, check=True)

@@ -1,72 +1,20 @@
-# CI selection and derivation reuse
+# CI selection
 
-Every change runs shell/Nix syntax checks, provider/aspect fixtures, Python
-tests, workflow lint and release metadata validation. The fixture job also
-publishes a deterministic Nix test plan and its case counts in the run summary.
+`modules/ci/_graph.json` is a versioned projection of the feature descriptors, explicit profile selections, private asset ownership and build-check profiles. `lib.ciGraph` exports the same value. `write-ci-graph` regenerates the manifest and `docs/ARCHITECTURE.md`; `ci-graph` rejects drift. `check-flake-file` rejects drift in generated `flake.nix`.
 
-| Changes | Nix plan |
-| --- | --- |
-| README, changelog, contributor/security guidance and documentation records | Skip the Nix job |
-| Existing Professional role modules | All-role schema-3 composition, applicable Dell composition, both schema-2 foundations and the workstation host |
-| Devops capability or Ghostty recipe | Capability, Dell/developer and all-role compositions, both schema-2 foundations and workstation |
-| Icon cleanup recipe | All-role composition, both schema-2 foundations and workstation; declared icon build check also runs |
-| Dell model files | Generic and Dell/camera compositions, workstation and both schema-2 foundations |
-| Shared modules, flake wiring, locks, catalogs, scripts, tests, CI or unknown files | Complete suite |
+The planner maps changed files to owners and traverses schema-specific dependencies in reverse by intersecting affected features with each case/check closure. Multiple changes are unioned. Git diff disables rename detection, retaining both old and new paths; deletions and unknown ownership conservatively require full validation. A changed manifest also forces full validation. Descriptor fingerprints make metadata or configuration-function edits invalidate the manifest; owned runtime files can still receive focused plans. The generated architecture diagram is never treated as documentation-only.
 
-Selections are unions across changed paths. Unknown files, new roles, missing
-or shallow comparison commits and empty diffs select the complete suite.
-Renames count as deletion plus addition, so moving runtime code into a docs
-directory cannot suppress its tests. A small edit to `flake.nix` still selects
-full evaluation because it can rewire any output.
+A shorter plan requires all of:
 
-Shortened plans require a successful GitHub Actions **CI gate** on the exact
-comparison base SHA. Missing, failed or unavailable baseline checks cause full
-validation. CI requests only read access to contents and checks. PRs compare
-the tested merge commit against the event's base; main pushes compare against
-the prior commit. Merge groups, manual runs and reusable release validation
-always select the complete suite. Release callers explicitly pass `full: true`;
-any reusable invocation overriding `ref` also forces full validation of that
-checkout, independently of the caller event's changed paths.
+- A completed successful GitHub Actions `CI gate` on the exact base SHA.
+- A supported, structurally valid graph that matches pure source regeneration.
+- The identical graph at that base SHA.
+- Known ownership for every runtime change.
 
-## Build reuse and evaluation
+Without that evidence the planner runs the complete suite. Documentation-only skips have the same baseline and graph requirements. Manual runs, merge groups, release calls, explicit checkout overrides and unknown events always run full validation.
 
-Every focused or full Nix job runs `nix flake check`, requesting all five
-declared build checks. Nix derivation identities and the existing binary cache
-determine which outputs need building. No saved Python-test result or
-PR-controlled success marker substitutes for validation.
+Full runs execute contracts, all 21 profile cases and every flake check. The original checks are `home`, `profile-command`, `nixgl-wrapper`, `desktop-icons` and `profile-generation`; the two generated-file checks are additional requirements. Focused runs evaluate affected cases and request affected build checks plus generated-file checks. Nix derivation identities and native binary caching determine reuse. Matrix batches remain capped at two.
 
-The profile matrices share their pinned Foundation input within batches of at
-most two cases. Each case still evaluates its activation derivation and runs
-the same membership, wrapping, service and host assertions. The four work-role
-profiles use the constructor directly, with the original personal-module
-imports, instead of copying and rewriting the source flake four times.
+The always-running `CI gate` validates the exact plan again and requires successful fixtures and Nix checks. It permits a skipped Nix job only for a valid documentation plan; failures, cancellations, missing outputs, altered selections and a shortened plan on a full-validation event all fail the gate.
 
-Installed helpers bundle only their runtime Python, library, template data,
-lock, metadata and license files. Docs, CI files and flake comments no longer
-change those runtime bundles. Full release source hashes and revision metadata
-remain separate and unchanged in meaning; the published initializer and
-consumer template retain exact complete-source provenance.
-
-## Required gate
-
-`CI gate` always runs, even after a failure or skipped dependency. It rejects
-missing/malformed plans, omitted cases, failed/cancelled fixtures, unexpected
-Nix skips and shortened plans on full-validation events. Only a validated docs
-plan permits a skipped Nix job. The branch ruleset still requires this same
-GitHub Actions check, with no bypasses.
-
-## Local validation
-
-```bash
-nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
-bash tests/nix-check.sh
-bash tests/nix-check.sh --no-build --batch-size 1
-python3 tests/nix_schema3_validation.py --case capabilities --case all
-python3 tests/nix_host_validation.py --case dell-camera-disabled --case workstation
-```
-
-`--ci` is reserved for a validated plan passed from the workflow. Direct local
-runs perform full validation by default. The unit tests cover selection and
-gate failures; the Nix suite also proves unchanged check derivations after
-docs/flake-comment edits, runtime-source invalidation and retained full-source
-provenance. These checks build and evaluate without activating a home.
+Run `bash tests/nix-check.sh --no-build` for evaluation-only validation, or omit `--no-build` to build. CI uses the explicit `CI_PLAN` emitted by the fixture job. See [module conventions](MODULES.md) when adding ownership or dependencies.
