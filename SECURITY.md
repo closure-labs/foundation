@@ -1,8 +1,7 @@
 # Security policy
 
 Security fixes target the latest published release and `main`. Older releases
-do not have a separate maintenance commitment. The initial supported release
-line is `0.1.x` once published.
+do not have a separate maintenance commitment.
 
 Report suspected vulnerabilities privately using
 [GitHub's private vulnerability reporting](https://github.com/closure-labs/foundation/security/advisories/new).

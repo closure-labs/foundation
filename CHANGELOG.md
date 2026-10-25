@@ -6,6 +6,10 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Make Foundation easier to configure with focused setup, profile, activation and recovery guides, a shorter README, and a single documentation index.
+- Keep application and role definitions together so contributors can add features without updating separate catalogs. Existing profiles, application providers and personal configuration files remain compatible.
+- Select affected CI evaluations and build checks from declared feature dependencies, with full validation when the base result or dependency graph cannot be verified. Check generated configuration and architecture files for drift.
+
 ## [0.3.3] - 2026-10-23
 
 - Install the Home Manager CLI alongside NH in the shared base configuration so new Finite homes can run `home-manager switch`.

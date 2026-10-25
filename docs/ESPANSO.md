@@ -1,29 +1,12 @@
-## Manage Git-backed Espanso files without custom flake inputs
+# Personal Espanso files
 
-Keep Espanso files in a separate Git repository and declare their pinned snapshot
-in `~/.config/home-manager/modules/local.nix`. Finite preserves that module during
-scaffold upgrades. This keeps personal sources independent of the template's
-`flake.nix` and `flake.lock`:
+Enable the Support role or `support-tools` capability, then keep personal matches in your own repository. The host must provide the keyboard access Espanso needs; Foundation does not grant it.
 
-```nix
-{...}: let
-  matches = builtins.fetchTree {
-    type = "git";
-    url = "ssh://git@example.com/your/espanso-config.git";
-    ref = "main";
-    rev = "REPLACE_WITH_FULL_COMMIT_HASH";
-    narHash = "REPLACE_WITH_NAR_HASH";
-  };
-in {
-  xdg.configFile."espanso/match/packages/personal.yml".source =
-    "${matches.outPath}/personal.yml";
-}
-```
+## 1. Pin a snapshot
 
-Use real commit and content hashes before building. To inspect a new snapshot,
-fetch it explicitly as your desktop user:
+Fetch the repository as your desktop user to discover its commit and content hash:
 
-```bash
+```sh
 nix eval --impure --json --expr 'builtins.fetchTree {
   type = "git";
   url = "ssh://git@example.com/your/espanso-config.git";
@@ -31,25 +14,36 @@ nix eval --impure --json --expr 'builtins.fetchTree {
 }'
 ```
 
-Copy the returned `rev` and `narHash` into `modules/local.nix`, review the change,
-then build and apply Home Manager. Only the discovery command uses `--impure`;
-the pinned module works with normal pure flake evaluation. Keep the module in
-your personal configuration Git repository as well, so reverting its pins restores
-the previous snapshot. Home Manager links the snapshot into Espanso's normal
-configuration directory; edits in a working checkout do not affect the running
-configuration until you commit, update the pins, and activate it.
+Replace the example URL before running it. Private sources use your SSH credentials.
 
-Declare additional files under `espanso/config/`, `espanso/match/`, or
-`espanso/scripts/` individually. Manage only the files you intend to own; existing
-unmanaged files need to be moved aside before their first Home Manager activation.
-If `customize.nix` already declares a target, move that declaration into the local
-module rather than defining it twice. Once migrated, remove its former custom
-flake input and run `nix flake lock ~/.config/home-manager` to prune unused entries
-without requesting dependency updates.
+## 2. Declare the files
 
-Private repositories use your SSH credentials during source fetching. A
-`file:///absolute/path/to/checkout` URL also works with explicit pins, but restoring
-on another machine requires that checkout and commit. Push local-only commits
-before switching to an SSH remote. As with flake inputs, fetched files enter the
-Nix store; keep credentials outside matchfiles.
+Add this to `~/.config/home-manager/modules/local.nix`, replacing the URL, commit and hash with real values:
 
+```nix
+{ ... }: let
+  matches = builtins.fetchTree {
+    type = "git";
+    url = "ssh://git@example.com/your/espanso-config.git";
+    ref = "main";
+    rev = "FULL_COMMIT_HASH";
+    narHash = "NAR_HASH";
+  };
+in {
+  xdg.configFile."espanso/match/packages/personal.yml".source =
+    "${matches.outPath}/personal.yml";
+}
+```
+
+Declare other files individually under `espanso/config/`, `espanso/match/` or `espanso/scripts/`. Avoid defining the same target in two modules. Existing unmanaged files may need to be moved aside before Home Manager can manage them.
+
+## 3. Build and apply
+
+```sh
+finite-home-apply --check
+finite-home-apply
+```
+
+Commit the pins in your personal configuration. To update matches, commit and push their source, discover the new hashes, update the pins, then build and apply again. Editing a working checkout alone does not change the active snapshot.
+
+Fetched files enter the Nix store, so keep credentials outside matchfiles. See [Configuration](CONFIGURATION.md) for other personal settings.

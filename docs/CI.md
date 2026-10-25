@@ -1,20 +1,43 @@
-# CI selection
+# Continuous integration
 
-`modules/ci/_graph.json` is a versioned projection of the feature descriptors, explicit profile selections, private asset ownership and build-check profiles. `lib.ciGraph` exports the same value. `write-ci-graph` regenerates the manifest and `docs/ARCHITECTURE.md`; `ci-graph` rejects drift. `check-flake-file` rejects drift in generated `flake.nix`.
+CI validates configurations without activating a home. The always-running **CI gate** is the required merge check.
 
-The planner maps changed files to owners and traverses schema-specific dependencies in reverse by intersecting affected features with each case/check closure. Multiple changes are unioned. Git diff disables rename detection, retaining both old and new paths; deletions and unknown ownership conservatively require full validation. A changed manifest also forces full validation. Descriptor fingerprints make metadata or configuration-function edits invalidate the manifest; owned runtime files can still receive focused plans. The generated architecture diagram is never treated as documentation-only.
+## Run checks locally
 
-A shorter plan requires all of:
+```sh
+# Fixtures, workflow lint and release metadata
+nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
 
-- A completed successful GitHub Actions `CI gate` on the exact base SHA.
-- A supported, structurally valid graph that matches pure source regeneration.
-- The identical graph at that base SHA.
+# Full profile matrix and build checks
+bash tests/nix-check.sh
+```
+
+Use `bash tests/nix-check.sh --no-build` for evaluation only. Matrix batches are capped at two profiles; add `--batch-size 1` to evaluate one at a time.
+
+Full runs cover contracts, all 21 profile cases and seven build checks: `home`, `profile-command`, `nixgl-wrapper`, `desktop-icons`, `profile-generation`, `check-flake-file` and `ci-graph`.
+
+## How affected checks are selected
+
+The [generated manifest](../modules/ci/_graph.json) records feature ownership, private assets, schema-specific dependency edges, profile roots and build-check roots. `lib.ciGraph` exports the same value. The planner combines changed-file owners with dependency closures to select affected cases and checks.
+
+A shorter plan requires:
+
+- A successful GitHub Actions `CI gate` on the exact base commit.
+- A supported graph that matches pure source regeneration.
+- The same graph at the base commit.
 - Known ownership for every runtime change.
 
-Without that evidence the planner runs the complete suite. Documentation-only skips have the same baseline and graph requirements. Manual runs, merge groups, release calls, explicit checkout overrides and unknown events always run full validation.
+Without that evidence, CI runs full validation. Rename detection is disabled so both old and new paths are considered. Missing files, unknown ownership, changed graphs and descriptor fingerprints force the conservative path. Documentation skips require the same proof; the generated architecture diagram is never documentation-only.
 
-Full runs execute contracts, all 21 profile cases and every flake check. The original checks are `home`, `profile-command`, `nixgl-wrapper`, `desktop-icons` and `profile-generation`; the two generated-file checks are additional requirements. Focused runs evaluate affected cases and request affected build checks plus generated-file checks. Nix derivation identities and native binary caching determine reuse. Matrix batches remain capped at two.
+Manual runs, merge groups, release calls and explicit checkout overrides always validate fully. Focused runs request affected build checks plus generated-file checks. Nix's derivation cache determines what actually rebuilds.
 
-The always-running `CI gate` validates the exact plan again and requires successful fixtures and Nix checks. It permits a skipped Nix job only for a valid documentation plan; failures, cancellations, missing outputs, altered selections and a shortened plan on a full-validation event all fail the gate.
+## Keep generated files current
 
-Run `bash tests/nix-check.sh --no-build` for evaluation-only validation, or omit `--no-build` to build. CI uses the explicit `CI_PLAN` emitted by the fixture job. See [module conventions](MODULES.md) when adding ownership or dependencies.
+```sh
+nix run path:.#write-flake
+nix run path:.#write-ci-graph
+```
+
+The second command writes the manifest and [diagram](ARCHITECTURE.md). Drift fails CI. The gate recomputes the plan and rejects missing results, changed selections, failures, cancellations or an unexpected skipped Nix job.
+
+See [module conventions](MODULES.md) before changing dependency declarations. Record validation results in the pull request rather than adding temporary reports to the documentation tree.

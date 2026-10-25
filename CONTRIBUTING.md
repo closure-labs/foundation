@@ -1,65 +1,36 @@
 # Contributing to Foundation
 
-Open an issue for substantial behavior or dependency changes before investing
-in an implementation. Keep changes focused and describe their effect on users.
-For vulnerabilities, follow [SECURITY.md](SECURITY.md).
+Keep changes focused on reproducible Home Manager configurations for x86_64 Linux. Discuss substantial behavior or dependency changes in an issue first. Report vulnerabilities through the [security policy](SECURITY.md).
 
-Foundation is intended to provide Finite's default Home Manager flake and also
-supports standalone use. Read [README.md](README.md) for the supported host and
-account setup. Preserve
-profile schema compatibility, canonical role/package ordering, runtime
-`finite-*` command names and `home.stateVersion` unless a change intentionally
-migrates them. Keep dependency changes in `flake.lock` reviewable and preserve
-third-party license notices.
+## Make the change
 
-Run the fixture checks using installed Bash, jq, Python 3 and Nix:
+1. Create a Git branch or jj bookmark from `main`.
+2. Read [module conventions](docs/MODULES.md) before changing features, inputs or dependencies.
+3. Preserve profile compatibility, canonical selection ordering, `finite-*` commands, consumer customization files and `home.stateVersion` unless you are explicitly implementing a migration.
+4. Regenerate artifacts when their sources change:
 
-```bash
-bash tests/check.sh
+```sh
+nix run path:.#write-flake
+nix run path:.#write-ci-graph
 ```
 
-Use the pinned CI development shell to run the same repository validation as CI:
+Use the [public API reference](docs/API.md) when changing constructors or catalogs. Review input declarations and lock changes together; retain third-party notices.
 
-```bash
+## Verify the result
+
+```sh
 nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
-```
-
-Run the full Nix checks on an x86_64 Linux host with enough memory and disk for
-the desktop packages:
-
-```bash
 bash tests/nix-check.sh
 ```
 
-Use `bash tests/nix-check.sh --no-build` to evaluate the same profiles without
-building packages. Local runs default to the complete matrix. Evaluation batches
-contain at most two profiles; `--batch-size 1` evaluates them individually.
+For a quick fixture pass with installed Bash, jq, Python and Nix, use `bash tests/check.sh`. For evaluation without package builds, use `bash tests/nix-check.sh --no-build`. These checks do not activate a profile.
 
-All pull requests run fixtures, workflow lint and metadata checks. With a
-verified green base commit, documentation changes skip the Nix job and known
-isolated changes select affected profile cases. Shared code, flake wiring,
-dependencies, tests, CI changes and unknown paths run the full suite. Push CI
-runs on `main`; feature-branch pushes rely on their PR run. Merge-group, manual
-and release runs always validate the full matrix, including all declared build
-checks. The required **CI gate** validates the plan and every expected result.
-See [CI selection and derivation reuse](docs/CI.md) for the selection rules,
-fallbacks and local commands.
+If changing activation behavior, also arrange deliberate validation on a suitable host. Add focused regression tests where they protect behavior. See [CI](docs/CI.md) for selection and caching rules.
 
-These checks build configurations without activating Home Manager. Changes to
-activation behavior should also be tested deliberately on a suitable host.
-Record commands and results in the pull request, including any checks that
-could not run. Add focused fixtures when they help prevent a behavioral
-regression. Consider both standalone users and Finite's consuming setup when
-changing defaults, and add user-facing changes under `Unreleased` in
-[CHANGELOG.md](CHANGELOG.md).
+## Open a review PR
 
-Jujutsu and Git contributors are welcome. With `jj`, review `jj status` and
-`jj diff`, describe the change with `jj describe`, then push a named bookmark
-and open a pull request against `main`. CI must pass before merging; the
-required check is **CI gate**. See [docs/RELEASING.md](docs/RELEASING.md) for
-maintainer setup and release steps.
+Describe the user-visible result, commands run, results and any validation limits. Include user-facing changes under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
 
-Contributions are provided under the repository's [Apache-2.0 license](LICENSE).
-Bundled third-party material keeps its own stated license.
+Keep documentation task-oriented. Update the [docs index](docs/README.md) and relevant guide; put temporary plans, benchmarks, QA results and release-preparation notes in the PR instead of committing reports. Retain reusable test tools in `tests/` or `scripts/`.
 
-Module layout, feature registration, generated inputs and graph updates are documented in [docs/MODULES.md](docs/MODULES.md). Regenerate both artifacts before requesting review.
+Push the branch or bookmark and open a PR against `main`. **CI gate** must pass before merging. Follow [Releasing](docs/RELEASING.md) when preparing a version.
