@@ -4,7 +4,7 @@
   api = inputs.self.lib;
   profile = builtins.fromJSON (builtins.readFile ../../profile.json);
   home = inputs.self.homeConfigurations.${profile.identity.username};
-  applications = api.mkApplications { inherit pkgs; };
+  applications = api.mkApplications { inherit pkgs; releaseInfo = {}; };
 in {
       home = home.activationPackage;
       profile-command =
@@ -22,7 +22,8 @@ in {
         pkgs.runCommand "foundation-profile-generation" {
           nativeBuildInputs = with pkgs; [bash coreutils jq yq-go];
         } ''
-          bash ${../../tests/profile-generation.sh} ${applications.homeProfile}/bin/finite-home-profile ${applications.profileCatalog}
+          bash ${../../tests/profile-generation.sh} ${applications.homeProfile}/bin/foundation-home-profile ${applications.profileCatalog}
+          bash ${../../tests/foundation-cli.sh} ${applications.foundation}/bin/foundation
           touch "$out"
         '';
     }

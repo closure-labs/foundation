@@ -117,12 +117,12 @@ class SelectorTests(unittest.TestCase):
         self.catalog_path = self.root / "catalog.json"
         self.catalog_path.write_text(json.dumps(self.catalog))
         self.log = self.root / "events.jsonl"
-        for name in ("zenity", "finite-home-apply"):
+        for name in ("zenity", "foundation-home-apply"):
             mock = self.bin / name
             mock.write_text(f"#!{sys.executable}\n" + '''import json, os, sys
 from pathlib import Path
 name = Path(sys.argv[0]).name
-if name == "finite-home-apply" and "--editor-context" in sys.argv:
+if name == "foundation-home-apply" and "--editor-context" in sys.argv:
     value = json.loads(Path(os.environ["FINITE_HOME_PROFILE_PATH"]).read_text())
     catalog = json.loads(Path(os.environ["FINITE_FOUNDATION_CATALOG"]).read_text())
     print(json.dumps({"schema": 1, "profile": value, "catalog": catalog, "canMigrate": True}))
@@ -130,7 +130,7 @@ if name == "finite-home-apply" and "--editor-context" in sys.argv:
 with Path(os.environ["SELECTOR_LOG"]).open("a") as stream:
     stream.write(json.dumps([name, *sys.argv[1:]]) + "\\n")
 if name == "zenity":
-    stage = ("packages" if "--title=Configure Finite packages" in sys.argv else
+    stage = ("packages" if "--title=Configure Foundation packages" in sys.argv else
              "capabilities" if "--title=Additional capabilities" in sys.argv else
              "review" if "--text-info" in sys.argv else "roles")
     if os.environ.get("SELECTOR_CANCEL") == stage:
@@ -152,7 +152,7 @@ else:
 
     def run_selector(self, *arguments, **overrides):
         before = self.profile.read_bytes()
-        result = subprocess.run(["bash", str(ROOT / "modules/home/commands/_assets/finite-configure"), *arguments],
+        result = subprocess.run(["bash", str(ROOT / "modules/home/commands/_assets/foundation-configure"), *arguments],
                                 env={**self.env, **overrides}, text=True, capture_output=True)
         self.assertEqual(self.profile.read_bytes(), before)
         events = [json.loads(x) for x in self.log.read_text().splitlines()] if self.log.exists() else []
@@ -161,7 +161,7 @@ else:
     def test_accept_preserves_ids_checked_state_and_single_apply(self):
         result, events = self.run_selector()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual([x[0] for x in events], ["zenity", "zenity", "finite-home-apply"])
+        self.assertEqual([x[0] for x in events], ["zenity", "zenity", "foundation-home-apply"])
         roles = events[0]
         self.assertIn("--column=Classification", roles)
         self.assertIn("--hide-column=4", roles)
@@ -181,7 +181,7 @@ else:
         rows = packages[start:]
         self.assertEqual(rows[3::4], ["hack-font", "herdr", "jj", "opencode", "uv"])
         self.assertEqual(rows[0::4], ["FALSE", "FALSE", "FALSE", "FALSE", "TRUE"])
-        self.assertEqual(events[2], ["finite-home-apply", "--roles", "developer,support", "--packages", "jj,uv"])
+        self.assertEqual(events[2], ["foundation-home-apply", "--roles", "developer,support", "--packages", "jj,uv"])
 
     def test_cancel_either_dialog_never_applies(self):
         for stage, count in (("roles", 1), ("packages", 2)):
@@ -194,12 +194,12 @@ else:
     def test_empty_selections_are_passed_as_empty_arguments(self):
         result, events = self.run_selector(SELECTOR_ROLES="", SELECTOR_PACKAGES="")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(events[-1], ["finite-home-apply", "--roles", "", "--packages", ""])
+        self.assertEqual(events[-1], ["foundation-home-apply", "--roles", "", "--packages", ""])
 
     def test_apply_failure_propagates(self):
         result, events = self.run_selector(SELECTOR_APPLY_STATUS="7")
         self.assertEqual(result.returncode, 7)
-        self.assertEqual(sum(x[0] == "finite-home-apply" for x in events), 1)
+        self.assertEqual(sum(x[0] == "foundation-home-apply" for x in events), 1)
 
     def test_rows_come_from_catalog_including_unclassified_custom_roles(self):
         catalog = copy.deepcopy(self.catalog)
@@ -261,7 +261,7 @@ else:
         self.assertEqual(checked["essentials"], "FALSE")
         self.assertEqual(checked["recording"], "TRUE")
         preview, review, applied = events[3:]
-        expected = ["finite-home-apply", "--roles", "family,creative", "--packages", "jj,uv", "--capabilities", "recording,notes"]
+        expected = ["foundation-home-apply", "--roles", "family,creative", "--packages", "jj,uv", "--capabilities", "recording,notes"]
         self.assertEqual(preview, expected + ["--preview"])
         self.assertIn("--text-info", review)
         self.assertEqual(applied, expected + ["--approve-preview", "a" * 64])
@@ -273,13 +273,13 @@ else:
             self.log.unlink(missing_ok=True)
             result, events = self.run_selector(SELECTOR_CANCEL=stage)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertFalse(any(event[0] == "finite-home-apply" and "--preview" not in event for event in events))
+            self.assertFalse(any(event[0] == "foundation-home-apply" and "--preview" not in event for event in events))
 
     def test_conversion_is_only_requested_explicitly(self):
         self.schema_three(source_schema=2)
         result, events = self.run_selector("--migrate-profile", SELECTOR_ROLES="family")
         self.assertEqual(result.returncode, 0, result.stderr)
-        calls = [event for event in events if event[0] == "finite-home-apply"]
+        calls = [event for event in events if event[0] == "foundation-home-apply"]
         self.assertEqual(len(calls), 2)
         self.assertTrue(all("--migrate-profile" in event for event in calls))
 

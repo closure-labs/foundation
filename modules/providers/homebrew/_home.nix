@@ -5,7 +5,7 @@
     + lib.concatMapStrings (package: "brew ${builtins.toJSON package.formula}\n") brewPolicy.packages
   );
   brewMigrationStatus = pkgs.writeShellApplication {
-    name = "finite-brew-migration-status";
+    name = "foundation-brew-status";
     # Absolute helper paths keep the caller's PATH intact for provider checks.
     runtimeEnv = {
       FINITE_BREW_JQ = "${pkgs.jq}/bin/jq";
@@ -19,7 +19,7 @@ in {
     packages = lib.mkOrder 700 [brewMigrationStatus];
     activation.checkBrewProviders = lib.hm.dag.entryBefore ["writeBoundary"] ''
       if ! HOMEBREW_NO_AUTO_UPDATE=1 FINITE_BREW_POLICY=${./_assets/brew-packages.json} \
-        ${brewMigrationStatus}/bin/finite-brew-migration-status --check-installed; then
+        ${brewMigrationStatus}/bin/foundation-brew-status --check-installed; then
         echo "Install the shared CLI tools before applying this profile:" >&2
         echo "  brew bundle install --no-upgrade --file=${brewFile}" >&2
         exit 1

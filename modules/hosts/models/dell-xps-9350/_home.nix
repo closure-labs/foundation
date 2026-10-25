@@ -6,7 +6,7 @@
   ...
 }: let
   panelPolicy = pkgs.writeShellApplication {
-    name = "finite-dell-xps-9350-panel-policy";
+    name = "foundation-dell-xps-9350-panel-policy";
     runtimeInputs = with pkgs; [coreutils gawk glib gnugrep];
     text = builtins.readFile ./_assets/dell-xps-9350-panel-policy;
   };

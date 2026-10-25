@@ -39,10 +39,7 @@ Declare other files individually under `espanso/config/`, `espanso/match/` or `e
 
 ## 3. Build and apply
 
-```sh
-finite-home-apply --check
-finite-home-apply
-```
+Follow [Build, then activate](ACTIVATION.md#build-then-activate) to apply the updated personal source.
 
 Commit the pins in your personal configuration. To update matches, commit and push their source, discover the new hashes, update the pins, then build and apply again. Editing a working checkout alone does not change the active snapshot.
 

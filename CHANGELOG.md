@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Replace installed `finite-*` home helpers with `foundation home <action>`, including build-only `foundation home check`. Run the same interface through the native default flake app or `#foundation`; individual home apps remain available.
+
 - Make Foundation easier to configure with focused setup, profile, activation and recovery guides, a shorter README, and a single documentation index.
 - Keep application and role definitions together so contributors can add features without updating separate catalogs. Existing profiles, application providers and personal configuration files remain compatible.
 - Select affected CI evaluations and build checks from declared feature dependencies, with full validation when the base result or dependency graph cannot be verified. Check generated configuration and architecture files for drift.

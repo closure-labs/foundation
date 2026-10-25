@@ -27,11 +27,11 @@ inputs.foundation.lib.mkHomeConfiguration {
 | `lib.hosts` | Host choices and pure normalization |
 | `lib.profileCapabilities` | Supported initialization, normalization, editing and writing schemas |
 | `lib.profileChanges.preview { profile = …; }` | Versioned, non-activating change preview |
-| `lib.profileDrafts` | Compatibility resolver and migration-preview interface |
+| `lib.profileDrafts` | Compatibility resolver; see [Migration](MIGRATION.md#integration-api) |
 
 The catalog envelope version and profile schema are distinct. Read `profileSchema` and `profileCapabilities` when selecting a writer or editor; do not infer support from the envelope version. Existing schema-2 consumers keep their six-role catalog. New profiles default to schema 3.
 
-Change previews accept optional `roles`, `packages`, `capabilities` and `migrate` arguments. They describe changes; the controller owns approval, building and activation. The CLI's approval token binds the preview to its exact configuration and locked source.
+Change previews accept optional `roles`, `packages` and `capabilities` arguments. Conversion options are documented in [Migration](MIGRATION.md#integration-api). They describe changes; the controller owns approval, building and activation. The CLI's approval token binds the preview to its exact configuration and locked source.
 
 The pure entry points under [lib/](../lib/) remain compatible façades over feature-owned implementations. Profile generation evaluates bundled normalization without evaluating the full flake or fetching Nixpkgs.
 

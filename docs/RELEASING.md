@@ -1,6 +1,6 @@
 # Releasing Foundation
 
-Releases are reviewed separately from deployment to Finite. `VERSION` and `foundation.json` identify the source version; the [changelog](../CHANGELOG.md) supplies release notes.
+Releases are reviewed separately from deployment to consuming systems. `VERSION` and `foundation.json` identify the source version; the [changelog](../CHANGELOG.md) supplies release notes.
 
 ## 1. Prepare the release
 
@@ -41,7 +41,7 @@ Publication triggers **Advance latest release**. It selects the highest publishe
 
 Confirm the channel points to the published tag. For recovery, run that workflow manually on `main`; `python3 scripts/release-channel.py --check` provides a read-only preview in a fetched checkout authenticated with `gh`.
 
-Finite adoption is a separate reviewed change to its immutable source pin. Validate its initializer, configuration generation and host activation before rollout.
+Consumer adoption is a separate reviewed change to its immutable source pin. Validate its initializer, configuration generation and host activation before rollout.
 
 ## Repository protections
 

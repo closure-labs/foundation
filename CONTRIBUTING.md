@@ -6,7 +6,7 @@ Keep changes focused on reproducible Home Manager configurations for x86_64 Linu
 
 1. Create a Git branch or jj bookmark from `main`.
 2. Read [module conventions](docs/MODULES.md) before changing features, inputs or dependencies.
-3. Preserve profile compatibility, canonical selection ordering, `finite-*` commands, consumer customization files and `home.stateVersion` unless you are explicitly implementing a migration.
+3. Preserve profile compatibility, canonical selection ordering, public helper commands, consumer customization files and `home.stateVersion` unless the change explicitly requires a compatibility transition; document that in the [dedicated guide](docs/MIGRATION.md).
 4. Regenerate artifacts when their sources change:
 
 ```sh
