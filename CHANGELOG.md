@@ -6,11 +6,15 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-27
+
 - Replace installed `finite-*` home helpers with `foundation home <action>`, including build-only `foundation home check`. Run the same interface through the native default flake app or `#foundation`; individual home apps remain available.
 
 - Make Foundation easier to configure with focused setup, profile, activation and recovery guides, a shorter README, and a single documentation index.
 - Keep application and role definitions together so contributors can add features without updating separate catalogs. Existing profiles, application providers and personal configuration files remain compatible.
 - Select affected CI evaluations and build checks from declared feature dependencies, with full validation when the base result or dependency graph cannot be verified. Check generated configuration and architecture files for drift.
+
+- Add opt-in `FOUNDATION_TIMINGS=1` observations for staged profile validation, Home Manager realization, Brew policy/bootstrap, activation and rollback, including failed stages. Preserve resource budgets, command order and one initialization; internal Nix fetch/build and Flatpak durations remain unresolved.
 
 ## [0.3.3] - 2026-10-23
 
@@ -96,7 +100,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/closure-labs/foundation/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/closure-labs/foundation/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/closure-labs/foundation/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/closure-labs/foundation/compare/v0.3.0...v0.3.1
