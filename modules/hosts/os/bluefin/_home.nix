@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
   source = pkgs.runCommand "foundation-bluefin-preparation-source" { } ''
     mkdir -p "$out"
@@ -23,7 +28,7 @@ in
   # Historical copied-policy entries absent from both upstream stock bundles.
   # These are Finite additions; no Brew formula/tap declaration is retained.
   home.packages = [
-    pkgs.bbrew
+    (pkgs.bbrew or inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.bbrew)
     pkgs.ugrep
     pkgs.uutils-coreutils
   ];

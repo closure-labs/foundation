@@ -456,7 +456,8 @@
     {
       "formula": "valkyrie00/bbrew/bbrew",
       "treatment": "Finite Nix addition",
-      "nixAttribute": "bbrew"
+      "nixAttribute": "bbrew",
+      "nixInput": "nixpkgs when available, otherwise existing pinned nixpkgs-unstable"
     },
     {
       "formula": "chezmoi",
@@ -1262,7 +1263,7 @@
     },
     {
       "source": "modules/hosts/os/bluefin/_home.nix",
-      "sha256": "748584c5a9e9ea50cbd16f1706f6cde231fd666879a3d0de9b7cac5e4842ffee",
+      "sha256": "228785191d23d3104d75fc4203f365236159afa3d8e835dbd6d87fec983e034a",
       "treatment": "explicit Finite user configuration/helper"
     },
     {

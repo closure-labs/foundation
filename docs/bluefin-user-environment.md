@@ -19,7 +19,7 @@ The final boot/activation check against these bases remains a hosted requirement
 | 16 entries in inherited `cli.Brewfile` | Bluefin Brew binaries and defaults |
 | 11 entries in `preinstall.d/system-cli.Brewfile` | Bluefin preinstall mechanism, including Fzf and Starship |
 | Existing Fzf shell bindings and Starship prompt | Explicit Finite configuration, without a second binary |
-| bbrew, ugrep, uutils-coreutils | Finite additions in `home.packages` from pinned Nixpkgs |
+| bbrew, ugrep, uutils-coreutils | Finite additions in `home.packages` from pinned Nixpkgs; bbrew falls back to the existing pinned unstable input |
 | Existing 60 application descriptors | Existing Nix/Flatpak provider choices retained |
 | User services, desktop and hardware-specific settings | Home Manager declarations |
 | Root services, mounts/sockets, SELinux and bootc plumbing | OS image |

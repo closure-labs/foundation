@@ -3,7 +3,10 @@
   metadata = {
     ownership = "Inherited Bluefin CLI bundle and user environment";
   };
-  dependencies = [ ];
+  dependencies = [
+    "providers/nixpkgs"
+    "providers/nixpkgs-unstable"
+  ];
   schemaDependencies = { };
   configuration = schema: import ./_home.nix;
 }
