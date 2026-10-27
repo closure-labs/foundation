@@ -46,3 +46,27 @@ These use the direct build/activation path. Foundation's staged commands additio
 - **Activation failure:** Foundation restores configuration entries and attempts to reactivate the previous generation. Inspect the error and retained `home-manager.previous.*` backups next to your configuration before another attempt.
 
 Homebrew and Flatpak side effects are not transactional. Restoring a source lock or Home Manager generation does not restore application data; retain application-specific backups when changing providers.
+
+## Optional stage timings
+
+Set `FOUNDATION_TIMINGS=1` on an existing staged command to emit versioned timing
+records on stderr. For example, `FOUNDATION_TIMINGS=1 foundation home check`
+measures a check without activation. Instrumentation is disabled by default and
+does not add a second initialization, evaluation or build invocation.
+
+Each `FOUNDATION_TIMING ` line contains JSON with schema, kind, a fixed stage
+name, UTC start time, elapsed seconds, outcome and subprocess status when known.
+It excludes paths, usernames, commands, output and environment values, and grants
+no publication authority. Failed and interrupted stages retain partial elapsed
+time. Diagnostic write failures preserve the underlying operation's outcome.
+
+Stages distinguish profile validation, Home Manager realization, Brew policy
+evaluation, Brew bootstrap, activation and rollback activation. Initialization,
+Brew provisioning and commit/activation totals contain nested stages: do not add
+them together as independent cost. Realization includes Nix's internal
+evaluation, fetch, build and retry waits; this first instrumentation does not
+claim a separate duration for each. Flatpak work remains inside activation.
+Unknown internal breakdowns must remain unknown until separately instrumented.
+Resource limits, command arguments, personal configuration and activation order
+are unchanged. CI consumers must bind any collected records to their native
+guest/job evidence and selected Foundation release before using them in reports.
