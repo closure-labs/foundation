@@ -68,6 +68,6 @@ in {
     metadata = pkgs.writeText "foundation-source.json" (builtins.toJSON releaseInfo);
   in
     pkgs.runCommand "foundation-consumer-${version}" {nativeBuildInputs = [pkgs.python3];} ''
-      python3 ${../../../scripts/home.py} template --source ${../../..} --metadata ${metadata} --output "$out"
+      python3 ${../../..}/scripts/home.py template --source ${../../..} --metadata ${metadata} --output "$out"
     '';
 }
