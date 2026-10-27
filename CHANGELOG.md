@@ -6,6 +6,9 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Remove legacy home-profile schema-2 readers, catalogs, composition and conversion paths. Home profiles must use schema 3; unsupported persisted profiles fail with replacement guidance before build or activation. See [Migration](docs/MIGRATION.md) before updating an older consumer.
+
+
 ## [0.5.1] - 2026-10-27
 
 - Repair the exported Home Manager consumer-template builder so the initialization helper can import its observation module from the packaged source tree.

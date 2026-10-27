@@ -29,9 +29,7 @@ def main():
             project = domainCatalog: import ./lib/home-catalog.nix {inherit domainCatalog lib; version="fixture";};
           in {lib = {
             homeCatalog = project catalog;
-            homeCatalogForSchema = schema: if schema == 2 then project catalog else
-              (project (catalog // {rolesByName=composition.contract.roles; roleNames=builtins.attrNames composition.contract.roles;})) //
-              {profileSchema=3; capabilities=composition.contract.capabilities;};
+            homeCatalogForSchema = schema: import ./lib/profile-catalog.nix {domainCatalog=catalog; inherit lib schema; version="fixture";};
             normalizeProfile = import ./lib/normalize-profile.nix {inherit catalog;};
             profileCapabilities = builtins.fromJSON (builtins.readFile ./lib/profile-capabilities.json);
             profileChanges = {schema=1; preview=import ./lib/profile-changes.nix {inherit catalog;};};
@@ -46,17 +44,16 @@ def main():
         original = home.tree_digest(root)
         environment = {"FINITE_RUNNING_PROFILE_PATH": str(base / "no-running-image"), "FINITE_FOUNDATION_CATALOG": "/caller/stale/catalog.json"}
         with patch.dict(os.environ, environment), patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
-            context = home.read_editor(root, migrate=True)
-            assert context["profile"]["schema"] == 2
+            context = home.read_editor(root)
+            assert context["profile"]["schema"] == 3
             assert len(context["catalog"]["roles"]) == 10
-            assert context["canMigrate"] is True
-            review = home.apply(root, roles="family,creative", packages="", capabilities="recording", migrate_profile=True, preview=True)
+            review = home.apply(root, roles="family,creative", packages="", capabilities="recording", preview=True)
             assert review["preview"]["candidate"]["schema"] == 3
             assert review["preview"]["source"]["packages"] == ["jj", "uv"]
             assert review["preview"]["candidate"]["packages"] == []
             assert review["preview"]["candidate"]["custom"] == {"preserve": True}
             assert review["source"]["path"].startswith("/nix/store/")
-            assert review == home.apply(root, roles="family,creative", packages="", capabilities="recording", migrate_profile=True, preview=True)
+            assert review == home.apply(root, roles="family,creative", packages="", capabilities="recording", preview=True)
             assert home.tree_digest(root) == original
             assert not (base / ".foundation.lock").exists()
             build.assert_not_called(); brew.assert_not_called(); commit.assert_not_called()
@@ -65,7 +62,7 @@ def main():
         # Build-only exercises the same controller candidate and negotiation;
         # the build boundary is replaced, never an actual GUI package build.
         with patch.dict(os.environ, environment), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew:
-            home.apply(root, roles="family,creative", packages="", capabilities="recording", migrate_profile=True,
+            home.apply(root, roles="family,creative", packages="", capabilities="recording",
                        approve_preview=review["approvalToken"], check=True)
             build.assert_called_once(); brew.assert_not_called()
             assert home.tree_digest(root) == original
@@ -79,7 +76,7 @@ def main():
             home.write_json(selected / "lib/profile-capabilities.json", capabilities)
             if mode == "future-editor":
                 selected.joinpath("flake.nix").write_text(selected.joinpath("flake.nix").read_text().replace("profileChanges = {schema=1;", "profileChanges = {schema=2;"))
-                capabilities["editSchemas"] = [2, 3]
+                capabilities["editSchemas"] = [3]
                 home.write_json(selected / "lib/profile-capabilities.json", capabilities)
             consumer = base / (mode + "-consumer")
             consumer.mkdir()
@@ -88,18 +85,17 @@ def main():
             home.run(["nix", "flake", "lock", "path:" + str(consumer)])
             before = home.tree_digest(consumer)
             with patch.dict(os.environ, environment):
-                assert home.read_editor(consumer)["profile"]["schema"] == 2
                 try:
-                    home.read_editor(consumer, migrate=True)
+                    home.read_editor(consumer)
                 except subprocess.CalledProcessError:
                     pass
                 else:
                     raise AssertionError(f"Accepted incompatible {mode}")
             assert home.tree_digest(consumer) == before
-            print(f"{mode} rejects new editing while retaining schema-2 catalog compatibility", flush=True)
+            print(f"{mode} rejects incompatible editing without writes", flush=True)
 
         expression = 'let f = builtins.getFlake ' + home.nix_value("path:" + str(ROOT)) + '; in { schema = f.lib.profileChanges.schema; preview = f.lib.profileChanges.preview '
-        expression += home.nix_value({"profile": profile(), "migrate": True, "roles": ["family"], "packages": []}) + '; }'
+        expression += home.nix_value({"profile": profile(), "roles": ["family"], "packages": []}) + '; }'
         data = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
         assert data["schema"] == 1 and data["preview"]["candidate"]["schema"] == 3
         print("Actual Foundation public profileChanges export passed", flush=True)

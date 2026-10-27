@@ -8,13 +8,6 @@
   };
   "dependencies" = [ ];
   "schemaDependencies" = {
-    "2" = [
-      "apps/ghostty"
-      "apps/ansible"
-      "apps/openbao"
-      "apps/opentofu"
-      "apps/packer"
-    ];
     "3" = [
       "apps/ghostty"
       "apps/ansible"

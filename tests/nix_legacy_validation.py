@@ -1,4 +1,4 @@
-"""Evaluate all work roles on both foundations and schemas, with consumer modules."""
+"""Evaluate all work roles on both foundations using schema 3, with consumer modules."""
 import json
 
 from nix_matrix import arguments, evaluate

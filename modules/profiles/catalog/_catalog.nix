@@ -9,7 +9,7 @@ let
   foundations = project "foundations";
   hardware = project "hardware";
   packages = project "package";
-  roles = project "legacyRole";
+  roles = project "role";
 in {
   inherit classifications foundations hardware packages roles;
   classificationsByName = toAttrs classifications;
@@ -23,5 +23,5 @@ in {
   homeHardwareNames = names (builtins.filter (entry: entry.homeManager) hardware);
   packageNames = names packages;
   roleNames = names roles;
-  homeCompatibleRoleNames = names (builtins.filter (role: role.homeCompatible) roles);
+  homeCompatibleRoleNames = names (builtins.filter (role: (role.homeCompatible or true)) roles);
 }

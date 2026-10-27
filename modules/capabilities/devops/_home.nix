@@ -3,17 +3,8 @@
   finiteHomeAssets,
   lib,
   pkgs,
-  foundationProfileSchema ? 2,
   ...
-}:
-let
-  ghostty = import ../../apps/ghostty/_package.nix { inherit pkgs; };
-in
-{
-  imports = [
-    (import ../../profiles/composition/_legacy-applications.nix { id = "capabilities/devops"; })
-  ];
-
+}: {
   # Terminal multiplexers inherit SHELL even when Ghostty starts Zsh directly.
   home.sessionVariables.SHELL = lib.mkDefault "${config.programs.zsh.package}/bin/zsh";
 

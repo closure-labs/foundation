@@ -18,20 +18,20 @@ inputs.foundation.lib.mkHomeConfiguration {
 
 | Entry point | Purpose |
 | --- | --- |
-| `lib.catalog` | Compatibility domain catalog |
+| `lib.catalog` | Domain catalog |
 | `lib.homeCatalog` | Current schema-3 home catalog |
-| `lib.homeCatalogForSchema 2` or `3` | Catalog for the requested profile format |
+| `lib.homeCatalogForSchema 3` | Schema-3 catalog (other profile schemas are rejected) |
 | `lib.mkHomeCatalog { domainCatalog = …; schema = 3; }` | Project a supplied domain catalog |
-| `lib.normalizeProfile profile` | Validate and canonicalize a schema-2 or schema-3 profile |
+| `lib.normalizeProfile profile` | Validate and canonicalize a schema-3 profile |
 | `lib.resolveProfile profile` | Resolve schema-3 applications, providers and capabilities |
 | `lib.hosts` | Host choices and pure normalization |
 | `lib.profileCapabilities` | Supported initialization, normalization, editing and writing schemas |
 | `lib.profileChanges.preview { profile = …; }` | Versioned, non-activating change preview |
-| `lib.profileDrafts` | Compatibility resolver; see [Migration](MIGRATION.md#integration-api) |
+| `lib.profileDrafts` | Schema-3 composition resolver; see [Migration](MIGRATION.md#integration-api) |
 
-The catalog envelope version and profile schema are distinct. Read `profileSchema` and `profileCapabilities` when selecting a writer or editor; do not infer support from the envelope version. Existing schema-2 consumers keep their six-role catalog. New profiles default to schema 3.
+The catalog envelope version and profile schema are distinct. Read `profileSchema` and `profileCapabilities` when selecting a writer or editor; do not infer support from the envelope version. Only schema-3 home profiles are supported; older consumers must replace their profile before updating (see [Migration](MIGRATION.md)).
 
-Change previews accept optional `roles`, `packages` and `capabilities` arguments. Conversion options are documented in [Migration](MIGRATION.md#integration-api). They describe changes; the controller owns approval, building and activation. The CLI's approval token binds the preview to its exact configuration and locked source.
+Change previews accept optional `roles`, `packages` and `capabilities` arguments. They describe changes; the controller owns approval, building and activation. The CLI's approval token binds the preview to its exact configuration and locked source.
 
 The pure entry points under [lib/](../lib/) remain compatible façades over feature-owned implementations. Profile generation evaluates bundled normalization without evaluating the full flake or fetching Nixpkgs.
 

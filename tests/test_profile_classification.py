@@ -45,7 +45,7 @@ class CatalogTests(unittest.TestCase):
                          [("Professional", 10), ("Personal", 20)])
         home = data["catalog"]
         self.assertEqual(home["classifications"]["professional"]["roles"], ROLE_NAMES)
-        self.assertEqual(home["classifications"]["personal"]["roles"], [])
+        self.assertEqual(home["classifications"]["personal"]["roles"], ["family", "media", "creative", "gaming"])
         self.assertEqual(home["schema"], 3)
         for role in ROLE_NAMES:
             self.assertEqual(home["roles"][role]["classification"], "professional")
@@ -68,7 +68,7 @@ class CatalogTests(unittest.TestCase):
             support = domain.rolesByName.support // { classification = "personal"; };
           };
         })''')
-        self.assertEqual(home["classifications"]["personal"]["roles"], ["support"])
+        self.assertEqual(home["classifications"]["personal"]["roles"], ["support", "family", "media", "creative", "gaming"])
         self.assertEqual(home["classifications"]["professional"]["roles"],
                          [x for x in ROLE_NAMES if x != "support"])
 
@@ -91,7 +91,7 @@ class CatalogTests(unittest.TestCase):
             }) domain.foundationsByName;
           });
         }''')
-        self.assertEqual(data["compatible"], ["sales", "trainer", "support"])
+        self.assertEqual(data["compatible"], ["sales", "trainer", "support", "family", "media", "creative", "gaming"])
         self.assertEqual(data["catalog"]["foundations"]["bluefin"]["profiles"],
                          {"generic-x86_64": "finite"})
         self.assertEqual(data["catalog"]["foundations"]["bluefin-dx"]["profiles"],
@@ -102,7 +102,7 @@ class CatalogTests(unittest.TestCase):
 class SelectorTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.catalog = evaluate("project domain")
+        cls.catalog = evaluate(f'import {ROOT}/lib/profile-catalog.nix {{domainCatalog=domain; inherit lib; version="fixture";}}')
 
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
@@ -112,7 +112,7 @@ class SelectorTests(unittest.TestCase):
         self.bin.mkdir()
         self.profile = self.root / "profile.json"
         self.profile.write_text(json.dumps({
-            "schema": 2, "roles": ["developer", "sales"], "packages": ["uv"],
+            "schema": 3, "roles": ["developer", "sales"], "packages": ["uv"], "capabilities": [],
         }))
         self.catalog_path = self.root / "catalog.json"
         self.catalog_path.write_text(json.dumps(self.catalog))
@@ -125,7 +125,7 @@ name = Path(sys.argv[0]).name
 if name == "foundation-home-apply" and "--editor-context" in sys.argv:
     value = json.loads(Path(os.environ["FINITE_HOME_PROFILE_PATH"]).read_text())
     catalog = json.loads(Path(os.environ["FINITE_FOUNDATION_CATALOG"]).read_text())
-    print(json.dumps({"schema": 1, "profile": value, "catalog": catalog, "canMigrate": True}))
+    print(json.dumps({"schema": 1, "profile": value, "catalog": catalog}))
     sys.exit(0)
 with Path(os.environ["SELECTOR_LOG"]).open("a") as stream:
     stream.write(json.dumps([name, *sys.argv[1:]]) + "\\n")
@@ -161,7 +161,7 @@ else:
     def test_accept_preserves_ids_checked_state_and_single_apply(self):
         result, events = self.run_selector()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual([x[0] for x in events], ["zenity", "zenity", "foundation-home-apply"])
+        self.assertEqual([x[0] for x in events], ["zenity", "zenity", "zenity", "foundation-home-apply", "zenity", "foundation-home-apply"])
         roles = events[0]
         self.assertIn("--column=Classification", roles)
         self.assertIn("--hide-column=4", roles)
@@ -174,14 +174,18 @@ else:
             "FALSE", "Professional", "Support", "support",
             "FALSE", "Professional", "Executive", "executive",
             "FALSE", "Professional", "IT", "it",
+            "FALSE", "Personal", "Family", "family",
+            "FALSE", "Personal", "Media", "media",
+            "FALSE", "Personal", "Creative", "creative",
+            "FALSE", "Personal", "Gaming", "gaming",
         ])
-        self.assertNotIn("Personal", roles)
+        self.assertIn("Personal", roles)
         packages = events[1]
         start = packages.index("FALSE")
         rows = packages[start:]
         self.assertEqual(rows[3::4], ["hack-font", "herdr", "jj", "opencode", "uv"])
         self.assertEqual(rows[0::4], ["FALSE", "FALSE", "FALSE", "FALSE", "TRUE"])
-        self.assertEqual(events[2], ["foundation-home-apply", "--roles", "developer,support", "--packages", "jj,uv"])
+        self.assertEqual(events[-1], ["foundation-home-apply", "--roles", "developer,support", "--packages", "jj,uv", "--capabilities", "recording", "--approve-preview", "a" * 64])
 
     def test_cancel_either_dialog_never_applies(self):
         for stage, count in (("roles", 1), ("packages", 2)):
@@ -194,12 +198,12 @@ else:
     def test_empty_selections_are_passed_as_empty_arguments(self):
         result, events = self.run_selector(SELECTOR_ROLES="", SELECTOR_PACKAGES="")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(events[-1], ["foundation-home-apply", "--roles", "", "--packages", ""])
+        self.assertEqual(events[-1], ["foundation-home-apply", "--roles", "", "--packages", "", "--capabilities", "recording", "--approve-preview", "a" * 64])
 
     def test_apply_failure_propagates(self):
         result, events = self.run_selector(SELECTOR_APPLY_STATUS="7")
         self.assertEqual(result.returncode, 7)
-        self.assertEqual(sum(x[0] == "foundation-home-apply" for x in events), 1)
+        self.assertEqual(sum(x[0] == "foundation-home-apply" for x in events), 2)
 
     def test_rows_come_from_catalog_including_unclassified_custom_roles(self):
         catalog = copy.deepcopy(self.catalog)
@@ -233,6 +237,9 @@ else:
                 self.assertIn("catalog", result.stderr.lower())
 
     def test_schema_three_requires_a_capability_catalog_before_any_dialog(self):
+        catalog = copy.deepcopy(self.catalog)
+        catalog.pop("capabilities")
+        self.catalog_path.write_text(json.dumps(catalog))
         value = {"schema": 3, "roles": ["family", "developer"], "packages": ["jj"],
                  "capabilities": ["recording"], "custom": {"retain": True}}
         self.profile.write_text(json.dumps(value))
@@ -241,14 +248,9 @@ else:
         self.assertEqual(events, [])
         self.assertIn("capability catalog", result.stderr)
 
-    def schema_three(self, source_schema=3):
-        contract = f'(import {ROOT}/lib/profile-drafts {{catalog = domain;}}).contract'
-        catalog = evaluate(f'''let c = {contract}; in (project (domain // {{
-          rolesByName = c.roles; roleNames = builtins.attrNames c.roles;
-        }})) // {{ profileSchema = 3; capabilities = c.capabilities; }}''')
-        self.catalog_path.write_text(json.dumps(catalog))
-        self.profile.write_text(json.dumps({"schema": source_schema, "roles": ["family"] if source_schema == 3 else ["developer"],
-                                           "packages": ["uv"], **({"capabilities": ["recording"]} if source_schema == 3 else {})}))
+    def schema_three(self):
+        self.profile.write_text(json.dumps({"schema": 3, "roles": ["family"], "packages": ["uv"],
+                                           "capabilities": ["recording"]}))
 
     def test_schema_three_checks_only_explicit_capabilities_and_reviews_exact_selections(self):
         self.schema_three()
@@ -275,13 +277,16 @@ else:
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(any(event[0] == "foundation-home-apply" and "--preview" not in event for event in events))
 
-    def test_conversion_is_only_requested_explicitly(self):
-        self.schema_three(source_schema=2)
-        result, events = self.run_selector("--migrate-profile", SELECTOR_ROLES="family")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        calls = [event for event in events if event[0] == "foundation-home-apply"]
-        self.assertEqual(len(calls), 2)
-        self.assertTrue(all("--migrate-profile" in event for event in calls))
+    def test_unsupported_profile_is_rejected_before_dialogs(self):
+        self.profile.write_text(json.dumps({"schema": 2, "roles": ["developer"], "packages": []}))
+        result, events = self.run_selector()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events, [])
+
+    def test_removed_conversion_flag_is_rejected_before_dialogs(self):
+        result, events = self.run_selector("--migrate-profile")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events, [])
 
 
 if __name__ == "__main__":

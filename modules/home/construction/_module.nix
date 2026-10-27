@@ -8,22 +8,15 @@
 }: let
   # The version-controlled profile selects the account, roles and packages.
   vars = (import ../../../lib/normalize-profile.nix {inherit catalog;}) foundationProfile;
-  system =
-    if vars.schema == 3
-    then vars.host.system
-    else "x86_64-linux";
+  system = vars.host.system;
   catalog = import ../../../lib/catalog.nix;
   canonicalRoles = vars.roles;
   canonicalPackages = vars.packages;
-  composition =
-    if vars.schema == 3
-    then (import ../../../lib/profile-drafts {inherit catalog;}).resolve vars
-    else null;
+  composition = (import ../../../lib/profile-drafts {inherit catalog;}).resolve vars;
   pkgs = import inputs.nixpkgs {
     inherit system;
     config.allowUnfree = true;
   };
-  selectedPackages = map (import ../../profiles/composition/_legacy-packages.nix { inherit inputs pkgs; }) canonicalPackages;
   applications = import ../../../lib/applications.nix {
     inherit pkgs;
     source = ../../..;
@@ -44,11 +37,7 @@ in {
         inherit modules pkgs;
         extraSpecialArgs = {
           inherit inputs;
-          foundationProfileSchema = vars.schema;
-          foundationHost =
-            if vars.schema == 3
-            then vars.host
-            else null;
+          foundationHost = vars.host;
           foundationComposition = composition;
           finiteHomeAssets = {
             devops = ../../capabilities/devops/_assets/rootfs/usr/share/finite;
@@ -73,9 +62,7 @@ in {
         home = {
           username = lib.mkForce vars.identity.username;
           homeDirectory = lib.mkForce vars.identity.homeDirectory;
-          packages =
-            [applications.foundation]
-            ++ lib.optionals (vars.schema == 2) selectedPackages;
+          packages = [applications.foundation];
           sessionVariables = {
             FINITE_FOUNDATION = vars.foundation;
             FINITE_HARDWARE = vars.hardware;

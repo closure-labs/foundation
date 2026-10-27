@@ -3,7 +3,6 @@
   inputs,
   lib,
   pkgs,
-  foundationProfileSchema ? 2,
   foundationHost ? null,
   ...
 }: let
@@ -32,10 +31,7 @@ in {
   programs = {
     firefox = {
       enable = true;
-      package =
-        if foundationProfileSchema == 3
-        then config.lib.nixGL.wrap finiteFirefox
-        else finiteFirefox;
+      package = config.lib.nixGL.wrap finiteFirefox;
     };
   };
 }

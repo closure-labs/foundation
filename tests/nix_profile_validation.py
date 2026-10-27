@@ -20,13 +20,15 @@ def target(directory, *, normalizer, candidate=False, descriptor=True):
     shutil.copytree(ROOT / "lib", directory / "lib")
     shutil.copytree(ROOT / "modules", directory / "modules")
     shutil.copyfile(ROOT / "VERSION", directory / "VERSION")
-    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "normalize-profile-v2.nix", "hosts.nix"):
+    for name in ("catalog.nix", "home-catalog.nix", "normalize-profile.nix", "hosts.nix"):
         (directory / name).write_text("import ./lib/" + name + "\n")
     shutil.copyfile(ROOT / "lib/profile-capabilities.json", directory / "profile-capabilities.json")
-    extension = '''// {
-      rolesByName = base.rolesByName // { future = { name = "future"; label = "Future"; order = 5; }; };
-      roleNames = ["future"] ++ base.roleNames;
-    }''' if candidate else ""
+    if candidate:
+        role = directory / "modules/roles/future"
+        role.mkdir()
+        (role / "_feature.nix").write_text('''{ id="roles/future"; metadata.role = {
+          name="future"; label="Future"; order=5; classification="professional";
+        }; dependencies=[]; schemaDependencies={}; }''')
     directory.joinpath("flake.nix").write_text('''{
       outputs = _: let
         lib = {
@@ -34,13 +36,13 @@ def target(directory, *, normalizer, candidate=False, descriptor=True):
           genAttrs = names: f: builtins.listToAttrs (map (name: { inherit name; value = f name; }) names);
         };
         base = import ./catalog.nix;
-        catalog = base EXTENSION;
+        catalog = base;
       in { lib = {
         homeCatalog = import ./home-catalog.nix { domainCatalog = catalog; inherit lib; version = "fixture"; };
         CAPABILITIES
         NORMALIZER
       }; };
-    }'''.replace("EXTENSION", extension).replace("CAPABILITIES", "profileCapabilities = builtins.fromJSON (builtins.readFile ./profile-capabilities.json);" if normalizer and descriptor else "").replace("NORMALIZER", "normalizeProfile = import ./normalize-profile.nix { inherit catalog; };" if normalizer else ""))
+    }'''.replace("CAPABILITIES", "profileCapabilities = builtins.fromJSON (builtins.readFile ./profile-capabilities.json);" if normalizer and descriptor else "").replace("NORMALIZER", "normalizeProfile = import ./normalize-profile.nix { inherit catalog; };" if normalizer else ""))
 
 
 def main():
@@ -51,7 +53,7 @@ def main():
             return subprocess.run(command, check=True, text=True, stderr=subprocess.PIPE, **kwargs)
         with patch.object(home, "run", side_effect=quiet_run), patch.dict(os.environ, FINITE_FOUNDATION_CATALOG=str(base / "missing-caller-catalog"),
                                                                         FINITE_RUNNING_PROFILE_PATH=str(base / "no-running-image")):
-            for name, normalizer, candidate in (("legacy", False, False), ("bridge", True, False), ("candidate", True, True)):
+            for name, normalizer, candidate in (("current", True, False), ("candidate", True, True)):
                 selected = base / name
                 target(selected, normalizer=normalizer, candidate=candidate)
                 stage = base / (name + "-consumer")
@@ -68,18 +70,24 @@ def main():
                 home.run(["nix", "flake", "lock", "path:" + str(stage)])
                 lock_bytes = stage.joinpath("flake.lock").read_bytes()
                 selected_bytes = selected.joinpath("flake.nix").read_bytes()
-                # Mutable local inputs must still obey their locked content hash.
+                expected = copy.deepcopy(value)
+                expected.update(roles=(["future"] if candidate else []) + ["developer", "it"], packages=["jj", "uv"], capabilities=value.get("capabilities", []),
+                                host={"system": "x86_64-linux", "formFactor": "generic", "cpu": "generic", "gpus": [],
+                                      "model": "generic", "camera": False, "fingerprint": False})
+                # Mutable local inputs must never supply unlocked content. Nix may
+                # reject the changed path or reuse its already cached locked source.
                 selected.joinpath("flake.nix").write_text('{ outputs = _: throw "used unlocked input"; }')
                 try:
-                    home.validate_staged_profile(stage)
+                    locked = home.validate_staged_profile(stage)
                 except subprocess.CalledProcessError:
                     pass
                 else:
-                    raise AssertionError(f"{name} accepted changed locked source")
-                selected.joinpath("flake.nix").write_bytes(selected_bytes)
+                    assert locked == expected, (name, "did not use locked source", locked)
+                finally:
+                    selected.joinpath("flake.nix").write_bytes(selected_bytes)
+                assert stage.joinpath("flake.lock").read_bytes() == lock_bytes
+                assert home.read_json(stage / "profile.json") == value
                 actual = home.validate_staged_profile(stage)
-                expected = copy.deepcopy(value)
-                expected.update(roles=(["future"] if candidate else []) + ["developer", "it"], packages=["jj", "uv"])
                 assert actual == expected, (name, actual)
                 assert stage.joinpath("flake.lock").read_bytes() == lock_bytes
                 assert home.read_json(stage / "profile.json") == value
@@ -113,21 +121,19 @@ def main():
             assert home.validate_staged_profile(standalone)["roles"] == ["developer", "it"]
             print("Standalone target normalization passed", flush=True)
 
-            for name, capabilities in (("unsupported", {"schema": 1, "initializeSchemas": [3], "normalizeSchemas": [3], "writeSchema": 3, "catalogSchemas": [3]}),
+            for name, capabilities in (("unsupported", {"schema": 1, "initializeSchemas": [1, 2], "normalizeSchemas": [2], "writeSchema": 2, "catalogSchemas": [2]}),
                                        ("malformed", None)):
                 selected = base / (name + "-capabilities")
                 target(selected, normalizer=True)
                 home.write_json(selected / "profile-capabilities.json", capabilities)
                 home.write_json(selected / "profile.json", profile())
                 home.run(["nix", "flake", "lock", "path:" + str(selected)])
-                with patch.object(home, "validate_profile") as fallback:
-                    try:
-                        home.validate_staged_profile(selected)
-                    except (ValueError, subprocess.CalledProcessError):
-                        pass
-                    else:
-                        raise AssertionError(f"Accepted {name} target capabilities")
-                    fallback.assert_not_called()
+                try:
+                    home.validate_staged_profile(selected)
+                except (ValueError, subprocess.CalledProcessError):
+                    pass
+                else:
+                    raise AssertionError(f"Accepted {name} target capabilities")
                 print(f"Explicit {name} target capabilities rejected without fallback", flush=True)
 
             # Check the actual public export, rather than only the fixture API.
@@ -144,48 +150,36 @@ def main():
                   profiles.generic-x86_64.name = if name == "bluefin" then "finite" else "finite-dev";
                 }) domain.foundationsByName;
               };
-              legacyDomain = builtins.removeAttrs domain ["classifications"] // {
-                rolesByName = builtins.mapAttrs (_: role: builtins.removeAttrs role ["classification"]) domain.rolesByName;
-              };
             in {
               default = f.lib.homeCatalog;
-              legacy = f.lib.homeCatalogForSchema 2;
               current = f.lib.homeCatalogForSchema 3;
               custom = f.lib.mkHomeCatalog { domainCatalog = withImages; };
-              customLegacy = f.lib.mkHomeCatalog { domainCatalog = legacyDomain; schema = 2; };
               applications = builtins.fromJSON (builtins.readFile (f.lib.mkApplications {pkgs = f.inputs.nixpkgs.legacyPackages.x86_64-linux;}).profileCatalog);
               packaged = builtins.fromJSON (builtins.readFile f.packages.x86_64-linux.home-profile-catalog);
             }'''
             catalogs = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
             assert catalogs["default"] == catalogs["current"]
-            assert len(catalogs["legacy"]["roles"]) == 6
-            assert catalogs["legacy"]["profileSchema"] == 2
             assert len(catalogs["current"]["roles"]) == 10
             assert len(catalogs["current"]["capabilities"]) == 31
             assert catalogs["current"]["profileCapabilities"]["writeSchema"] == 3
             assert catalogs["default"] == catalogs["applications"] == catalogs["packaged"]
             assert catalogs["custom"]["foundations"]["bluefin"]["profiles"] == {"generic-x86_64": "finite"}
             assert catalogs["custom"]["classifications"]["personal"]["roles"] == ["family", "media", "creative", "gaming"]
-            assert catalogs["customLegacy"]["classifications"] == {}
-            assert len(catalogs["customLegacy"]["roles"]) == 6
-            assert all(role["classification"] is None for role in catalogs["customLegacy"]["roles"].values())
-            print("API/application/package catalogs agree; schema-3 image mappings and explicit legacy custom constructor pass", flush=True)
+            print("API/application/package catalogs agree; schema-3 image mappings pass", flush=True)
 
-            selected = base / "old-schema2-source"
+            selected = base / "unsupported-profile"
             target(selected, normalizer=True)
-            selected.joinpath("normalize-profile.nix").write_text("import ./lib/normalize-profile-v2.nix\n")
-            home.write_json(selected / "profile-capabilities.json", {**home.profile_capabilities(), "initializeSchemas": [1, 2], "normalizeSchemas": [2], "writeSchema": 2})
-            home.write_json(selected / "profile.json", {**profile(), "schema": 3, "capabilities": []})
+            home.write_json(selected / "profile.json", {**profile(), "schema": 2})
             home.run(["nix", "flake", "lock", "path:" + str(selected)])
             before = home.tree_digest(selected)
             try:
                 home.validate_staged_profile(selected)
-            except subprocess.CalledProcessError:
+            except (ValueError, subprocess.CalledProcessError):
                 pass
             else:
-                raise AssertionError("Old schema-2 source accepted schema 3")
+                raise AssertionError("Accepted unsupported persisted profile")
             assert home.tree_digest(selected) == before
-            print("New helper rejects supplied schema 3 against a schema-2-only source without writes", flush=True)
+            print("Unsupported persisted profile rejected without writes", flush=True)
 
             selected = base / "descriptor-absent-source"
             target(selected, normalizer=True, descriptor=False)

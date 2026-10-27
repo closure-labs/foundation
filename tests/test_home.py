@@ -33,10 +33,6 @@ class ConsumerTests(unittest.TestCase):
         self.base = Path(self.tmp.name)
         self.root = self.base / "home-manager"
         home.make_template(ROOT, INFO, self.root, LOCK)
-        # These recovery/update fixtures deliberately model an existing schema-2 consumer.
-        value = home.read_json(self.root / "profile.json")
-        value = {key: item for key, item in value.items() if key not in ("host", "capabilities")}
-        home.write_json(self.root / "profile.json", {**value, "schema": 2, "hardware": "generic-x86_64"})
         self.activation = self.base / "generation"
         self.activation.mkdir()
         (self.activation / "activate").write_text("#!/bin/sh\nexit 0\n")
@@ -222,7 +218,9 @@ class ConsumerTests(unittest.TestCase):
             self.assertEqual(home.read_json(stage / "profile.json")["roles"], ["sales"])
             self.assertEqual(home.read_json(stage / "foundation.json"), INFO)
             return self.activation
-        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "build", side_effect=build) as built, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
+        candidate = {**home.read_json(self.root / "profile.json"), "roles": ["sales"]}
+        preview = {"preview": {"status": "preview", "candidate": candidate}}
+        with patch.object(home, "prepare_profile_change", return_value=preview), patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "build", side_effect=build) as built, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             home.apply(self.root, roles="sales", check=True)
             built.assert_called_once()
             brew.assert_not_called(); commit.assert_not_called()

@@ -16,7 +16,7 @@ class NixMatrixTests(unittest.TestCase):
                 nix_matrix.selection(cases, selected)
 
     def test_two_case_batches_share_one_foundation_and_yield_every_case(self):
-        cases = {"a": {"schema": 2}, "b": {"schema": 3}, "c": {"schema": 3}}
+        cases = {"a": {"schema": 3}, "b": {"schema": 3}, "c": {"schema": 3}}
         responses = [subprocess.CompletedProcess([], 0, json.dumps({"a": {"drv": "a.drv"}, "b": {"drv": "b.drv"}})),
                      subprocess.CompletedProcess([], 0, json.dumps({"c": {"drv": "c.drv"}}))]
         with patch.object(nix_matrix.subprocess, "run", side_effect=responses) as run:

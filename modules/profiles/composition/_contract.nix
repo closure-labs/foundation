@@ -15,13 +15,5 @@ in {
   schema = 1; profileSchema = 3; status = "draft";
   inherit applications roles capabilities;
   inherit (base) commonCapabilities infrastructure graphics;
-  legacyApplications = project "apps/" "legacyApplication";
   optionalPackages = builtins.listToAttrs (map (name: { inherit name; value = name; }) catalog.packageNames);
-  legacy = {
-    commonApplications = targets 2 "home/legacy" "apps/";
-    roleApplications = builtins.listToAttrs (map (name: {
-      inherit name; value = map (suffix "apps/") (builtins.filter
-        (id: builtins.substring 0 5 id == "apps/") (loader.closure 2 ["roles/${name}"]));
-    }) catalog.roleNames);
-  };
 }

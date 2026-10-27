@@ -14,8 +14,8 @@ from test_profile_classification import evaluate
 
 
 def profile():
-    return {"schema": 2, "foundation": "bluefin", "hardware": "generic-x86_64",
-            "roles": ["it", "developer"], "packages": ["uv", "jj"],
+    return {"schema": 3, "foundation": "bluefin", "hardware": "generic-x86_64",
+            "roles": ["it", "developer"], "packages": ["uv", "jj"], "capabilities": [],
             "identity": {"username": pwd.getpwuid(os.getuid()).pw_name,
                          "homeDirectory": str(Path.home())}}
 
@@ -31,17 +31,18 @@ class NormalizationTests(unittest.TestCase):
         value["local"] = {"literal": "${untouched}", "enabled": True}
         value["identity"]["extra"] = "preserve"
         expected = copy.deepcopy(value)
+        expected["host"] = evaluate(f'(import {ROOT}/lib/hosts.nix).defaults')
         expected.update(roles=["developer", "it"], packages=["jj", "uv"])
         self.assertEqual(self.normalize(value), expected)
         self.assertEqual(self.normalize(expected), expected)
 
     def test_empty_selections_are_valid(self):
         value = {**profile(), "roles": [], "packages": []}
-        self.assertEqual(self.normalize(value), value)
+        self.assertEqual(self.normalize(value), {**value, "host": evaluate(f'(import {ROOT}/lib/hosts.nix).defaults')})
 
     def test_malformed_or_unsupported_profiles_fail_clearly(self):
         cases = [None, [], {}, *({**profile(), **change} for change in (
-            {"schema": 1}, {"schema": 4}, {"schema": True}, {"schema": 2.0}, {"roles": "it"},
+            {"schema": 1}, {"schema": 2}, {"schema": 4}, {"schema": True}, {"schema": 2.0}, {"roles": "it"},
             {"roles": [["it"]]}, {"roles": ["it", "it"]}, {"roles": ["missing"]},
             {"packages": [None]}, {"packages": ["uv", "uv"]}, {"packages": ["missing"]},
             {"foundation": []}, {"hardware": "missing"}, {"identity": None},
@@ -53,14 +54,14 @@ class NormalizationTests(unittest.TestCase):
             with self.subTest(value=value):
                 result = self.normalize(value, check=False)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("Invalid Foundation profile", result.stderr)
+                self.assertRegex(result.stderr, "Invalid Foundation (profile|host)")
 
     def test_equal_order_uses_name_as_tiebreaker(self):
         encoded = home.nix_value(json.dumps(profile()))
         result = evaluate(f'''(import {ROOT}/lib/normalize-profile.nix {{
-          catalog = domain // {{ rolesByName = builtins.mapAttrs (_: role: role // {{ order = 1; }}) domain.rolesByName; }};
+          catalog = domain // {{ packagesByName = builtins.mapAttrs (_: package: package // {{ order = 1; }}) domain.packagesByName; }};
         }}) (builtins.fromJSON {encoded})''')
-        self.assertEqual(result["roles"], ["developer", "it"])
+        self.assertEqual(result["packages"], ["jj", "uv"])
 
 
 class StagedValidationTests(unittest.TestCase):
@@ -85,7 +86,8 @@ class StagedValidationTests(unittest.TestCase):
     def payload(self, normalizer=True, value=None, catalog=None):
         return json.dumps({"hasNormalizer": normalizer,
                            "profile": self.value if value is None else value,
-                           "catalog": self.catalog if catalog is None else catalog})
+                           "catalog": self.catalog if catalog is None else catalog,
+                           "capabilities": home.profile_capabilities()})
 
     def test_target_normalizer_and_catalog_override_caller(self):
         normalized = {**self.value, "roles": ["developer", "it"], "packages": ["jj", "uv"]}
@@ -100,19 +102,17 @@ class StagedValidationTests(unittest.TestCase):
         self.assertIn(r"\${literal}", expression)
         self.assertNotIn("/caller/stale", expression)
 
-    def test_legacy_target_uses_its_own_catalog(self):
-        catalog = copy.deepcopy(self.catalog)
-        catalog["roles"]["future"] = {"order": 5}
-        value = {**self.value, "roles": ["it", "future"], "packages": []}
-        with patch.object(home, "capture", return_value=self.payload(False, value, catalog)):
-            self.assertEqual(home.validate_staged_profile(self.stage)["roles"], ["future", "it"])
+    def test_target_without_normalizer_is_rejected(self):
+        with patch.object(home, "capture", return_value=self.payload(False)), patch.object(home, "validate_runtime_profile") as runtime:
+            with self.assertRaisesRegex(ValueError, "normalizer; update Foundation"):
+                home.validate_staged_profile(self.stage)
+            runtime.assert_not_called()
 
     def test_target_evaluation_failure_never_falls_back(self):
         failure = subprocess.CalledProcessError(1, "nix eval")
-        with patch.object(home, "capture", side_effect=failure) as capture, patch.object(home, "validate_profile") as legacy:
+        with patch.object(home, "capture", side_effect=failure) as capture:
             with self.assertRaises(subprocess.CalledProcessError):
                 home.validate_staged_profile(self.stage)
-            legacy.assert_not_called()
             self.assertEqual(capture.call_count, 1)
 
     def test_runtime_identity_and_image_checks_remain_required(self):
@@ -129,12 +129,14 @@ class StagedValidationTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         home.validate_staged_profile(self.stage)
 
-    def test_legacy_malformed_values_raise_validation_errors(self):
-        for change in ({"roles": [["it"]]}, {"packages": [None]}, {"foundation": []},
-                       {"identity": []}, {"identity": {"username": "test", "homeDirectory": "/"}}):
-            with self.subTest(change=change), patch.object(home, "capture", return_value=self.payload(False, {**self.value, **change})):
-                with self.assertRaises(ValueError):
-                    home.validate_staged_profile(self.stage)
+    def test_schema_two_is_rejected_before_target_evaluation_without_writes(self):
+        home.write_json(self.stage / "profile.json", {**self.value, "schema": 2})
+        before = home.tree_digest(self.stage)
+        with patch.object(home, "capture") as capture:
+            with self.assertRaisesRegex(ValueError, "schema.*recreate.*schema 3"):
+                home.validate_staged_profile(self.stage)
+            capture.assert_not_called()
+        self.assertEqual(home.tree_digest(self.stage), before)
 
     def test_build_persists_normalization_before_nix_build(self):
         normalized = {**self.value, "roles": ["developer", "it"], "packages": ["jj", "uv"]}
@@ -169,32 +171,21 @@ class StagedValidationTests(unittest.TestCase):
         self.assertFalse(self.stage.joinpath("profile.json").is_symlink())
         self.assertEqual(home.read_json(self.stage / "profile.json"), normalized)
 
-    def test_initialize_only_migrates_schema_one(self):
-        for schema in (1, 2, 3):
-            value = {**self.value, "schema": schema, "extra": "keep"}
-            value["identity"] = {**value["identity"], "extra": "keep identity"}
-            if schema == 3:
-                value["capabilities"] = ["recording"]
-            if schema == 1:
-                del value["packages"]
-            def build(stage):
-                actual = home.read_json(stage / "profile.json")
-                self.assertEqual(actual["schema"], 2 if schema == 1 else schema)
-                self.assertEqual(actual["extra"], "keep")
-                self.assertEqual(actual["identity"]["extra"], "keep identity")
-                if schema == 3:
-                    self.assertEqual(actual["capabilities"], ["recording"])
-                self.assertEqual(actual["packages"], [] if schema == 1 else self.value["packages"])
-            metadata = self.base / "metadata.json"
-            home.write_json(metadata, INFO)
-            with self.subTest(schema=schema), patch.dict(os.environ, FINITE_FOUNDATION_METADATA=str(metadata)), patch.object(home, "capture", return_value=json.dumps(value)), patch.object(home, "build", side_effect=build) as build_mock:
-                root = self.base / "new-home"
-                home.initialize(root, self.base / "seed.yaml", check=True)
-                build_mock.assert_called_once()
-                self.assertFalse(root.exists())
+    def test_initialize_preserves_schema_three_fields(self):
+        value = {**self.value, "extra": "keep", "capabilities": ["recording"]}
+        value["identity"] = {**value["identity"], "extra": "keep identity"}
+        def build(stage):
+            self.assertEqual(home.read_json(stage / "profile.json"), value)
+        metadata = self.base / "metadata.json"
+        home.write_json(metadata, INFO)
+        with patch.dict(os.environ, FINITE_FOUNDATION_METADATA=str(metadata)), patch.object(home, "capture", return_value=json.dumps(value)), patch.object(home, "build", side_effect=build) as build_mock:
+            root = self.base / "new-home"
+            home.initialize(root, self.base / "seed.yaml", check=True)
+            build_mock.assert_called_once()
+            self.assertFalse(root.exists())
 
     def test_initialize_rejects_unknown_schema_before_creating_stage(self):
-        for schema in (None, True, 0, 4, "2"):
+        for schema in (None, True, 0, 1, 2, 4, "2"):
             with self.subTest(schema=schema), patch.object(home, "capture", return_value=json.dumps({**self.value, "schema": schema})), patch.object(home, "make_template") as template:
                 with self.assertRaisesRegex(ValueError, "Unsupported profile schema"):
                     home.initialize(self.base / "new-home", self.base / "seed.yaml", check=True)
@@ -205,7 +196,7 @@ class StagedValidationTests(unittest.TestCase):
         home.make_template(ROOT, INFO, root, LOCK)
         home.write_json(root / "profile.json", self.value)
         before = home.tree_digest(root)
-        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "validate_staged_profile", side_effect=ValueError("target rejected")), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "prepare_profile_change", side_effect=ValueError("target rejected")), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "target rejected"):
                 home.apply(root, roles="missing")
             brew.assert_not_called()
@@ -221,7 +212,7 @@ class StagedValidationTests(unittest.TestCase):
         root.joinpath("profile.json").symlink_to(linked)
         before = linked.read_bytes()
         digest = home.tree_digest(root)
-        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "validate_staged_profile", side_effect=ValueError("target rejected")):
+        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "prepare_profile_change", side_effect=ValueError("target rejected")):
             with self.assertRaisesRegex(ValueError, "target rejected"):
                 home.apply(root, roles="missing")
         self.assertEqual(linked.read_bytes(), before)

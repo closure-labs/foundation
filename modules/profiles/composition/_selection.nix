@@ -4,7 +4,7 @@ let
   catalog = import ../../../lib/catalog.nix;
   p = (import ../../../lib/normalize-profile.nix { inherit catalog; }) profile;
   contract = import ../../../lib/profile-drafts/contract.nix { inherit catalog; };
-  schema3 = [
+  selected = [
     "profiles/composition"
   ]
   ++ map (name: "capabilities/${name}") contract.commonCapabilities
@@ -19,14 +19,6 @@ let
     "hosts/models/${p.host.model}"
   ]
   ++ map (name: "hosts/gpu/${name}") p.host.gpus;
-  schema2 =
-    map (name: "roles/${name}") p.roles
-    ++ map (name: "apps/${name}") p.packages
-    ++ [
-      (
-        if p.hardware == "dell-xps-9350-intel" then "hosts/models/dell-xps-9350" else "hosts/models/generic"
-      )
-    ];
 in
 {
   schema = p.schema;
@@ -44,5 +36,5 @@ in
     else
       [ ]
   )
-  ++ (if p.schema == 3 then schema3 else schema2);
+  ++ selected;
 }

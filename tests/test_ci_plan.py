@@ -108,11 +108,12 @@ class CiPlanTests(unittest.TestCase):
         self.assertFalse(plan["checks"] or plan["schema3"] or plan["hosts"] or plan["legacy"])
         ci.validate_plan(plan)
 
-    def test_transitive_shared_application_selection_and_schema_variants(self):
+    def test_transitive_shared_application_selection_and_schema_rejection(self):
         graph = ci.load_graph()
         self.assertIn("apps/ghostty", ci.closure(graph, 3, ["roles/developer"]))
         self.assertIn("apps/ghostty", ci.closure(graph, 3, ["roles/support"]))
-        self.assertIn("providers/flatpak", ci.closure(graph, 2, ["apps/gradia"]))
+        with self.assertRaisesRegex(ValueError, "expected schema 3"):
+            ci.closure(graph, 2, ["apps/gradia"])
         self.assertIn("providers/nixpkgs", ci.closure(graph, 3, ["apps/gradia"]))
         plan = self.focused(["modules/apps/ghostty/_package.nix"])
         self.assertEqual(set(plan["schema3"]), {"capabilities", "dell-mixed", "all"})
@@ -177,7 +178,7 @@ class CiPlanTests(unittest.TestCase):
         import nix_schema3_validation,nix_host_validation,nix_legacy_validation
         for group,mod in (("schema3",nix_schema3_validation),("hosts",nix_host_validation),("legacy",nix_legacy_validation)):
             self.assertEqual(ci.make_plan(None)[group], list(mod.cases()))
-        self.assertEqual(len(ci.SCHEMA3)+len(ci.HOSTS)+len(ci.LEGACY),21)
+        self.assertEqual(len(ci.SCHEMA3)+len(ci.HOSTS)+len(ci.LEGACY),19)
         for paths in (["../x"],["/x"],[None],"x"):
             with self.assertRaises(ValueError): ci.make_plan(paths)
 

@@ -15,7 +15,6 @@
     ];
     "graphics" = {
       "globalLibraryExports" = false;
-      "legacyBackend" = "generic-linux-gpu";
       "offload" = "explicit-only";
       "preferredBackend" = "nixgl-mesa";
       "vulkanDefault" = false;
@@ -33,7 +32,6 @@
     "apps/firefox"
     "providers/graphics"
     "home/shell"
-    "home/legacy"
     "home/activation"
     "home/commands"
   ];

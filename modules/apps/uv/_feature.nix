@@ -8,13 +8,6 @@
       "input" = "nixpkgs";
       "provider" = "nix";
     };
-    "legacyApplication" = {
-      "attribute" = "uv";
-      "declaration" = "nix:nixpkgs:uv";
-      "graphical" = false;
-      "input" = "nixpkgs";
-      "provider" = "nix";
-    };
     "package" = {
       "description" = "Python package and project manager";
       "label" = "uv";
@@ -24,13 +17,9 @@
   };
   "dependencies" = [ "providers/nixpkgs" ];
   "schemaDependencies" = { };
-  configuration =
-    schema:
-    if schema == 3 then
-      (import ../../profiles/composition/_application.nix {
-        id = "uv";
-        application = (import ./_feature.nix).metadata.application;
-      })
-    else
-      { };
+  configuration = schema:
+    (import ../../profiles/composition/_application.nix {
+      id = "uv";
+      application = (import ./_feature.nix).metadata.application;
+    });
 }
