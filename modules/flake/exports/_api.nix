@@ -28,6 +28,7 @@
       sourceInfo = releaseInfo;
     };
 in {
+  ciPlans = import ../../ci/_plans.nix;
   ciGraph = import ../../ci/_graph.nix;
   inherit catalog homeCatalog homeCatalogForSchema sourceInfo mkApplications normalizeProfile;
   hosts = import ../../../lib/hosts.nix;

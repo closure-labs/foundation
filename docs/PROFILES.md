@@ -68,22 +68,4 @@ Schema 3 uses nixGL Mesa for graphical Nix applications, with verified Flathub e
 
 ## IPU7 camera health
 
-`foundation home camera` detects a bound Intel IPU7 controller and enumerates camera formats with the host's libcamera tools. It does not capture images. `foundation home check` includes this diagnostic before the configuration build; camera warnings do not prevent building.
-
-A legacy `/etc/libcamera/configuration.yaml` override can select an incompatible IPA module from `/var/lib/finite/libcamera/ipa`. The sensor may appear in PipeWire while Firefox has no usable camera formats. When that exact undefined-symbol failure is detected, Foundation tests the installed host IPA module and only offers a repair if format enumeration succeeds.
-
-```sh
-foundation home camera
-foundation home camera --repair
-```
-
-The `hosts/camera/ipu7` aspect performs the same guarded repair at activation time. Detection runs on the target machine, not during pure flake evaluation. It applies to actual IPU7 controllers, not every Intel CPU. Unknown failures, missing host tools and conflicting personal overrides are reported without replacing them.
-
-The repair writes `~/.config/systemd/user/wireplumber.service.d/70-foundation-ipu7.conf`, pointing WirePlumber at the matching host IPA directory. It does not edit system files, install drivers, alter camera permissions or restart audio automatically. When it is safe to interrupt audio and calls:
-
-```sh
-systemctl --user daemon-reload
-systemctl --user restart wireplumber
-```
-
-Then reload the Firefox meeting page. The check verifies format enumeration; confirm video in the application separately. To undo the workaround, remove only the generated `70-foundation-ipu7.conf`, reload systemd and restart WirePlumber. Future activation will recreate it if the verified failure remains.
+Foundation checks exposed IPU7 controllers at runtime and can repair a verified host IPA module mismatch. Follow [Camera diagnosis and repair](CAMERA.md) for commands, restart instructions and limitations.

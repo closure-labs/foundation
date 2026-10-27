@@ -39,6 +39,6 @@ The pure entry points under [lib/](../lib/) remain compatible façades over feat
 
 `lib.mkApplications { pkgs = …; }` packages the Foundation helpers. `lib.mkConsumerTemplate { pkgs = …; }` creates the consumer scaffold. Both accept an optional `releaseInfo`; `lib.sourceInfo` describes the source version and provenance.
 
-`flakeModules.aspects` retains the exported aspect module and existing `features.*` aliases. `lib.ciGraph` exposes the versioned dependency manifest, while `lib.discoveredFeatures` lists registered features. Registration alone does not activate them.
+`flakeModules.aspects` retains the exported aspect module and existing `features.*` aliases. `lib.ciPlans` exposes full and automation check selections. `lib.ciGraph` exposes the versioned dependency manifest, while `lib.discoveredFeatures` lists registered features. Registration alone does not activate them.
 
 See [module ownership](MODULES.md) for implementation conventions and [CI](CI.md) for graph validation.

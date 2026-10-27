@@ -31,6 +31,16 @@ Without that evidence, CI runs full validation. Rename detection is disabled so 
 
 Manual runs, merge groups, release calls and explicit checkout overrides always validate fully. Focused runs request affected build checks plus generated-file checks. Nix's derivation cache determines what actually rebuilds.
 
+## Automation dependency updates
+
+Same-major GitHub Action pin updates use an `automation` plan when the exact base has a successful CI gate and the generated dependency graph is unchanged and valid. The planner compares the complete Git diff: only existing workflow `uses:` lines may change, preserving the action identity and changing only a full commit SHA and its version comment. Documentation may accompany those changes.
+
+[Flake-owned plan declarations](../modules/ci/_plans.nix), exported as `lib.ciPlans`, name the selected checks. The generated manifest carries the same declarations, and the graph check verifies those names against the actual flake check outputs.
+
+Automation plans run workflow lint, all fixtures and Python tests, plus the `profile-generation`, `check-flake-file` and `ci-graph` build checks. They skip the profile matrix and full home build. This exercises Nix setup and packaged helpers while retaining the strict required gate. Major action updates, workflow logic/permissions/runner changes, added or deleted workflows, mixed runtime changes and unavailable diff evidence use full validation.
+
+A dependency label alone never selects this shortcut. In particular, `flake.lock` changes can update Den, Home Manager and shared package sources, affecting every profile; those still run full validation. Manual, release and merge-group runs remain full even for action-pin-only changes.
+
 ## Keep generated files current
 
 ```sh

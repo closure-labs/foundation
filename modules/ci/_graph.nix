@@ -1,4 +1,5 @@
 let
+  plans = import ./_plans.nix;
   loader = import ../flake/features/_loader.nix {};
   inherit (loader) features;
   root = ../..;
@@ -13,6 +14,7 @@ let
   check = roots: { schema = 3; inherit roots; };
 in {
   schema = 1;
+  inherit plans;
   features = builtins.mapAttrs (id: f: {
     directory = "modules/${id}/";
     descriptorHash = builtins.hashString "sha256" (builtins.readFile (root + "/modules/${id}/_feature.nix"));
@@ -30,5 +32,5 @@ in {
     check-flake-file = check [];
     ci-graph = check [];
   };
-  fullChecks = ["home" "profile-command" "nixgl-wrapper" "desktop-icons" "profile-generation" "check-flake-file" "ci-graph"];
+  fullChecks = plans.full.checks;
 }

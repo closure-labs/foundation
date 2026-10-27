@@ -69,6 +69,10 @@ foundation home update
 
 The first command reports available published releases. The second builds and activates an update while preserving personal configuration. See [Activation, updates and recovery](docs/ACTIVATION.md) for build limits, backups and direct Home Manager commands.
 
+## Camera troubleshooting
+
+If Firefox cannot find an Intel IPU7 webcam, run `foundation home camera`. Foundation can detect and repair a verified host processing-module mismatch. Follow [Camera diagnosis and repair](docs/CAMERA.md) for the next steps, including when to restart services.
+
 ## Documentation
 
 [All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)

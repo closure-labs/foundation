@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GRAPH_PATH = "modules/ci/_graph.json"
 CASE_PROFILES = json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())
 SCHEMA3, HOSTS, LEGACY = (list(CASE_PROFILES[group]) for group in ("schema3", "hosts", "legacy"))
-FULL_CHECKS = ["home", "profile-command", "nixgl-wrapper", "desktop-icons", "profile-generation", "check-flake-file", "ci-graph"]
+FULL_CHECKS = json.loads((ROOT / GRAPH_PATH).read_text())["plans"]["full"]["checks"]
 
 
 def closure(graph, schema, roots):
@@ -42,6 +42,10 @@ def load_graph(path=None, validate_sources=False):
         raise ValueError("Unsupported dependency graph")
     if graph["fullChecks"] != FULL_CHECKS or set(graph["checks"]) != set(FULL_CHECKS):
         raise ValueError("Unsupported check set")
+    if (graph["plans"]["full"]["checks"] != FULL_CHECKS
+            or not graph["plans"]["automation"]["checks"]
+            or any(name not in FULL_CHECKS for name in graph["plans"]["automation"]["checks"])):
+        raise ValueError("Invalid flake CI plan targets")
     owners = set()
     for name, feature in graph["features"].items():
         directory = "modules/" + name + "/"
@@ -82,6 +86,62 @@ def documentation(path):
             or (path.startswith(".great_cto/") and path.endswith(".md")))
 
 
+# Preserve every byte except a pinned action SHA and its same-major version label.
+ACTION_PIN = re.compile(
+    r"(?P<prefix>[ \t]*(?:- )?uses: )(?P<action>[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)"
+    r"@(?P<sha>[a-f0-9]{40})(?P<gap>[ \t]+)# v(?P<version>[0-9]+(?:\.[0-9]+){0,2})(?P<end>[ \t]*)"
+)
+
+
+def action_pin_update(before, after):
+    old, new = before.splitlines(keepends=True), after.splitlines(keepends=True)
+    if len(old) != len(new) or old == new:
+        return False
+    for left, right in zip(old, new):
+        if left == right:
+            continue
+        a, b = ACTION_PIN.fullmatch(left.rstrip("\n")), ACTION_PIN.fullmatch(right.rstrip("\n"))
+        if not a or not b:
+            return False
+        if any(a[k] != b[k] for k in ("prefix", "action", "gap", "end")):
+            return False
+        av, bv = tuple(map(int, a['version'].split('.'))), tuple(map(int, b['version'].split('.')))
+        if av[0] != bv[0] or bv < av or a['sha'] == b['sha']:
+            return False
+        if left.endswith("\n") != right.endswith("\n"):
+            return False
+    return True
+
+
+def action_pins_only(paths, base, cwd=None):
+    cwd = cwd or ROOT
+    try:
+        head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True, stderr=subprocess.PIPE).strip()
+        actual = changed_paths(base, head, cwd=cwd)
+        if actual is None or sorted(set(actual)) != paths:
+            return False
+        found = False
+        for path in paths:
+            if documentation(path):
+                continue
+            if not re.fullmatch(r"\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml", path):
+                return False
+            # Require regular files on both sides; additions/deletions/renames fail closed.
+            contents, modes = [], []
+            for rev in (base, head):
+                mode = subprocess.check_output(["git", "ls-tree", rev, "--", path], cwd=cwd, text=True, stderr=subprocess.PIPE)
+                if not mode.startswith("100644 blob ") and not mode.startswith("100755 blob "):
+                    return False
+                modes.append(mode.split()[0])
+                contents.append(subprocess.check_output(["git", "show", f"{rev}:{path}"], cwd=cwd, text=True, stderr=subprocess.PIPE))
+            if modes[0] != modes[1] or not action_pin_update(*contents):
+                return False
+            found = True
+        return found
+    except (OSError, UnicodeError, subprocess.SubprocessError):
+        return False
+
+
 def make_plan(paths, full=False, baseline=None, graph=None):
     if paths is not None:
         if (not isinstance(paths, list) or any(not isinstance(p, str) or not p
@@ -96,6 +156,11 @@ def make_plan(paths, full=False, baseline=None, graph=None):
     try:
         graph = graph if graph is not None else load_graph()
         owners = {file: name for name, feature in graph["features"].items() for file in feature["files"]}
+        if action_pins_only(paths, baseline):
+            plan.update(mode="automation", contracts=False, baseline=baseline,
+                        graph=graph_digest(graph), checks=list(graph["plans"]["automation"]["checks"]),
+                        schema3=[], hosts=[], legacy=[])
+            return plan
         affected = set()
         for path in paths:
             if path in owners:
@@ -119,7 +184,7 @@ def make_plan(paths, full=False, baseline=None, graph=None):
 def validate_plan(plan):
     if (not isinstance(plan, dict) or type(plan.get("schema")) is not int or plan.get("schema") != 2
             or type(plan.get("contracts")) is not bool or not isinstance(plan.get("mode"), str)
-            or plan.get("mode") not in {"docs", "focused", "full"}):
+            or plan.get("mode") not in {"docs", "automation", "focused", "full"}):
         raise ValueError("Missing or unsupported CI plan")
     if plan["mode"] != "full" and (not isinstance(plan.get("baseline"), str)
                                   or not re.fullmatch(r"[a-f0-9]{40}", plan["baseline"])):
