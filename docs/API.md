@@ -37,7 +37,9 @@ The pure entry points under [lib/](../lib/) remain compatible façades over feat
 
 ## Packaging and modules
 
-`lib.mkApplications { pkgs = …; }` packages the Foundation helpers. `lib.mkConsumerTemplate { pkgs = …; }` creates the consumer scaffold. Both accept an optional `releaseInfo`; `lib.sourceInfo` describes the source version and provenance.
+`lib.mkApplications { pkgs = …; }` packages the Foundation helpers. `lib.mkConsumerTemplate { pkgs = …; }` creates the consumer scaffold. Both accept an optional `releaseInfo`; the argument name is retained for compatibility and does not require a published release. `lib.sourceInfo` describes the source version and provenance: `schema = 1`, `compatibility = 1`, `version`, immutable `rev`, `narHash`, and `lastModified`. Staged main adoption additionally records `upstreamCI` (workflow, run ID, attempt and URL) as additive provenance and revalidates it before activation. The version is a human milestone; the revision identifies an update. Packaging consumers must retain the exact source revision and hash, not infer identity from a version tag alone. Dirty or unpinned source metadata is not a substitute for valid consumer provenance.
+
+Main-tracking consumer declarations use `github:closure-labs/foundation/main`; their lock node retains `original.ref = "main"` alongside immutable `locked.rev` and `locked.narHash`. Foundation owns its nested dependency graph. Do not override its Nixpkgs or Home Manager pins with consumer-level follows; unrelated personal inputs remain separately owned. See [updates](ACTIVATION.md#update-foundation) for explicit adoption and qualification.
 
 `flakeModules.aspects` retains the exported aspect module and existing `features.*` aliases. `lib.ciPlans` exposes full and automation check selections. `lib.ciGraph` exposes the versioned dependency manifest, while `lib.discoveredFeatures` lists registered features. Registration alone does not activate them.
 

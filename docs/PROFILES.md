@@ -41,7 +41,7 @@ Use the [configuration selector](CONFIGURATION.md#change-roles-and-applications)
 ## Generate a profile
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-profile -- \
+nix run github:closure-labs/foundation/main#home-profile -- \
   --foundation bluefin-dx --roles developer,creative \
   --packages jj --capabilities recording \
   --form-factor laptop --cpu intel --gpus intel-integrated --format json

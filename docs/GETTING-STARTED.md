@@ -17,7 +17,7 @@ Run Foundation commands as your desktop user, not with `sudo`. If `~/.config/hom
 For a household desktop:
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-profile -- \
+nix run github:closure-labs/foundation/main#home-profile -- \
   --foundation bluefin --roles family,media --form-factor desktop \
   --format json > "$HOME/foundation-profile.json"
 ```
@@ -25,7 +25,7 @@ nix run github:closure-labs/foundation/latest-release#home-profile -- \
 For a work laptop:
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-profile -- \
+nix run github:closure-labs/foundation/main#home-profile -- \
   --foundation bluefin-dx --roles developer --packages jj \
   --form-factor laptop --cpu intel --gpus intel-integrated \
   --format json > "$HOME/foundation-profile.json"
@@ -38,7 +38,7 @@ Review [roles, capabilities and host values](PROFILES.md) before continuing. Kee
 ## 3. Build without activating
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-init -- \
+nix run github:closure-labs/foundation/main#home-init -- \
   --profile "$HOME/foundation-profile.json" --check
 ```
 
@@ -47,11 +47,11 @@ This validates the profile and builds a staged home. It does not create the live
 ## 4. Initialize and activate
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-init -- \
+nix run github:closure-labs/foundation/main#home-init -- \
   --profile "$HOME/foundation-profile.json"
 ```
 
-Initialization creates the personal flake, provisions required shared Homebrew tools, and activates the built generation. Its `flake.lock` records the exact Foundation source and dependencies.
+Initialization creates the personal flake, provisions required shared Homebrew tools, and activates the built generation. Its `flake.nix` tracks `main`, while `flake.lock` records the exact Foundation revision, content hash and dependency pins. Later commits are adopted only through an explicit update; a version release is not required.
 
 After activation, open a new terminal and follow [Configuration](CONFIGURATION.md) to change selections and add personal settings.
 
@@ -70,4 +70,4 @@ FINITE_HOME_FLAKE_PATH="$PWD" nix run path:.#foundation -- home check
 FINITE_HOME_FLAKE_PATH="$PWD" nix run path:.#foundation -- home apply
 ```
 
-The second command activates the checkout and provisions shared Brew tools. Maintain its source and dependency pins explicitly; published-release updates target importing personal flakes. See [Configuration](CONFIGURATION.md#pin-a-source-checkout) for an immutable local input instead.
+The second command activates the checkout and provisions shared Brew tools. Maintain its source and dependency pins explicitly; staged updates target importing personal flakes. See [Configuration](CONFIGURATION.md#pin-a-source-checkout) for an immutable local input instead.

@@ -1,6 +1,6 @@
 # Migration
 
-Use this guide to adopt Foundation in an older home configuration or replace an unsupported home profile. Routine release updates are covered in [Activation](ACTIVATION.md#update-foundation). These are separate operations; choose the section that matches your configuration.
+Use this guide to adopt Foundation in an older home configuration or replace an unsupported home profile. Routine source updates are covered in [Activation](ACTIVATION.md#update-foundation). These are separate operations; choose the section that matches your configuration.
 
 Before starting, back up your personal files and application data. Run commands as your desktop user. Build checks do not activate changes.
 
@@ -21,13 +21,21 @@ foundation home migrate --check
 foundation home migrate
 ```
 
-If the helpers are not installed, run `nix run github:closure-labs/foundation/latest-release#home-migrate -- --check` first, then repeat without `--check` to migrate.
+If the helpers are not installed, run `nix run github:closure-labs/foundation/main#home-migrate -- --check` first, then repeat without `--check` to migrate.
 
 Migration adopts Foundation's dependency pins while preserving your profile, personal modules and additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration.
 
-## Move a fixed release pin onto the release channel
+## Move an older consumer onto main
 
-To move a fixed-commit consumer onto that channel, change its Foundation URL in `flake.nix`, then update the input and apply:
+New consumers use `github:closure-labs/foundation/main`. The former `latest-release` branch is no longer advanced by this repository's publishing workflow. Existing lock files still identify immutable sources; retiring the publisher does not change those builds. A current Foundation staged updater migrates a supported `latest-release` declaration to `main` when you explicitly apply an eligible update. Older installed helpers may still use the old release-only discovery, so use the manual route below to adopt this behavior.
+
+To deliberately opt an existing tag or fixed-commit consumer into main tracking, change its Foundation URL in `flake.nix` to:
+
+```nix
+inputs.foundation.url = "github:closure-labs/foundation/main";
+```
+
+Then update the input, review the lock diff, build and apply:
 
 ```sh
 cd ~/.config/home-manager
@@ -35,6 +43,8 @@ nix flake update foundation
 foundation home check
 foundation home apply
 ```
+
+This manual path resolves current `main` without the staged updater's CI qualification. Review its exact commit and successful CI before applying. Retain your previous lock and personal files for recovery. Existing local Git pins remain manually maintained and are never silently migrated to GitHub.
 
 ## Integration API
 

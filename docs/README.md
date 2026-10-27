@@ -14,6 +14,6 @@ Start with a profile, add your own settings, then build and activate your home.
 | Add or change a Foundation feature | [Module architecture](MODULES.md) |
 | Integrate Foundation into another flake | [Public API](API.md) |
 | Understand validation and affected checks | [CI](CI.md) |
-| Prepare and publish a release | [Releasing](RELEASING.md) |
+| Understand main delivery and publish a version milestone | [Releasing](RELEASING.md) |
 
 The [generated dependency diagram](ARCHITECTURE.md) describes how catalogs, home composition and CI share feature declarations. See the [changelog](../CHANGELOG.md) for release history and [contributing guide](../CONTRIBUTING.md) for local checks.
