@@ -7,8 +7,7 @@
     ];
     "infrastructure" = [
       "Foundation commands and transactional activation"
-      "Brew provider policy and preflight"
-      "Managed Git/Fzf/nh/Zsh integration"
+      "Managed Git/nh/Zsh integration"
       "Fonts and XDG paths"
       "Generic Linux integration"
       "Role flags and existing role-specific configuration"
@@ -33,7 +32,6 @@
     "providers/flatpak"
     "apps/firefox"
     "providers/graphics"
-    "providers/homebrew"
     "home/shell"
     "home/legacy"
     "home/activation"

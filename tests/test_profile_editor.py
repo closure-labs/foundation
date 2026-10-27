@@ -84,7 +84,7 @@ class ProfileEditor(unittest.TestCase):
 
     def test_preview_is_deterministic_and_has_no_live_writes_or_external_effects(self):
         before = home.tree_digest(self.root)
-        with patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             first = self.preview(capabilities="recording", packages="")
             second = self.preview(capabilities="recording", packages="")
         self.assertEqual(first, second)
@@ -95,7 +95,7 @@ class ProfileEditor(unittest.TestCase):
         self.assertIn("do not automatically import", first["summary"])
 
     def test_conversion_requires_approval_before_build(self):
-        with patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew:
             with self.assertRaisesRegex(ValueError, "reviewed --preview"):
                 home.apply(self.root, roles="family", migrate_profile=True)
         build.assert_not_called(); brew.assert_not_called()
@@ -106,14 +106,14 @@ class ProfileEditor(unittest.TestCase):
         def build(stage):
             self.assertEqual(home.read_json(stage / "profile.json"), review["preview"]["candidate"])
             return self.activation
-        with patch.object(home, "build", side_effect=build), patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             home.apply(self.root, roles="family", packages="", capabilities="recording", migrate_profile=True, approve_preview=review["approvalToken"])
         brew.assert_called_once(); commit.assert_called_once()
         self.assertEqual(commit.call_args.kwargs["expected_profile_hash"], home.profile_hash(self.root))
 
     def test_build_only_conversion_needs_no_approval_and_preserves_live_profile(self):
         before = home.tree_digest(self.root)
-        with patch.object(home, "build", return_value=self.activation) as build, patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "build", return_value=self.activation) as build, patch.object(home, "prepare_generation") as brew:
             home.apply(self.root, roles="family", migrate_profile=True, check=True)
         build.assert_called_once(); brew.assert_not_called()
         self.assertEqual(home.tree_digest(self.root), before)
@@ -172,7 +172,7 @@ class ProfileEditor(unittest.TestCase):
         def build(stage):
             linked.write_text(linked.read_text() + "\n")
             return self.activation
-        with patch.object(home, "build", side_effect=build), patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "changed during the build"):
                 home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
         brew.assert_not_called(); commit.assert_not_called()
@@ -181,7 +181,7 @@ class ProfileEditor(unittest.TestCase):
     def test_failed_build_leaves_original_profile_and_sources_intact(self):
         review = self.preview()
         before = home.tree_digest(self.root)
-        with patch.object(home, "build", side_effect=ValueError("build failed")), patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "build", side_effect=ValueError("build failed")), patch.object(home, "prepare_generation") as brew:
             with self.assertRaisesRegex(ValueError, "build failed"):
                 home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
         brew.assert_not_called()
@@ -207,7 +207,7 @@ class ProfileEditor(unittest.TestCase):
             if command == [str(self.activation / "activate")]:
                 self.assertEqual(home.read_json(self.root / "profile.json")["schema"], 3)
                 raise subprocess.CalledProcessError(1, command)
-        with patch.object(home, "build", return_value=self.activation), patch.object(home, "provision_brew"), patch.object(home, "previous_generation", return_value=previous), patch.object(home, "run", side_effect=activate) as run:
+        with patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=previous), patch.object(home, "run", side_effect=activate) as run:
             with self.assertRaises(subprocess.CalledProcessError):
                 home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
         self.assertEqual(home.tree_digest(self.root), before)
@@ -217,7 +217,7 @@ class ProfileEditor(unittest.TestCase):
     def test_successful_conversion_backs_up_two_and_updates_the_finite_selection(self):
         review = self.preview()
         state = self.base / "configuration"
-        with patch.object(home, "build", return_value=self.activation), patch.object(home, "provision_brew"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(state)):
+        with patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(state)):
             home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
         self.assertEqual(home.read_json(self.root / "profile.json"), review["preview"]["candidate"])
         self.assertEqual(home.read_json(state / "finite/profile.json"), review["preview"]["candidate"])

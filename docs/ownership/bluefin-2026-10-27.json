@@ -1,0 +1,1326 @@
+{
+  "schema": 1,
+  "authorizesPublication": false,
+  "baselineDate": "2026-10-27",
+  "baseImages": {
+    "bluefin": "ghcr.io/ublue-os/bluefin@sha256:60f302cf95d422a46a961769a1918b08cccfc24a27b22111ad8afcabfb5ad400",
+    "bluefin-dx": "ghcr.io/ublue-os/bluefin-dx@sha256:6e9709f03441430839b5a759634c558b6c00ea4252c78779e532601e1171929e"
+  },
+  "bluefinSource": "339a46a5817c53ec0846f56af2c82fc762cbf3b5",
+  "nativeBuild": {
+    "run": 40432110222,
+    "jobs": {
+      "bluefin": 121952031329,
+      "bluefin-dx": 121952031208
+    }
+  },
+  "commonImage": "ghcr.io/projectbluefin/common@sha256:e3688e9263031989b6466283fd68346d06c8526e2eb3747d35951024292f79e3",
+  "commonAmd64Manifest": "sha256:6d5b38d6ba7f588e36f38f1e6063b4260793cd215665233004eb9ccc80af3354",
+  "commonLayer": "sha256:dbc353aff2eb1896d3e81aabdbfdbef6e08c970fdaa04350be2e32ba78e978d4",
+  "commonTocSha256": "sha256:aabfd056d67053912b77a1d4ef4c276e7a033f444ab3c9ad12891a2f41aba276",
+  "brewImage": "ghcr.io/ublue-os/brew@sha256:393b567da078f0f0638450c388e229011dae06f94a90017cb7525b57d9faa46e",
+  "brewSetupLayer": "sha256:dd81fea4ccdc6df15ee0f7e871fd2dc12ef36bde1a0b39eee47f3772cc26e65e",
+  "upstreamFiles": [
+    {
+      "name": "system_files/bluefin/usr/share/ublue-os/homebrew/full-desktop.Brewfile",
+      "size": 2444,
+      "digest": "sha256:282d791f78be957b8781e0727b75b7c31ab94bbdf625d63216a9dca878e124b7",
+      "offset": 106338487,
+      "endOffset": 106339490
+    },
+    {
+      "name": "system_files/bluefin/usr/share/ublue-os/homebrew/system-dx-flatpaks.Brewfile",
+      "size": 242,
+      "digest": "sha256:4867d23cf4243979c1053a5c569ef60ca47ef634f5a96fc69ce07214fb3a41c3",
+      "offset": 106339635,
+      "endOffset": 106339799
+    },
+    {
+      "name": "system_files/bluefin/usr/share/ublue-os/homebrew/system-flatpaks.Brewfile",
+      "size": 1269,
+      "digest": "sha256:32ca0cd5315c571bba31dcc863f7f256fa00cb31e3b4e11b6e7427e9cadcc7a2",
+      "offset": 106339941,
+      "endOffset": 106340412
+    },
+    {
+      "name": "system_files/bluefin/usr/share/ublue-os/just/system.just",
+      "size": 15879,
+      "digest": "sha256:0bbe4ed05940550e5bcf2aa37f4baa2875d52001d5cd3a36e8da2167f070f37e",
+      "offset": 106341853,
+      "endOffset": 106346959
+    },
+    {
+      "name": "system_files/shared/usr/bin/brew-preinstall",
+      "size": 59,
+      "digest": "sha256:22638cadaab722da067a57578c04e4bee6e95ebffb6861f412beecca6f33c315",
+      "offset": 106356342,
+      "endOffset": 106356414
+    },
+    {
+      "name": "system_files/shared/usr/lib/systemd/user/brew-preinstall.service",
+      "size": 431,
+      "digest": "sha256:207b36ebab4c3e5816d3d3d65e352df9d7ba386f1561f63855a6e0ae915965a9",
+      "offset": 112836144,
+      "endOffset": 112836438
+    },
+    {
+      "name": "system_files/shared/usr/lib/systemd/user-preset/01-brew-preinstall.preset",
+      "size": 31,
+      "digest": "sha256:7edb0fd62dae6b248df6dc8ab45752d8daa99b1b022d1a2b96aff3e5056cb0ef",
+      "offset": 112836926,
+      "endOffset": 112836970
+    },
+    {
+      "name": "system_files/shared/usr/libexec/brew-preinstall",
+      "size": 8798,
+      "digest": "sha256:67c802d8c026dc835893266e13ac9d2f65d1e3de1bf4121faf89184e3158c778",
+      "offset": 112861094,
+      "endOffset": 112864316
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/ai-tools.Brewfile",
+      "size": 665,
+      "digest": "sha256:9e31f58838b7ce7d9ba60d74b9f4f5928b025ab1ca60a37f64ef1c84da26395b",
+      "offset": 116533049,
+      "endOffset": 116533337
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/artwork.Brewfile",
+      "size": 199,
+      "digest": "sha256:ef0b430b8cfe97f73fea40ede92ae12d970682f8872ca3923e328d86880bbfa8",
+      "offset": 116533473,
+      "endOffset": 116533575
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/cli.Brewfile",
+      "size": 218,
+      "digest": "sha256:65b0657375707febc5967882402c5d4dc5528dbec06074a1b5f203d60ea313d5",
+      "offset": 116533708,
+      "endOffset": 116533840
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/cncf.Brewfile",
+      "size": 4869,
+      "digest": "sha256:8b96b3b615766bac4ab4521818170b5761a03d389b81387bcee54e856e45230c",
+      "offset": 116533975,
+      "endOffset": 116536165
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/experimental-ide.Brewfile",
+      "size": 732,
+      "digest": "sha256:fa3b18f3a03781668679ce14003f9ca3a784913d002bcfb7d9316b06c70b45bb",
+      "offset": 116536308,
+      "endOffset": 116536490
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/fonts-dev.Brewfile",
+      "size": 370,
+      "digest": "sha256:15678b81fbdc63a85d8a28e945f1b3d0d8441cdcf0431c204e2da923601956eb",
+      "offset": 116536629,
+      "endOffset": 116536764
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/fonts.Brewfile",
+      "size": 523,
+      "digest": "sha256:301d5661e14a35905011beef7d3eb32c547f227fa5adca96a6a671c53aabb050",
+      "offset": 116536899,
+      "endOffset": 116537124
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/ide.Brewfile",
+      "size": 430,
+      "digest": "sha256:ef8dabf44a6d4bdf3985998377fc846a366e2d63693f98e60eb1639e2618d872",
+      "offset": 116537257,
+      "endOffset": 116537447
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/k8s-tools.Brewfile",
+      "size": 270,
+      "digest": "sha256:7c07ca3430d4cc88b2d16cbb7e0c8f89b6681b225ba210727e641df04c0f6542",
+      "offset": 116537584,
+      "endOffset": 116537735
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/preinstall.d/chairlift.Brewfile",
+      "size": 66,
+      "digest": "sha256:00c2916595554dcfb997c5c8608ff5f8e5d3f8acb07ed8ec63bf1348a3a32ac6",
+      "offset": 116537905,
+      "endOffset": 116537984
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/preinstall.d/system-cli.Brewfile",
+      "size": 156,
+      "digest": "sha256:a44471b1a768f1bd89f19eb7dc841c83f4a7f731d25e3c606062d0accf25699f",
+      "offset": 116538131,
+      "endOffset": 116538236
+    },
+    {
+      "name": "system_files/shared/usr/share/ublue-os/homebrew/swift.Brewfile",
+      "size": 190,
+      "digest": "sha256:d984f47c730c396bb8cbb21cd0fcd8aedbffb55874a854e34605e2db2176f6e3",
+      "offset": 116538371,
+      "endOffset": 116538512
+    }
+  ],
+  "stockBundles": {
+    "full-desktop.Brewfile": {
+      "sha256": "sha256:282d791f78be957b8781e0727b75b7c31ab94bbdf625d63216a9dca878e124b7",
+      "formulae": [],
+      "casks": []
+    },
+    "system-dx-flatpaks.Brewfile": {
+      "sha256": "sha256:4867d23cf4243979c1053a5c569ef60ca47ef634f5a96fc69ce07214fb3a41c3",
+      "formulae": [],
+      "casks": []
+    },
+    "system-flatpaks.Brewfile": {
+      "sha256": "sha256:32ca0cd5315c571bba31dcc863f7f256fa00cb31e3b4e11b6e7427e9cadcc7a2",
+      "formulae": [],
+      "casks": []
+    },
+    "ai-tools.Brewfile": {
+      "sha256": "sha256:9e31f58838b7ce7d9ba60d74b9f4f5928b025ab1ca60a37f64ef1c84da26395b",
+      "formulae": [
+        "anomalyco/tap/opencode",
+        "block-goose-cli",
+        "charmbracelet/tap/crush",
+        "kimi-code",
+        "llm",
+        "llmfit",
+        "llmmanorg/tap/llmman",
+        "mistral-vibe",
+        "qwen-code",
+        "ramalama",
+        "ublue-os/tap/linux-mcp-server"
+      ],
+      "casks": [
+        "claude-code",
+        "codex",
+        "copilot-cli",
+        "ublue-os/tap/antigravity-cli-linux",
+        "ublue-os/tap/antigravity-linux",
+        "ublue-os/experimental-tap/opencode-desktop-linux",
+        "ublue-os/tap/goose-linux",
+        "ublue-os/tap/lm-studio-linux"
+      ]
+    },
+    "artwork.Brewfile": {
+      "sha256": "sha256:ef0b430b8cfe97f73fea40ede92ae12d970682f8872ca3923e328d86880bbfa8",
+      "formulae": [],
+      "casks": [
+        "ublue-os/tap/bazzite-wallpapers",
+        "ublue-os/tap/bluefin-wallpapers",
+        "ublue-os/tap/bluefin-wallpapers-extra",
+        "ublue-os/tap/framework-wallpapers"
+      ]
+    },
+    "cli.Brewfile": {
+      "sha256": "sha256:65b0657375707febc5967882402c5d4dc5528dbec06074a1b5f203d60ea313d5",
+      "formulae": [
+        "atuin",
+        "bat",
+        "bash-preexec",
+        "chezmoi",
+        "direnv",
+        "dysk",
+        "eza",
+        "fd",
+        "gh",
+        "podman-tui",
+        "ripgrep",
+        "tealdeer",
+        "trash-cli",
+        "yq",
+        "zoxide",
+        "mise"
+      ],
+      "casks": []
+    },
+    "cncf.Brewfile": {
+      "sha256": "sha256:8b96b3b615766bac4ab4521818170b5761a03d389b81387bcee54e856e45230c",
+      "formulae": [
+        "argo",
+        "argocd",
+        "cilium-cli",
+        "coredns",
+        "crossplane",
+        "dapr/tap/dapr-cli",
+        "cri-tools",
+        "envoy",
+        "falco",
+        "flux",
+        "harbor-cli",
+        "helm",
+        "istioctl",
+        "kn",
+        "kubernetes-cli",
+        "minikube",
+        "kind",
+        "linkerd",
+        "opa",
+        "prometheus",
+        "vitess",
+        "cmctl",
+        "nerdctl",
+        "etcd",
+        "artifacthub/cmd/ah",
+        "buildpacks/tap/pack",
+        "c7n",
+        "cortex",
+        "karmadactl",
+        "kubevela",
+        "virtctl",
+        "kubescape",
+        "kyverno",
+        "lima",
+        "litmusctl",
+        "nats-server",
+        "notation",
+        "openfga",
+        "opentelemetry-cpp",
+        "operator-sdk",
+        "thanos",
+        "grpc",
+        "wasmcloud/wasmcloud/wash",
+        "atlantis",
+        "cdk8s",
+        "carvel-dev/carvel/kwt",
+        "carvel-dev/carvel/kctrl",
+        "carvel-dev/carvel/ytt",
+        "carvel-dev/carvel/kapp",
+        "carvel-dev/carvel/kbld",
+        "carvel-dev/carvel/imgpkg",
+        "carvel-dev/carvel/vendir",
+        "kubectl-cnpg",
+        "devspace",
+        "k8sgpt",
+        "kitops-ml/kitops/kitops",
+        "kwctl",
+        "kumactl",
+        "mesheryctl",
+        "microcks/tap/microcks-cli",
+        "porter",
+        "telepresenceio/telepresence/telepresence-oss",
+        "tremor-runtime",
+        "wasmedge",
+        "k0sproject/tap/k0sctl",
+        "k3d",
+        "ko",
+        "kpt"
+      ],
+      "casks": []
+    },
+    "experimental-ide.Brewfile": {
+      "sha256": "sha256:fa3b18f3a03781668679ce14003f9ca3a784913d002bcfb7d9316b06c70b45bb",
+      "formulae": [],
+      "casks": [
+        "ublue-os/experimental-tap/cursor-linux",
+        "ublue-os/experimental-tap/clion-linux",
+        "ublue-os/experimental-tap/datagrip-linux",
+        "ublue-os/experimental-tap/dataspell-linux",
+        "ublue-os/experimental-tap/emacs-app-linux",
+        "ublue-os/experimental-tap/goland-linux",
+        "ublue-os/experimental-tap/intellij-idea-linux",
+        "ublue-os/experimental-tap/phpstorm-linux",
+        "ublue-os/experimental-tap/pycharm-linux",
+        "ublue-os/experimental-tap/rider-linux",
+        "ublue-os/experimental-tap/rubymine-linux",
+        "ublue-os/experimental-tap/rustrover-linux",
+        "ublue-os/experimental-tap/webstorm-linux",
+        "ublue-os/tap/zed-linux"
+      ]
+    },
+    "fonts-dev.Brewfile": {
+      "sha256": "sha256:15678b81fbdc63a85d8a28e945f1b3d0d8441cdcf0431c204e2da923601956eb",
+      "formulae": [],
+      "casks": [
+        "font-caskaydia-mono-nerd-font",
+        "font-comic-shanns-mono-nerd-font",
+        "font-droid-sans-mono-nerd-font",
+        "font-go-mono-nerd-font",
+        "font-blex-mono-nerd-font",
+        "font-sauce-code-pro-nerd-font",
+        "font-source-code-pro",
+        "font-ubuntu-nerd-font",
+        "font-fira-code-nerd-font",
+        "font-0xproto-nerd-font",
+        "font-jetbrains-mono-nerd-font"
+      ]
+    },
+    "fonts.Brewfile": {
+      "sha256": "sha256:301d5661e14a35905011beef7d3eb32c547f227fa5adca96a6a671c53aabb050",
+      "formulae": [],
+      "casks": [
+        "font-opendyslexic",
+        "font-arial",
+        "font-arial-black",
+        "font-comic-sans-ms",
+        "font-impact",
+        "colindean/fonts-nonfree/font-microsoft-aptos",
+        "colindean/fonts-nonfree/font-microsoft-fluent",
+        "colindean/fonts-nonfree/font-microsoft-office",
+        "font-dejavu",
+        "font-fira-sans",
+        "font-montserrat",
+        "font-noto-sans",
+        "font-roboto",
+        "font-ubuntu"
+      ]
+    },
+    "ide.Brewfile": {
+      "sha256": "sha256:ef8dabf44a6d4bdf3985998377fc846a366e2d63693f98e60eb1639e2618d872",
+      "formulae": [
+        "nvim",
+        "micro",
+        "helix",
+        "devcontainer"
+      ],
+      "casks": [
+        "ublue-os/tap/visual-studio-code-linux",
+        "ublue-os/tap/visual-studio-code-linux@insiders",
+        "ublue-os/tap/vscodium-linux",
+        "ublue-os/tap/antigravity-linux",
+        "ublue-os/tap/jetbrains-toolbox-linux"
+      ]
+    },
+    "k8s-tools.Brewfile": {
+      "sha256": "sha256:7c07ca3430d4cc88b2d16cbb7e0c8f89b6681b225ba210727e641df04c0f6542",
+      "formulae": [
+        "buildpacks/tap/pack",
+        "k0sproject/tap/k0sctl",
+        "cdk8s",
+        "dagger",
+        "grype",
+        "helm",
+        "k3sup",
+        "k9s",
+        "kind",
+        "kubectl",
+        "kubectx",
+        "rancher-cli",
+        "rancher-machine",
+        "syft"
+      ],
+      "casks": []
+    },
+    "preinstall.d/chairlift.Brewfile": {
+      "sha256": "sha256:00c2916595554dcfb997c5c8608ff5f8e5d3f8acb07ed8ec63bf1348a3a32ac6",
+      "formulae": [],
+      "casks": [
+        "frostyard/tap/chairlift"
+      ]
+    },
+    "preinstall.d/system-cli.Brewfile": {
+      "sha256": "sha256:a44471b1a768f1bd89f19eb7dc841c83f4a7f731d25e3c606062d0accf25699f",
+      "formulae": [
+        "fzf",
+        "glow",
+        "htop",
+        "rclone",
+        "restic",
+        "smartmontools",
+        "squashfs",
+        "starship",
+        "tcpdump",
+        "tmux",
+        "ykman"
+      ],
+      "casks": []
+    },
+    "swift.Brewfile": {
+      "sha256": "sha256:d984f47c730c396bb8cbb21cd0fcd8aedbffb55874a854e34605e2db2176f6e3",
+      "formulae": [
+        "swiftly",
+        "swiftlint",
+        "swiftformat"
+      ],
+      "casks": []
+    }
+  },
+  "historicalCopiedPolicy": [
+    {
+      "formula": "atuin",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "bash-preexec",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "bat",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "valkyrie00/bbrew/bbrew",
+      "treatment": "Finite Nix addition",
+      "nixAttribute": "bbrew",
+      "nixInput": "nixpkgs when available, otherwise existing pinned nixpkgs-unstable"
+    },
+    {
+      "formula": "chezmoi",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "direnv",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "dysk",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "eza",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "fd",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "gh",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "mise",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "podman-tui",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "ripgrep",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "starship",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "tealdeer",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "trash-cli",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "ugrep",
+      "treatment": "Finite Nix addition",
+      "nixAttribute": "ugrep"
+    },
+    {
+      "formula": "uutils-coreutils",
+      "treatment": "Finite Nix addition",
+      "nixAttribute": "uutils-coreutils"
+    },
+    {
+      "formula": "yq",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    },
+    {
+      "formula": "zoxide",
+      "treatment": "upstream stock binary/defaults",
+      "nixAttribute": null
+    }
+  ],
+  "stockConfigOverrides": [
+    {
+      "binary": "fzf",
+      "owner": "Bluefin preinstall",
+      "configuration": "programs.zsh.initContent; Finite devops Fzf settings",
+      "installsNixBinary": false
+    },
+    {
+      "binary": "starship",
+      "owner": "Bluefin preinstall",
+      "configuration": "Finite devops prompt and starship.toml",
+      "installsNixBinary": false
+    }
+  ],
+  "applications": [
+    {
+      "id": "ansible",
+      "source": "modules/apps/ansible/_feature.nix",
+      "sourceSha256": "db2dfc31708ae84488ef4c985c140b5e8c2c472565ad6df300934b82c0388c77",
+      "declarations": [
+        "nix:nixpkgs:ansible"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "audio-player",
+      "source": "modules/apps/audio-player/_feature.nix",
+      "sourceSha256": "9f47c547218b873822ad8c585604d0c634506803814568c27e11f568649c39c3",
+      "declarations": [
+        "nix:nixpkgs:decibels"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "bitwarden",
+      "source": "modules/apps/bitwarden/_feature.nix",
+      "sourceSha256": "fddbba6b44f3558ef81f10a079df68775fb1ea8cb4821a818d58ea22557b32c3",
+      "declarations": [
+        "nix:nixpkgs-weekly:bitwarden-desktop"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "bitwarden-cli",
+      "source": "modules/apps/bitwarden-cli/_feature.nix",
+      "sourceSha256": "1390d11fbf82b4f0389b8ebc55ad767662bb7afedc1ebfe8c00a9f0df8a0485b",
+      "declarations": [
+        "nix:nixpkgs-weekly:bitwarden-cli"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "blender",
+      "source": "modules/apps/blender/_feature.nix",
+      "sourceSha256": "9c85d7babd2e05f627e97f8341208034d4987443c9e69f13a276d00d605f42e5",
+      "declarations": [
+        "nix:nixpkgs:blender"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "camera-controls",
+      "source": "modules/apps/camera-controls/_feature.nix",
+      "sourceSha256": "b508335457a5a8c84f620aed99dd012e607d8f6b61a0380edab63d3749a6191e",
+      "declarations": [
+        "nix:nixpkgs:cameractrls",
+        "flatpak:flathub:hu.irl.cameractrls"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "cargo-audit",
+      "source": "modules/apps/cargo-audit/_feature.nix",
+      "sourceSha256": "6ca9c453ef31a30eeb31c04748a8208264cf61984f5ebcda73993b7f1c5eb774",
+      "declarations": [
+        "nix:nixpkgs:cargo-audit"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "cargo-edit",
+      "source": "modules/apps/cargo-edit/_feature.nix",
+      "sourceSha256": "d1126bbe1c771dbea45074ff15a556f95e51cd63c4f7940dd64d707626450abd",
+      "declarations": [
+        "nix:nixpkgs:cargo-edit"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "cargo-watch",
+      "source": "modules/apps/cargo-watch/_feature.nix",
+      "sourceSha256": "1b3ccd26e248fd01f412ad07329ebce4428ce5cf24d0421878a54651a07ced0d",
+      "declarations": [
+        "nix:nixpkgs:cargo-watch"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "chromium",
+      "source": "modules/apps/chromium/_feature.nix",
+      "sourceSha256": "212fd9175d33e8f6578f279513604e5a80e45948bc9d120582bb69cdc5794a6c",
+      "declarations": [
+        "nix:nixpkgs:chromium",
+        "flatpak:flathub:org.chromium.Chromium"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "damask",
+      "source": "modules/apps/damask/_feature.nix",
+      "sourceSha256": "b4d42af133ea690bc2dbe6220b296cd29415f678eb815d7cde4a2bda4acc9bbe",
+      "declarations": [
+        "flatpak:flathub:app.drey.Damask"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "devenv",
+      "source": "modules/apps/devenv/_feature.nix",
+      "sourceSha256": "71708c12af31e24d0b1e81fb9abb7772218f8ffdc6b910266aa0cff6fdf51704",
+      "declarations": [
+        "nix:devenv:devenv"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "distroshelf",
+      "source": "modules/apps/distroshelf/_feature.nix",
+      "sourceSha256": "0fc328d924e58b3ae4ef316ba7df0e35f96e340d233d1b892de8fa9935525411",
+      "declarations": [
+        "nix:nixpkgs:distroshelf",
+        "flatpak:flathub:com.ranfdev.DistroShelf"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "element",
+      "source": "modules/apps/element/_feature.nix",
+      "sourceSha256": "1be6e0e8e7c6aac49d2fef36d26a5ece81195fff23ba991455bce0df30feb4b3",
+      "declarations": [
+        "nix:nixpkgs-weekly:element-desktop"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "espanso",
+      "source": "modules/apps/espanso/_feature.nix",
+      "sourceSha256": "5ea4cf4e048f0d59f7a167d4f68d192d965673ea5343450648b1088778e397f4",
+      "declarations": [
+        "nix:nixpkgs:espanso-wayland"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "extension-manager",
+      "source": "modules/apps/extension-manager/_feature.nix",
+      "sourceSha256": "315932101fa939de2cc3ccb1744d0f32cc3dc4de1bd3c748d0154ac5859a16b3",
+      "declarations": [
+        "nix:nixpkgs:gnome-extension-manager",
+        "flatpak:flathub:com.mattjakeman.ExtensionManager"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "firefox",
+      "source": "modules/apps/firefox/_feature.nix",
+      "sourceSha256": "76a893490bd53b34caa9e63733835e216ab605d9e5a0ae696d5e7d526817c8ae",
+      "declarations": [
+        "nix:nixpkgs-weekly:firefox"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "flatseal",
+      "source": "modules/apps/flatseal/_feature.nix",
+      "sourceSha256": "338f4a95670bb808a88da9ca8f25a862ac9594d1928134a1d34860f50e0f2e52",
+      "declarations": [
+        "flatpak:flathub:com.github.tchx84.Flatseal"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "gearlever",
+      "source": "modules/apps/gearlever/_feature.nix",
+      "sourceSha256": "6466f1fede5ac14d2f26768b4556224dc3cbf4d312b5c3e6c58e2659d8c7c00f",
+      "declarations": [
+        "nix:nixpkgs:gearlever",
+        "flatpak:flathub:it.mijorus.gearlever"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "ghostty",
+      "source": "modules/apps/ghostty/_feature.nix",
+      "sourceSha256": "4adff3fdf6164867e184ad9209762f6ac16006298a58d9cc0cf5cae74d1485f3",
+      "declarations": [
+        "nix:nixpkgs:ghostty"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "gnome-chess",
+      "source": "modules/apps/gnome-chess/_feature.nix",
+      "sourceSha256": "2cae719ceaf87ac3140a3804ceaf005641d631128bcdf82db54aac280ada3814",
+      "declarations": [
+        "nix:nixpkgs:gnome-chess"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "gnuchess",
+      "source": "modules/apps/gnuchess/_feature.nix",
+      "sourceSha256": "60c0f8a3f6d5a015a013028bf43e1ee3e8c5db76a45dc8258c66cb1aeb45b680",
+      "declarations": [
+        "nix:nixpkgs:gnuchess"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "gradia",
+      "source": "modules/apps/gradia/_feature.nix",
+      "sourceSha256": "15d0a5fdca04a993704ac3a515964a0acec67f7064abbb629ee0471c7c561c94",
+      "declarations": [
+        "nix:nixpkgs:gradia",
+        "flatpak:flathub:be.alexandervanhee.gradia"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "grist",
+      "source": "modules/apps/grist/_feature.nix",
+      "sourceSha256": "9290cdd2248c1bf9016ae697321b7ed4fbdbd0f7b53c4293106c01b8152d1ff7",
+      "declarations": [
+        "desktop-entry:finite-grist"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "hack-font",
+      "source": "modules/apps/hack-font/_feature.nix",
+      "sourceSha256": "a7148b38f9f30c10f71befadca7b06ec4fb3dac24513399f6b50aedc7c4ee639",
+      "declarations": [
+        "nix:nixpkgs:nerd-fonts.hack"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "herdr",
+      "source": "modules/apps/herdr/_feature.nix",
+      "sourceSha256": "6fe17a94a4b708d84096ee1d76256153c7a5a1933427a0bd516245550474a809",
+      "declarations": [
+        "nix:nixpkgs-unstable:herdr"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "heroic",
+      "source": "modules/apps/heroic/_feature.nix",
+      "sourceSha256": "87f31b3f03cafea0b9611d3758b1b28df69a46ebc7fd20b50a1c5bf3f9f2d6a8",
+      "declarations": [
+        "nix:nixpkgs:heroic"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "icebox",
+      "source": "modules/apps/icebox/_feature.nix",
+      "sourceSha256": "1adada95f03ddac59a93e6f9312cc2b0b06f8cf67e8cf0b27ca7abbf03b5a178",
+      "declarations": [
+        "flatpak:flathub:io.github.pleromix.IceBox"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "ignition",
+      "source": "modules/apps/ignition/_feature.nix",
+      "sourceSha256": "b4fd8363af2b82654647155a0bf0331d2c544c5eb2ec391ee84481fae9b034c0",
+      "declarations": [
+        "nix:nixpkgs:ignition",
+        "flatpak:flathub:io.github.flattool.Ignition"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "impression",
+      "source": "modules/apps/impression/_feature.nix",
+      "sourceSha256": "a7828185327c9e0a60f7987bdedfead2790637beff89cad6fb6923a9301448aa",
+      "declarations": [
+        "nix:nixpkgs:impression",
+        "flatpak:flathub:io.gitlab.adhami3310.Impression"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "jellyfin",
+      "source": "modules/apps/jellyfin/_feature.nix",
+      "sourceSha256": "84eeb95c6ed40c8b8b5141d0ffd22ec9940973e45fa37a4b0280f8b6b0e38b2a",
+      "declarations": [
+        "nix:nixpkgs:jellyfin-desktop"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "jj",
+      "source": "modules/apps/jj/_feature.nix",
+      "sourceSha256": "bace13ab978e505ca5bd9bcaee460e22bcbe4535b4dcd7d595d6e5da8c8652b9",
+      "declarations": [
+        "nix:nixpkgs:jujutsu"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "joplin",
+      "source": "modules/apps/joplin/_feature.nix",
+      "sourceSha256": "b28e687d3ae4e12a4df84ae25e72b9769cb12bc0834f86685c85c3ad1442d401",
+      "declarations": [
+        "nix:nixpkgs:joplin-desktop",
+        "flatpak:flathub:net.cozic.joplin_desktop"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "kdenlive",
+      "source": "modules/apps/kdenlive/_feature.nix",
+      "sourceSha256": "12697a58ddd9931221965a6942c2e44870928d5d7ba363c453b349486f01c304",
+      "declarations": [
+        "nix:nixpkgs:kdePackages.kdenlive"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "krita",
+      "source": "modules/apps/krita/_feature.nix",
+      "sourceSha256": "99fb35f11528ec2366859bfdb2082fffd4b3db6e558f5faf9e5398b59d26d36e",
+      "declarations": [
+        "nix:nixpkgs:krita"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "libreoffice",
+      "source": "modules/apps/libreoffice/_feature.nix",
+      "sourceSha256": "7e3a652d42f211aa7d74474ce967d3562404f191e546621f141a4cdcd1c64595",
+      "declarations": [
+        "nix:nixpkgs-weekly:libreoffice"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "lutris",
+      "source": "modules/apps/lutris/_feature.nix",
+      "sourceSha256": "354a7f4160853695f9a206e2bb1219ab7990c78dc6f72e0bbb6f03b444ffa707",
+      "declarations": [
+        "nix:nixpkgs:lutris"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "marp",
+      "source": "modules/apps/marp/_feature.nix",
+      "sourceSha256": "457ca8722d7ed3370eb3eeb9b438f9fc81f861e5ffa08b870a800816876caedc",
+      "declarations": [
+        "nix:nixpkgs:marp-cli"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "mission-center",
+      "source": "modules/apps/mission-center/_feature.nix",
+      "sourceSha256": "416b9dfb25a75e51ac49d7188b0e8253dbc24368aa3e9878214ad8a5cce015cd",
+      "declarations": [
+        "nix:nixpkgs:mission-center",
+        "flatpak:flathub:io.missioncenter.MissionCenter"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "neovim",
+      "source": "modules/apps/neovim/_feature.nix",
+      "sourceSha256": "30eb30c8617990e3bf1ec940d132c9de2af5989644fdfaa457f98a592df01255",
+      "declarations": [
+        "nix:nixpkgs:neovim"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "nextcloud",
+      "source": "modules/apps/nextcloud/_feature.nix",
+      "sourceSha256": "cec0cc5aa91c65434f0c070abf0e15e9a1cd8c9d7fd66cec39ae97e1314e40ae",
+      "declarations": [
+        "nix:nixpkgs-weekly:nextcloud-client"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "obs",
+      "source": "modules/apps/obs/_feature.nix",
+      "sourceSha256": "87143edfb5b3a42f1bb0e176d8682686cfbad66c4f712c4163d3aa223de49e56",
+      "declarations": [
+        "nix:nixpkgs:obs-studio"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "openbao",
+      "source": "modules/apps/openbao/_feature.nix",
+      "sourceSha256": "8c967b5b65d415914b0eb85cd2c1e0c50dbd24fc4ea66947f8278a65b66ef035",
+      "declarations": [
+        "nix:nixpkgs:openbao"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "opencode",
+      "source": "modules/apps/opencode/_feature.nix",
+      "sourceSha256": "9c376d831221433afbacfe96988a3e3607f0cbbf52fc23fbbeb0bf8a5002875c",
+      "declarations": [
+        "nix:nixpkgs:opencode"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "opentofu",
+      "source": "modules/apps/opentofu/_feature.nix",
+      "sourceSha256": "46d38da4f63814d54346627cec233b605da892b03a802b97da660041d05f1f01",
+      "declarations": [
+        "nix:nixpkgs:opentofu"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "packer",
+      "source": "modules/apps/packer/_feature.nix",
+      "sourceSha256": "194687c6a5946ff6430edbceff76824d393420f5b72e9361cb03ce0f1aa0b653",
+      "declarations": [
+        "nix:nixpkgs:packer"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "pinta",
+      "source": "modules/apps/pinta/_feature.nix",
+      "sourceSha256": "d22253cd85d93e90f25b22f55de8af769d55d3fa35eecf649bd881545fd77f3c",
+      "declarations": [
+        "nix:nixpkgs:pinta",
+        "flatpak:flathub:com.github.PintaProject.Pinta"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "refine",
+      "source": "modules/apps/refine/_feature.nix",
+      "sourceSha256": "ee7eee68d4abde46e4a31959bf892b6bcaebc04a9685695cf72b527eba8c1f05",
+      "declarations": [
+        "nix:nixpkgs:refine",
+        "flatpak:flathub:page.tesk.Refine"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "rustconn",
+      "source": "modules/apps/rustconn/_feature.nix",
+      "sourceSha256": "cdef57820bdd94d2dc78679912a616cb2ac8c4dfec02645a9cd3e92424c328f2",
+      "declarations": [
+        "flatpak:flathub:io.github.totoshko88.RustConn"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "rustdesk",
+      "source": "modules/apps/rustdesk/_feature.nix",
+      "sourceSha256": "9bff2b57aec9537adc70e598927ce0cc469b0b69d223e2d211740985786403cb",
+      "declarations": [
+        "nix:nixpkgs:rustdesk-flutter"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "rustup",
+      "source": "modules/apps/rustup/_feature.nix",
+      "sourceSha256": "5160179e21eb7b9505ed0d35f1a293ce206c294d7c076aa886f63f177a10a173",
+      "declarations": [
+        "nix:nixpkgs:rustup"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "smile",
+      "source": "modules/apps/smile/_feature.nix",
+      "sourceSha256": "f95f2e25b70221c008ec81530372579a22cf2e33c4de5dedd4a1b760512b9800",
+      "declarations": [
+        "nix:nixpkgs:smile",
+        "flatpak:flathub:it.mijorus.smile"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "spider",
+      "source": "modules/apps/spider/_feature.nix",
+      "sourceSha256": "9944ea8b3890a32c51a8769abc4590cdb60adafe27bbbe7b4c16fc3b172d7e0a",
+      "declarations": [
+        "flatpak:flathub:io.github.zaedus.spider"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "steam",
+      "source": "modules/apps/steam/_feature.nix",
+      "sourceSha256": "4006d3ba62d1f7b1ed347976eaca2823e341075e5f9ef178bc6a1856a18daf28",
+      "declarations": [
+        "nix:nixpkgs:steam"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "thunderbird",
+      "source": "modules/apps/thunderbird/_feature.nix",
+      "sourceSha256": "591cade2ff177051cec9285c6374d96322566c2528a90edb19d1d1ad35bfc989",
+      "declarations": [
+        "nix:nixpkgs:thunderbird"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "uv",
+      "source": "modules/apps/uv/_feature.nix",
+      "sourceSha256": "27eae502318a01356693a401576c6404a29a35cffbed14f7cdcffa89da71eb1f",
+      "declarations": [
+        "nix:nixpkgs:uv"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "vates-notes",
+      "source": "modules/apps/vates-notes/_feature.nix",
+      "sourceSha256": "97ddfcfb84c38a65ccc9884e224390209f4332b1913f8496f94e66ad29867778",
+      "declarations": [
+        "desktop-entry:finite-vates-notes"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "vlc",
+      "source": "modules/apps/vlc/_feature.nix",
+      "sourceSha256": "95e72614a7b1f0957b16e2f8f414bd1e57cc27ed8e1626c0b582bae3fc7f2404",
+      "declarations": [
+        "nix:nixpkgs:vlc"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "vscodium",
+      "source": "modules/apps/vscodium/_feature.nix",
+      "sourceSha256": "d16a634a399c1f6d7b052a47843ce4cb39a0671ef548ba7a38f1c6964f027c7b",
+      "declarations": [
+        "nix:nixpkgs:vscodium"
+      ],
+      "treatment": "preserve catalog provider choices"
+    },
+    {
+      "id": "warehouse",
+      "source": "modules/apps/warehouse/_feature.nix",
+      "sourceSha256": "963f53153dacf0f5a30142c95d0686d205536ea442f284462e89a3d82ba76880",
+      "declarations": [
+        "nix:nixpkgs:warehouse",
+        "flatpak:flathub:io.github.flattool.Warehouse"
+      ],
+      "treatment": "preserve catalog provider choices"
+    }
+  ],
+  "configurations": [
+    {
+      "source": "modules/apps/espanso/_settings.nix",
+      "sha256": "26d09c9e866af566def9980e8ac87f19db5b1b354cd29441e78b5736f59a2bdd",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/apps/firefox/_home.nix",
+      "sha256": "33ab48d350b3af19ba9003d6183be0ddff9f66075a1aae0cd801bc50ca6fa3c5",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/apps/grist/_settings.nix",
+      "sha256": "9a35909a256a0c8a831d94e791835218793cced3cd6a3a8b6ee68782d5a924c1",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/apps/vates-notes/_settings.nix",
+      "sha256": "81e969d029668e728034b5f906cea1b5972739da25da3691122a517e408d591e",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/ghostty/config.ghostty",
+      "sha256": "a106f27a803c3204b50d9877c3511e80fc76d16374b331f951b00a12ac745039",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/.zshenv",
+      "sha256": "5571f42628db3319b9b872a450c9fbbf26e25519059b0d1af461d302add092ad",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/.zshrc",
+      "sha256": "228de6b687d73af047c430b68d75f40342ba834ad9f9606f006e1b7313d65069",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/LICENSE",
+      "sha256": "495687b622414e731505b3e0b5730951369311efacee8847b94a1c7bdbdef5ab",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/aliases.zsh",
+      "sha256": "3a64dcb1e30d2c2ee6bab51aa9113d3f828875bcec9f198fb0d9ecf841d25505",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/bindings.zsh",
+      "sha256": "abe4e75c4ae9d1aa6367aafa6c2422f0ed4503249e1d7366f6b527e6ec0d838d",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/fzf.zsh",
+      "sha256": "86a88c189a7e6149bbb007c39a4d528806fee5643820868a17e0b9e30b760da6",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/prompt.zsh",
+      "sha256": "d1a1f35cd29eeb79a326f9ecbe387f86b4ce2e15d2e8ce8b84eb735d0cd58683",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/starship.toml",
+      "sha256": "b692021e5200969dce33abc6613287f8f256d8eae22f0839bec2ff1c142d6dfd",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/capabilities/devops/_home.nix",
+      "sha256": "a7980cd84186b25888b121f8bf6ac62771132b6c578b63f911589d58ef41a9c4",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/activation/_home.nix",
+      "sha256": "b23f70938b4682ae0dc0dc290b0b69cbac6ed73a1939c96e2a575a7ec8830988",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/base/_home.nix",
+      "sha256": "ef7c638168bb4a85b61f416d9e5235e46019e2c3cd424be4688bd20d31ce1dd7",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/commands/_assets/finite-brew-bootstrap",
+      "sha256": "d5f1eea4f69871020ab47bb01d4419718f45cb42ece77cae9740e752098c77d2",
+      "treatment": "compatibility helper; deprecated copied Brew policy"
+    },
+    {
+      "source": "modules/home/commands/_assets/finite-brew-migration-status",
+      "sha256": "955ec739d2df1e0ee0e48baa23c37c0b105261be9104274c60c372469834b9c3",
+      "treatment": "compatibility helper; deprecated copied Brew policy"
+    },
+    {
+      "source": "modules/home/commands/_assets/foundation-configure",
+      "sha256": "63c9fde227d73564265d2b14cab03cf57b4b44c54fb46b9d63087457bedf927c",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/commands/_assets/foundation-home-apply",
+      "sha256": "8660142ce3b2308cc99d19273ae39fe60406e134174a3ef546a040e32b11fbdd",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/legacy/_home.nix",
+      "sha256": "3091313fe68ee4a61e1c0ca3db5b6516ac84d215d8379b47db8d57de274c83cd",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/home/shell/_home.nix",
+      "sha256": "fda6110884b8791db5277987b46ab4992b0af8b182efe6e3e14e7101fd1e1619",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/camera/ipu7/_home.nix",
+      "sha256": "644101cc00d71bd792c5f12fac40e0af9851a5e72fa64ea13095bf6d216d2d9c",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/identity/_home.nix",
+      "sha256": "f238836350e8cd5de10384a7d542f83bdf1ae7a991a5bf7e23ab4ed2e84affca",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/machines/laptop/_home.nix",
+      "sha256": "4b2f497a996ba92bdf02e6cde6a1d2aac127d34cff1e1bf010e0999271fac37b",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/models/dell-xps-9350/_assets/dell-ipu7.conf",
+      "sha256": "881b3090478671cbdcd2ff5f322858db5dc92afe3ec62bd38c600caca694b128",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/models/dell-xps-9350/_assets/dell-xps-9350-panel-policy",
+      "sha256": "b17a412ea182b5271884febb25af70e9dc3b9789c1cca4b4d5340bbe1df761ba",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/models/dell-xps-9350/_assets/rootfs/usr/share/finite/dell-xps-9350-panel.conf",
+      "sha256": "47b48e39be41c35307e0532b32d141c8fabdeb33be51d6996008bbff398957a4",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/models/dell-xps-9350/_home.nix",
+      "sha256": "11d8a88593e48f687bd1efa621374c716df22d106b9b13c882c30e440483eb8c",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/models/generic/_home.nix",
+      "sha256": "d494f0ee586634a93dc2adc11bba878e43369514a858e2bf39ec3c5f4cc481e3",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/hosts/os/bluefin/_home.nix",
+      "sha256": "228785191d23d3104d75fc4203f365236159afa3d8e835dbd6d87fec983e034a",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/profiles/composition/_home.nix",
+      "sha256": "39cfd3dbe2c337d99aa62063b0acb69750776471d051e6c1b104fc01b1c6d07f",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/providers/flatpak/_observations.nix",
+      "sha256": "15fcb0c25473cc51ee40c188b92b1e5d52b2b1848af72bd2051648c0ddb76b37",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/providers/graphics/_home.nix",
+      "sha256": "06cce759ad6f2ace7344251471cec154faf06caeb9bcc07da6a30d6f5ce8e33c",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/providers/homebrew/_assets/brew-packages.json",
+      "sha256": "4f85a4b74b55cd0c53526adc9dda8a4ab8e4f0bd7290722cc4585fb057c6aebc",
+      "treatment": "compatibility helper; deprecated copied Brew policy"
+    },
+    {
+      "source": "modules/providers/homebrew/_home.nix",
+      "sha256": "86ef47c8bc6a5fbb5f7a87196a0d858c99504414d71b69fe553090052e7ee35b",
+      "treatment": "compatibility helper; deprecated copied Brew policy"
+    },
+    {
+      "source": "modules/roles/developer/_home.nix",
+      "sha256": "909df37e1373b451c3fb73be300a17351dbcc8e7ca3f46edbefe40bf288ee314",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/roles/executive/_home.nix",
+      "sha256": "a2bbb6f803c10267d7217869e0b4ee98520275443aed0c359cfa38017bb8031e",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/roles/it/_home.nix",
+      "sha256": "72650fabbac7c0f159e2345a677ecd5953d5a035eac3e9c00182784d3ac9529d",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/roles/sales/_home.nix",
+      "sha256": "94cadeeae5964a3d41eea977595d46ec5025e3b6377b2031bf59089ab443e71c",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/roles/support/_home.nix",
+      "sha256": "358cf54d68d54f657032486e3788582db203f573beff835cffc0a523219b3a46",
+      "treatment": "explicit Finite user configuration/helper"
+    },
+    {
+      "source": "modules/roles/trainer/_home.nix",
+      "sha256": "43673d162d7a6a4c77bff2a30cfebedb4d3d9ef7eb9195048a394e49629a0fc6",
+      "treatment": "explicit Finite user configuration/helper"
+    }
+  ],
+  "runtimeQualification": "pending hosted current-base validation; source provenance is not a boot/activation receipt"
+}

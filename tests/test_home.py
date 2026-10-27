@@ -195,7 +195,7 @@ class ConsumerTests(unittest.TestCase):
         selected = self.local_pin()
         before = home.tree_digest(self.root)
         output = io.StringIO()
-        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "published_releases") as releases, patch.object(home, "release_data") as release, patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit, contextlib.redirect_stdout(output):
+        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "published_releases") as releases, patch.object(home, "release_data") as release, patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit, contextlib.redirect_stdout(output):
             self.assertEqual(home.available(self.root), (INFO, None, None))
             home.update(self.root, check=True)
             home.update(self.root)
@@ -222,7 +222,7 @@ class ConsumerTests(unittest.TestCase):
             self.assertEqual(home.read_json(stage / "profile.json")["roles"], ["sales"])
             self.assertEqual(home.read_json(stage / "foundation.json"), INFO)
             return self.activation
-        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "build", side_effect=build) as built, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "build", side_effect=build) as built, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             home.apply(self.root, roles="sales", check=True)
             built.assert_called_once()
             brew.assert_not_called(); commit.assert_not_called()
@@ -291,7 +291,7 @@ class ConsumerTests(unittest.TestCase):
             for name, contents in before.items():
                 self.assertEqual((stage / name).read_bytes(), contents)
             return self.activation
-        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", side_effect=build), patch.object(home, "provision_brew"), patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation"), patch.object(home, "commit_stage") as commit:
             home.update(self.root)
             commit.assert_called_once()
 
@@ -412,7 +412,7 @@ class ConsumerTests(unittest.TestCase):
             stage = Path(command[-1].removeprefix("path:"))
             home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate))
         failure = subprocess.CalledProcessError(-signal.SIGKILL, ["nix", "build"])
-        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", side_effect=failure) as capture, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "validate_staged_profile", return_value=home.read_json(self.root / "profile.json")), patch.object(home, "capture_build", side_effect=failure) as capture, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "SIGKILL"):
                 home.update(self.root)
             capture.assert_called_once()
@@ -465,7 +465,7 @@ class ConsumerTests(unittest.TestCase):
             "files": {"modules/finite.nix": [hashlib.sha256(generated.read_bytes()).hexdigest()]},
             "outputs": [hashlib.sha256("outputs=inputs:{};}\n".strip().encode()).hexdigest()],
         })
-        with patch.object(home, "source_root", return_value=fixture), patch.object(home, "capture", return_value=json.dumps({"personal": {"url": "file:///personal", "flake": False}})), patch.object(home, "build", return_value=self.activation), patch.object(home, "provision_brew"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(self.base)):
+        with patch.object(home, "source_root", return_value=fixture), patch.object(home, "capture", return_value=json.dumps({"personal": {"url": "file:///personal", "flake": False}})), patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(self.base)):
             home.migrate(self.root, INFO, LOCK)
         self.assertEqual((self.root / "modules/local.nix").read_text(), personal)
         self.assertFalse(generated.exists())

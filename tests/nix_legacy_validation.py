@@ -16,6 +16,9 @@ def main():
     args = arguments(profiles)
     for name, _, actual in evaluate("legacy-composition.nix", profiles, args.selected, args.batch_size):
         assert actual["homeManagerCliInstalled"] is True, name
+        for field in ("bluefinAspectSelected", "preparationAttached", "stockFzfNotDuplicated",
+                      "unmanagedFlatpaksPreserved", "flatpakServiceWrapped"):
+            assert actual[field] is True, (name, field)
         print(f"All work roles and optional packages: {name} passed", flush=True)
 
 

@@ -116,7 +116,7 @@ class ProfileGeneration(unittest.TestCase):
         consumer.mkdir()
         (consumer / "sentinel").write_text("unchanged")
         before = home.tree_digest(consumer)
-        with patch.object(home, "capture", wraps=home.capture) as capture, patch.object(home, "build") as build, patch.object(home, "commit_stage") as commit, patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "capture", wraps=home.capture) as capture, patch.object(home, "build") as build, patch.object(home, "commit_stage") as commit, patch.object(home, "prepare_generation") as brew:
             home.generate_profile(options(roles="family"))
         command = capture.call_args.args[0]
         self.assertEqual(command[0], "nix-instantiate")

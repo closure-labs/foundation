@@ -1,7 +1,6 @@
 {
   "id" = "providers/homebrew";
   "metadata" = { };
-  "dependencies" = [ ];
+  "dependencies" = [ "hosts/os/bluefin" ];
   "schemaDependencies" = { };
-  configuration = schema: import ./_home.nix;
 }
