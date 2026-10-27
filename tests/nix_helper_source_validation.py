@@ -40,7 +40,7 @@ def main():
         source.joinpath("scripts/ci_plan.py").write_text("# CI-only change.\n")
         after = evaluate(source)
         assert after["helper"] == before["helper"]
-        assert {k:v for k,v in after["checks"].items() if k not in ("check-flake-file", "ci-graph")} == {k:v for k,v in before["checks"].items() if k not in ("check-flake-file", "ci-graph")}, (before["checks"], after["checks"])
+        assert {k:v for k,v in after["checks"].items() if k not in ("check-flake-file", "ci-graph", "consumer-template")} == {k:v for k,v in before["checks"].items() if k not in ("check-flake-file", "ci-graph", "consumer-template")}, (before["checks"], after["checks"])
         assert before["metadata"]["narHash"] == before["narHash"]
         assert after["metadata"]["narHash"] == after["narHash"]
         assert before["narHash"] != after["narHash"]

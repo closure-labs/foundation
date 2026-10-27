@@ -6,6 +6,11 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-27
+
+- Repair the exported Home Manager consumer-template builder so the initialization helper can import its observation module from the packaged source tree.
+- Build the actual consumer-template export in the full hosted check set, catching packaging failures before a Foundation release is adopted by Finite. Preserve complete release provenance and the existing helper-isolation checks.
+
 ## [0.5.0] - 2026-10-27
 
 - Preserve Bluefin's inherited stock CLI/preinstall bundles, configuration and update mechanisms through a dedicated `hosts/os/bluefin` aspect for both Bluefin profile names and supported profile schemas.
