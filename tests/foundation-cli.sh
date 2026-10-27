@@ -3,7 +3,7 @@ set -euo pipefail
 cli="${1:?foundation executable required}"
 "$cli" --help
 "$cli" home --help
-for action in check apply update init profile configure migrate status; do
+for action in check apply update init profile configure migrate status camera; do
   "$cli" home "$action" --help >/dev/null
 done
 for args in '' 'home' 'unknown' 'home unknown' 'update'; do

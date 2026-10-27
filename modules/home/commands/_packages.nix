@@ -23,6 +23,7 @@
       version = pkgs.lib.removeSuffix "\n" (builtins.readFile ../../../VERSION);
     }));
 in rec {
+  camera = import ../../hosts/camera/ipu7/_package.nix { inherit pkgs; };
   profileCatalog = homeCatalog;
   homeProfile = import ../../../lib/profile.nix {
     inherit pkgs;
@@ -42,7 +43,7 @@ in rec {
     name = "foundation";
     text = ''
       usage() {
-        echo 'Usage: foundation home <check|apply|update|init|profile|configure|migrate|status> [arguments]'
+        echo 'Usage: foundation home <check|apply|update|init|profile|configure|migrate|status|camera> [arguments]'
       }
       case "''${1:-}" in
         -h|--help) usage; exit 0 ;;
@@ -51,7 +52,8 @@ in rec {
       esac
       case "''${1:-}" in
         -h|--help) usage; exit 0 ;;
-        check) shift; exec ${homeApply}/bin/foundation-home-apply --check "$@" ;;
+        camera) shift; exec ${camera}/bin/foundation-camera "$@" ;;
+        check) shift; ${camera}/bin/foundation-camera || echo "Camera check needs attention; continuing configuration build." >&2; exec ${homeApply}/bin/foundation-home-apply --check "$@" ;;
         apply) shift; exec ${homeApply}/bin/foundation-home-apply "$@" ;;
         update) shift; exec ${homeUpdate}/bin/foundation-home-update "$@" ;;
         init) shift; exec ${homeInit}/bin/foundation-home-init "$@" ;;

@@ -41,6 +41,7 @@ inputs: let
       home-update = app applications.homeUpdate;
       home-migrate = app applications.homeMigrate;
       home-configure = app applications.configure;
+      home-camera = app applications.camera;
       app-status = app applications.appStatus;
     };
     templates.default = {
