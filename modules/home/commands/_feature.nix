@@ -1,6 +1,6 @@
 {
   "id" = "home/commands";
   "metadata" = { };
-  "dependencies" = [ ];
+  "dependencies" = [ "hosts/camera/ipu7" ];
   "schemaDependencies" = { };
 }
