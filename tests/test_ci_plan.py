@@ -22,6 +22,75 @@ class CiPlanTests(unittest.TestCase):
     def focused(self, paths):
         return ci.make_plan(paths, baseline=BASE)
 
+    def test_action_pin_diff_only_allows_same_major_pinned_updates(self):
+        before = "      - uses: DeterminateSystems/determinate-nix-action@" + "a" * 40 + " # v3.23.2\n"
+        after = before.replace("a" * 40, "b" * 40).replace("v3.23.2", "v3.24.0")
+        self.assertTrue(ci.action_pin_update(before, after))
+        for invalid in (before, after.replace("v3.24.0", "v4.0.0"),
+                        after.replace("v3.24.0", "v3.22.0"),
+                        after.replace("DeterminateSystems", "another-owner"),
+                        after.replace("b" * 40, "main"),
+                        after + "      run: echo changed\n", after.rstrip(),
+                        after.replace("      - uses:", "    - uses:"),
+                        after.replace(" # v3.24.0", "")):
+            with self.subTest(invalid=invalid):
+                self.assertFalse(ci.action_pin_update(before, invalid))
+
+    def test_automation_plan_keeps_smoke_builds_and_strict_gate(self):
+        with patch.object(ci, "action_pins_only", return_value=True):
+            plan = self.focused([".github/workflows/check.yml"])
+            self.assertEqual(plan["mode"], "automation")
+            self.assertEqual(plan["checks"], ci.load_graph()["plans"]["automation"]["checks"])
+            self.assertFalse(plan["contracts"] or plan["schema3"] or plan["hosts"] or plan["legacy"])
+            ci.check_gate(plan, "success", "success")
+            for fixtures, nix in (("failure", "success"), ("cancelled", "success"),
+                                  ("success", "skipped"), ("success", "failure"), ("success", "cancelled")):
+                with self.assertRaises(ValueError): ci.check_gate(plan, fixtures, nix)
+            with self.assertRaises(ValueError): ci.check_gate(plan, "success", "success", full=True)
+            with self.assertRaises(ValueError): ci.validate_plan({**plan, "checks": []})
+            self.assertEqual(ci.make_plan(plan["paths"])["mode"], "full")
+            self.assertEqual(ci.make_plan(plan["paths"], baseline=BASE, full=True)["mode"], "full")
+            with patch.object(ci, "baseline_green", return_value=False):
+                self.assertEqual(ci.with_baseline(plan, BASE, "owner/repo")["mode"], "full")
+
+    def test_action_pin_git_evidence_rejects_mixed_changes_and_missing_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(["git", "-c", "user.name=CI fixture", "-c", "user.email=ci@example.invalid",
+                    "-c", "commit.gpgsign=false", *args], cwd=root, text=True, stderr=subprocess.PIPE).strip()
+            git("init")
+            workflow = root / ".github/workflows/check.yml"
+            workflow.parent.mkdir(parents=True)
+            workflow.write_text("jobs:\n  check:\n    steps:\n      - uses: actions/checkout@" + "a" * 40 + " # v7.0.1\n")
+            (root / "README.md").write_text("docs\n")
+            git("add", "."); git("commit", "-m", "base")
+            base = git("rev-parse", "HEAD")
+            workflow.write_text(workflow.read_text().replace("a" * 40, "b" * 40).replace("v7.0.1", "v7.0.2"))
+            (root / "README.md").write_text("updated docs\n")
+            git("add", "."); git("commit", "-m", "pins")
+            paths = [".github/workflows/check.yml", "README.md"]
+            self.assertTrue(ci.action_pins_only(paths, base, cwd=root))
+            graph = ci.load_graph()
+            with patch.object(ci, "ROOT", root), patch.object(ci, "load_graph", return_value=graph):
+                plan = ci.make_plan(paths, baseline=base)
+                self.assertEqual(plan["mode"], "automation")
+                ci.validate_plan(plan)
+                ci.check_gate(plan, "success", "success")
+            self.assertFalse(ci.action_pins_only(paths[:1], base, cwd=root))
+            self.assertFalse(ci.action_pins_only(paths, "f" * 40, cwd=root))
+            pin = git("rev-parse", "HEAD")
+            (root / "flake.lock").write_text("{}")
+            git("add", "."); git("commit", "-m", "runtime")
+            self.assertFalse(ci.action_pins_only(paths, base, cwd=root))
+            self.assertFalse(ci.action_pins_only(sorted(paths + ["flake.lock"]), base, cwd=root))
+            git("reset", "--hard", pin)
+            workflow.rename(workflow.with_name("renamed.yml"))
+            git("add", "-A"); git("commit", "-m", "rename")
+            paths = ci.changed_paths(base, git("rev-parse", "HEAD"), cwd=root)
+            self.assertFalse(ci.action_pins_only(sorted(paths), base, cwd=root))
+
+
     def test_missing_proof_unknown_ownership_and_events_are_full(self):
         for paths in (None, [], ["README.md"], ["modules/apps/ghostty/_package.nix"]):
             self.assertEqual(ci.make_plan(paths)["mode"], "full")

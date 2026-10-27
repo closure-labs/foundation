@@ -8,6 +8,8 @@ series, minor releases may change configuration interfaces.
 
 ## [0.4.1] - 2026-10-27
 
+- Shorten CI for verified same-major GitHub Action pin updates: retain workflow lint, fixtures and Nix smoke builds while skipping the full profile matrix. Runtime dependency and workflow logic changes retain full validation.
+
 - Restore usable Intel IPU7 camera formats when a stale host IPA processing module prevents Firefox from finding the webcam. The new hardware-detected aspect verifies the matching host module before configuring a per-user repair during activation.
 - Add `foundation home camera` and the native `#home-camera` app for diagnosis and explicit repair. Build-only checks report camera health; repairs preserve personal overrides and never restart live audio automatically.
 - Add a focused camera guide covering diagnosis, repair, service restart, Firefox verification and undo steps.
