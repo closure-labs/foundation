@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export PYTHONDONTWRITEBYTECODE=1
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 bash tests/check.sh

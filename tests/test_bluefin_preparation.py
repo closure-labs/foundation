@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(ROOT / 'scripts'))
 from test_home import home
 SPEC = importlib.util.spec_from_file_location('bluefin_prepare', ROOT / 'modules/hosts/os/bluefin/_prepare.py')
