@@ -18,7 +18,7 @@ if grep -qF '"ghostty/config".source' "${module}"; then
 	exit 1
 fi
 grep -qF 'apps/openbao' modules/capabilities/devops/_feature.nix
-grep -qF 'enableZshIntegration = true' "${module}"
+grep -qF 'fzf --zsh' modules/hosts/os/bluefin/_home.nix
 grep -qF 'src = pkgs.zsh-vi-mode' "${module}"
 test ! -e "${rootfs}/usr/share/finite/zsh/plugins.zsh"
 test ! -e "${aspect_root}/apply.sh"

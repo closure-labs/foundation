@@ -5,10 +5,14 @@
   pkgs,
   foundationProfileSchema ? 2,
   ...
-}: let
-  ghostty = import ../../apps/ghostty/_package.nix {inherit pkgs;};
-in {
-  imports = [(import ../../profiles/composition/_legacy-applications.nix { id = "capabilities/devops"; })];
+}:
+let
+  ghostty = import ../../apps/ghostty/_package.nix { inherit pkgs; };
+in
+{
+  imports = [
+    (import ../../profiles/composition/_legacy-applications.nix { id = "capabilities/devops"; })
+  ];
 
   # Terminal multiplexers inherit SHELL even when Ghostty starts Zsh directly.
   home.sessionVariables.SHELL = lib.mkDefault "${config.programs.zsh.package}/bin/zsh";
@@ -41,7 +45,7 @@ in {
       }
     ];
     syntaxHighlighting.enable = true;
-    # The common base sets Brew precedence. Home Manager owns Zsh integrations.
+    # Bluefin retains stock binary precedence. Home Manager owns Finite Zsh configuration.
     initContent = lib.mkMerge [
       (lib.mkBefore ''
         # Refresh inherited login-session values in every interactive shell.
@@ -51,17 +55,12 @@ in {
     ];
   };
 
-  programs.fzf = {
-    enable = true;
-    enableZshIntegration = true;
-  };
-
   xdg.configFile = {
     "ghostty/config.ghostty".text =
       builtins.replaceStrings
-      ["command = /usr/bin/zsh"]
-      ["command = ${config.programs.zsh.package}/bin/zsh"]
-      (builtins.readFile (finiteHomeAssets.devops + "/ghostty/config.ghostty"));
+        [ "command = /usr/bin/zsh" ]
+        [ "command = ${config.programs.zsh.package}/bin/zsh" ]
+        (builtins.readFile (finiteHomeAssets.devops + "/ghostty/config.ghostty"));
     "zsh/aliases.zsh".source = finiteHomeAssets.devops + "/zsh/aliases.zsh";
     "zsh/bindings.zsh".source = finiteHomeAssets.devops + "/zsh/bindings.zsh";
     "zsh/fzf.zsh".source = finiteHomeAssets.devops + "/zsh/fzf.zsh";

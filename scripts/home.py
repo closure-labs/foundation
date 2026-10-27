@@ -28,32 +28,8 @@ EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "r
 REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
 
-@contextlib.contextmanager
-def timing(stage):
-    """Optional bounded observations; no paths, command output or authority."""
-    if os.environ.get("FOUNDATION_TIMINGS") != "1":
-        yield
-        return
-    started = time.monotonic()
-    started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    outcome, status = "error", None
-    try:
-        yield
-        outcome, status = "success", 0
-    except subprocess.CalledProcessError as error:
-        status = error.returncode
-        raise
-    finally:
-        record = {"schema": 1, "kind": "foundation-stage-timing", "authorizesPublication": False,
-                  "stage": stage, "seconds": round(max(0, time.monotonic() - started), 6),
-                  "startedAt": started_at,
-                  "outcome": outcome, "status": status}
-        try:
-            print("FOUNDATION_TIMING " + json.dumps(record, separators=(",", ":")), file=sys.stderr, flush=True)
-        except (OSError, ValueError):
-            # Diagnostics must not turn a successful activation into a rollback
-            # or hide the actual initialization/build failure.
-            pass
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from foundation_observations import timing, NixActivities, Resources, activation_observations
 
 
 def run(command, **kwargs):
@@ -67,6 +43,21 @@ def capture(command):
 
 def download_retryable(output):
     """416 is transient only after this command interrupted the same URL."""
+    if '@nix ' in output:
+        messages = []
+        for line in output.splitlines():
+            if line.startswith('@nix '):
+                try:
+                    record = json.loads(line[5:])
+                    if record.get('action') == 'msg' and isinstance(record.get('msg'), str):
+                        messages.append(record['msg'])
+                    elif record.get('action') not in ('start', 'stop', 'result'):
+                        return False
+                except (ValueError, TypeError, AttributeError):
+                    return False
+            else:
+                messages.append(line)
+        output = '\n'.join(messages)
     output = re.sub(r"\x1b\[[0-9;]*m", "", output)
     terminal = (r"HTTP (?:error |response:? )?4(?!(?:08|16|29)\b)[0-9]{2}\b|"
                 r"hash mismatch|NAR hash mismatch|signature.*(?:invalid|failed)|does not match expected hash|"
@@ -111,6 +102,8 @@ def download_retryable(output):
 def build_attempt(command, timeout):
     """Stream diagnostics and bound the whole process group, including nested retries."""
     captured = {"stdout": bytearray(), "stderr": bytearray()}
+    activities = NixActivities()
+    resources = Resources()
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True) as process:
         with selectors.DefaultSelector() as ready:
             ready.register(process.stdout, selectors.EVENT_READ, "stdout")
@@ -118,6 +111,7 @@ def build_attempt(command, timeout):
             deadline = time.monotonic() + timeout
             try:
                 while ready.get_map():
+                    resources.sample(process.pid)
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise subprocess.TimeoutExpired(command, timeout)
@@ -129,6 +123,7 @@ def build_attempt(command, timeout):
                         name = key.data
                         captured[name].extend(chunk)
                         if name == "stderr":
+                            activities.feed(chunk)
                             sys.stderr.write(chunk.decode("utf-8", errors="replace"))
                             sys.stderr.flush()
                             # Lack of retained proof makes an old 416 terminal.
@@ -145,6 +140,8 @@ def build_attempt(command, timeout):
                     pass
                 process.wait()
                 raise
+    resources.finish()
+    activities.finish()
     return subprocess.CompletedProcess(command, status,
         captured["stdout"].decode("utf-8", errors="replace"),
         captured["stderr"].decode("utf-8", errors="replace"))
@@ -638,6 +635,10 @@ def build(stage):
     installable = f"path:{stage}#homeConfigurations.{profile['identity']['username']}.activationPackage"
     command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
+    if os.environ.get("FOUNDATION_TIMINGS") == "1":
+        command.insert(4, "--unit=foundation-realisation-" + str(os.getpid()) + ".scope")
+        command.insert(-1, "--log-format")
+        command.insert(-1, "internal-json")
     try:
         paths = capture_build(command).splitlines()
     except subprocess.CalledProcessError as error:
@@ -659,26 +660,15 @@ def previous_generation():
     return profile.resolve() if profile.exists() else None
 
 
-@timing("brew-provisioning")
-def provision_brew(stage):
-    # Use the policy and installer from the selected Foundation release.
-    expression = 'let root = builtins.getFlake ' + json.dumps("path:" + str(stage)) + '''; f = root.inputs.foundation or root; in {
-      bootstrap = builtins.readFile (f.outPath + "/modules/home/commands/_assets/finite-brew-bootstrap");
-      status = builtins.readFile (f.outPath + "/modules/home/commands/_assets/finite-brew-migration-status");
-      policy = builtins.readFile (f.outPath + "/modules/providers/homebrew/_assets/brew-packages.json");
-    }'''
-    # nix eval --impure only permits the staged local flake reference; its lock is immutable.
-    with timing("brew-policy-evaluation"):
-        data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
-    with tempfile.TemporaryDirectory(prefix=".foundation-brew-", dir=stage.parent) as temp:
-        policy = Path(temp) / "policy.json"
-        bootstrap = Path(temp) / "finite-brew-bootstrap"
-        policy.write_text(data["policy"])
-        bootstrap.write_text(data["bootstrap"])
-        (Path(temp) / "finite-brew-migration-status").write_text(data["status"])
-        env = dict(os.environ, FINITE_BREW_POLICY=str(policy))
-        with timing("brew-bootstrap"):
-            run(["bash", str(bootstrap)], env=env)
+@timing("preparation")
+def prepare_generation(activation):
+    """Run an optional executable supplied by this one realized generation."""
+    executable = activation / "foundation-prepare"
+    if not executable.exists() and not executable.is_symlink():
+        return
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        raise ValueError("Generation preparation entry is not executable")
+    run([str(executable)])
 
 
 @timing("commit-and-activation")
@@ -707,7 +697,7 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
         if consumer:
             for relative in committed_files:
                 replace_file_entry(stage / relative, root / relative)
-        with timing("activation"):
+        with timing("activation"), activation_observations():
             run([str(activation / "activate")])
     except BaseException:
         failed = root.with_name(root.name + ".failed." + stamp)
@@ -882,7 +872,7 @@ def update(root, check=False):
             write_json(stage / "foundation.json", info)
             write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             activation = build(stage)
-            provision_brew(stage)
+            prepare_generation(activation)
             commit_stage(root, stage, original, activation)
 
 
@@ -931,7 +921,7 @@ def migrate(root, info, lock, check=False):
                 run(["nix", "flake", "lock", "path:" + str(stage)])
             activation = build(stage)
             if not check:
-                provision_brew(stage)
+                prepare_generation(activation)
                 commit_stage(root, stage, original, activation, replace_tree=True)
 
 
@@ -964,7 +954,7 @@ def initialize(root, profile_path, check=False):
             write_staged_profile(stage, profile)
             activation = build(stage)
             if not check:
-                provision_brew(stage)
+                prepare_generation(activation)
                 commit_stage(root, stage, None, activation)
 
 
@@ -1010,7 +1000,7 @@ def apply(root, roles=None, packages=None, check=False, capabilities=None, migra
             if tree_digest(root) != original or profile_hash(root) != raw_hash:
                 raise ValueError("Configuration changed during the build; nothing installed")
             if not check:
-                provision_brew(stage)
+                prepare_generation(activation)
                 commit_stage(root, stage, original, activation, expected_profile_hash=raw_hash)
 
 

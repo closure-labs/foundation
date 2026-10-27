@@ -33,7 +33,7 @@ nix run github:closure-labs/foundation/latest-release#home-init -- \
   --profile "$HOME/foundation-profile.json"
 ```
 
-Choose `bluefin-dx` if that is your installed foundation. Initialization creates `~/.config/home-manager` and refuses to replace an existing configuration. The last command provisions shared Homebrew tools and activates the built home.
+Choose `bluefin-dx` if that is your installed foundation. Initialization creates `~/.config/home-manager` and refuses to replace an existing configuration. The last command realizes the home, runs optional generation preparation, and activates it. On Bluefin, preparation ensures the inherited stock CLI bundle and user setup; Finite additions are declarative Nix/Flatpak packages. See [Bluefin ownership](docs/bluefin-user-environment.md).
 
 Follow [Getting started](docs/GETTING-STARTED.md) for prerequisites, hardware choices and checkout-based setup.
 
