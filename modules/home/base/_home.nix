@@ -1,6 +1,6 @@
 { inputs, lib, ... }: {
   # Keep the shared aspect entry point small; application selection stays in
-  # profile composition and the explicit schema-2 declarations.
+  # schema-3 profile composition.
 
   imports = [ ./_membership.nix ];
   home = {

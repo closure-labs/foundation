@@ -1,19 +1,17 @@
 set -euo pipefail
 
-migration=()
 case "${1:-}" in
-  -h|--help) echo 'Usage: foundation home configure [--migrate-profile]'; exit 0 ;;
+  -h|--help) echo 'Usage: foundation home configure'; exit 0 ;;
   '') [[ $# -eq 0 ]] || exit 2 ;;
-  --migrate-profile) [[ $# -eq 1 ]] || exit 2; migration+=(--migrate-profile) ;;
-  *) echo 'usage: foundation home configure [--migrate-profile]' >&2; exit 2 ;;
+  *) echo 'usage: foundation home configure' >&2; exit 2 ;;
 esac
 
 # The helper resolves the consumer's locked source; packaged catalogs can be stale.
-context=$(foundation-home-apply --editor-context "${migration[@]}")
+context=$(foundation-home-apply --editor-context)
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
 if ! jq -e '
-  .schema == 1 and (.profile.schema == 2 or .profile.schema == 3) and
+  .schema == 1 and .profile.schema == 3 and
   (.catalog.roles | type == "object") and (.catalog.packages | type == "object") and
   ((.catalog.classifications // {}) | type == "object") and
   all(.catalog.roles[]; (.label | type == "string") and (.order | type == "number") and
@@ -29,11 +27,11 @@ jq '.profile' <<<"$context" >"$work/profile.json"
 catalog="$work/catalog.json"
 current="$work/profile.json"
 schema=$(jq -r '.catalog.profileSchema // .profile.schema' <<<"$context")
-if [[ "$schema" != 2 && "$schema" != 3 ]]; then
+if [[ "$schema" != 3 ]]; then
   echo 'The locked Foundation editor format is unsupported.' >&2
   exit 2
 fi
-if [[ "$schema" == 3 ]] && ! jq -e '
+if ! jq -e '
   (.capabilities | type == "object") and
   all(.capabilities[]; (.label | type == "string") and (.order | type == "number") and
     (.applications | type == "array") and all(.applications[]; type == "string"))
@@ -57,8 +55,6 @@ package_rows=$(jq -ce --slurpfile profile "$current" '
      $package.label, $package.description, $id]
   ] | flatten
 ' "$catalog")
-capability_rows='[]'
-if [[ "$schema" == 3 ]]; then
   capability_rows=$(jq -ce --slurpfile profile "$current" '
     [.capabilities | to_entries | sort_by(.value.order, .key)[] |
       .key as $id | .value as $capability |
@@ -66,7 +62,6 @@ if [[ "$schema" == 3 ]]; then
        $capability.label, ($capability.applications | join(", ")), $id]
     ] | flatten
   ' "$catalog")
-fi
 mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$role_rows")
 roles=$(zenity --list --checklist \
   --title='Configure Foundation' --text='Select roles for this Home Manager configuration.' \
@@ -77,17 +72,13 @@ packages=$(zenity --list --checklist \
   --title='Configure Foundation packages' --text='Select optional Nix packages.' \
   --column='Use' --column='Package' --column='Description' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
-if [[ "$schema" == 2 ]]; then
-  foundation-home-apply --roles "$roles" --packages "$packages"
-  exit $?
-fi
 mapfile -d '' -t rows < <(jq -j '.[] | ., "\u0000"' <<<"$capability_rows")
 capabilities=$(zenity --list --checklist \
   --title='Additional capabilities' \
   --text='Role and hardware defaults are included automatically. Select additional capabilities to keep independently of your roles.' \
   --column='Use' --column='Capability' --column='Applications' --column='id' \
   --hide-column=4 --print-column=4 --separator=, "${rows[@]}") || exit 0
-change=("${migration[@]}" --roles "$roles" --packages "$packages" --capabilities "$capabilities")
+change=(--roles "$roles" --packages "$packages" --capabilities "$capabilities")
 preview=$(foundation-home-apply "${change[@]}" --preview)
 if ! jq -e '.schema == 1 and .preview.status == "preview" and .preview.activationAllowed == false and
   (.summary | type == "string") and (.approvalToken | type == "string" and test("^[a-f0-9]{64}$"))' <<<"$preview" >/dev/null; then

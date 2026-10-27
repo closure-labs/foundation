@@ -9,7 +9,7 @@ Start with a profile, add your own settings, then build and activate your home.
 | Choose roles, extra applications and hardware | [Profiles and hardware](PROFILES.md) |
 | Build, activate, update or recover | [Activation, updates and recovery](ACTIVATION.md) |
 | Diagnose an Intel IPU7 webcam missing from Firefox | [Camera diagnosis and repair](CAMERA.md) |
-| Adopt an older configuration or convert a profile | [Migration](MIGRATION.md) |
+| Adopt an older configuration or replace an unsupported profile | [Migration](MIGRATION.md) |
 | Keep personal Espanso files in Git | [Espanso](ESPANSO.md) |
 | Add or change a Foundation feature | [Module architecture](MODULES.md) |
 | Integrate Foundation into another flake | [Public API](API.md) |

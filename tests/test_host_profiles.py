@@ -77,32 +77,23 @@ class HostProfiles(unittest.TestCase):
 
     def test_workstation_candidate_retains_the_current_application_identities(self):
         candidate = json.loads((ROOT / "examples/workstations/dale-xps-9350.json").read_text())
-        original = {key: value for key, value in candidate.items() if key not in ("host", "capabilities")}
-        original.update(schema=2, hardware="dell-xps-9350-intel")
-        old = run_draft("resolveLegacy", original)
         new = run_draft("resolve", candidate)
-        self.assertEqual(old["applicationIds"], new["applicationIds"])
+        self.assertIn("firefox", new["applicationIds"])
         self.assertEqual(new["profile"]["hardware"], "dell-xps-9350-intel")
         self.assertTrue(new["profile"]["host"]["fingerprint"])
         self.assertEqual(new["classifications"], ["professional"])
 
-    def test_conversion_does_not_repurpose_a_custom_schema_two_host_field(self):
-        value = draft(host=normalize_host({}))
+    def test_schema_two_with_host_is_rejected_without_changes(self):
+        value = draft(host={"formFactor": "generic"})
         value["schema"] = 2
-        for api in ("profile-changes.nix", "profile-drafts"):
-            operation = "" if api.endswith(".nix") else ".previewMigration"
-            preview = evaluate(f'(import {ROOT}/lib/{api} {{catalog = domain;}}){operation} {home.nix_value({"profile": value, "migrate": True} if not operation else {"profile": value})}')
-            self.assertEqual(preview["status"], "blocked")
-            self.assertEqual(preview["source"]["host"], value["host"])
-            self.assertIsNone(preview["candidate"])
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "consumer"
             root.mkdir()
             home.write_json(root / "profile.json", value)
             before = home.tree_digest(root)
             with patch.object(home, "editor_target") as target:
-                with self.assertRaisesRegex(ValueError, "custom host field"):
-                    home.read_editor(root, migrate=True)
+                with self.assertRaisesRegex(ValueError, "recreate.*schema 3"):
+                    home.read_editor(root)
                 target.assert_not_called()
             self.assertEqual(home.tree_digest(root), before)
 

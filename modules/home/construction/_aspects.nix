@@ -1,6 +1,6 @@
-{ den, lib, foundationProfile ? {schema = 2;}, ... }: let
+{ den, lib, foundationProfile ? {schema = 3;}, ... }: let
   loader = import ../../flake/features/_loader.nix {};
-  schema = foundationProfile.schema or 2;
+  schema = foundationProfile.schema or 3;
   aspects = builtins.mapAttrs (id: descriptor: {
     includes = map (dependency: den.aspects.foundation.${dependency}) (loader.dependencies schema id);
     homeManager.imports = [

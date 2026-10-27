@@ -19,9 +19,7 @@
     };
   project = domainCatalog: import ../../../lib/home-catalog.nix {inherit domainCatalog lib version;};
 in
-  if schema == 2
-  then (project domainCatalog) // {profileSchema = 2;}
-  else if schema == 3
+  if schema == 3
   then
     (project selected)
     // {
@@ -29,4 +27,4 @@ in
       capabilities = contract.capabilities;
       hosts = (import ../../../lib/hosts.nix).choices;
     }
-  else throw "Unsupported Foundation catalog profile schema"
+  else throw "Unsupported Foundation catalog profile schema; expected schema 3. Recreate the profile with foundation home profile."

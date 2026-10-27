@@ -2,7 +2,6 @@
   config,
   inputs,
   lib,
-  foundationProfileSchema ? 2,
   ...
 }: {
   fonts.fontconfig.enable = true;
@@ -26,8 +25,8 @@
 
   targets.genericLinux = {
     enable = true;
-    gpu.enable = foundationProfileSchema == 2;
-    nixGL = lib.mkIf (foundationProfileSchema == 3) {
+    gpu.enable = false;
+    nixGL = {
       packages = inputs.nixGL.packages;
       defaultWrapper = "mesa";
       vulkan.enable = false;

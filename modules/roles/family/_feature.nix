@@ -10,7 +10,6 @@
   };
   "dependencies" = [ ];
   "schemaDependencies" = {
-    "2" = [ ];
     "3" = [
       "capabilities/office"
       "capabilities/mail"

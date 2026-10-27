@@ -237,7 +237,7 @@ def profile_capabilities():
 def require_helper_schema(profile, field="normalizeSchemas"):
     if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
             or profile["schema"] not in profile_capabilities()[field]):
-        raise ValueError("The installed Foundation helper does not support this profile schema")
+        raise ValueError("The installed Foundation helper does not support this profile schema; recreate the selection with foundation home profile (schema 3) and review it before applying")
 
 
 def version(value):
@@ -405,28 +405,6 @@ def copy_configuration(source, target):
     ])
 
 
-def validate_profile(profile, catalog):
-    """Schema-2 fallback for selected releases without a Nix normalizer."""
-    if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] != 2:
-        raise ValueError("Unsupported profile schema; migrate a schema-1 profile with the existing initializer first")
-    for field, choices in (("roles", catalog["roles"]), ("packages", catalog["packages"])):
-        requested = profile.get(field)
-        if (not isinstance(requested, list) or any(not isinstance(x, str) or x not in choices for x in requested)
-                or len(set(requested)) != len(requested)):
-            raise ValueError(f"Invalid or duplicate {field}")
-        profile[field] = sorted(requested, key=lambda x: (choices[x]["order"], x))
-    if any(not isinstance(profile.get(field), str) or profile[field] not in catalog[choices]
-           for field, choices in (("foundation", "foundations"), ("hardware", "hardware"))):
-        raise ValueError("Unsupported host foundation or hardware")
-    identity = profile.get("identity", {})
-    if (not isinstance(identity, dict) or not isinstance(identity.get("username"), str)
-            or not re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?", identity["username"])
-            or not isinstance(identity.get("homeDirectory"), str)
-            or not re.fullmatch(r"/.+", identity["homeDirectory"])):
-        raise ValueError("Invalid account identity")
-    return profile
-
-
 def validate_runtime_profile(profile, catalog):
     """Account and running-image checks belong to the invoking machine."""
     identity = profile["identity"]
@@ -443,7 +421,7 @@ def validate_runtime_profile(profile, catalog):
 @timing("profile-validation")
 def validate_staged_profile(stage, data=None):
     # Read the profile from the same staged flake as its locked Foundation.
-    # Fallback is capability-based: target validation failures must propagate.
+    # Selected releases must provide the schema-3 normalizer and capabilities.
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
     expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
@@ -454,15 +432,16 @@ def validate_staged_profile(stage, data=None):
     in {
       inherit hasNormalizer;
       catalog = if target.lib ? homeCatalogForSchema then target.lib.homeCatalogForSchema submitted.schema else target.lib.homeCatalog;
-      profile = if submitted.schema == 3 && !hasCapabilities
+      profile = if !hasCapabilities
         then throw "Schema 3 requires explicit selected Foundation capabilities"
         else if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
         then throw "Selected Foundation does not support this profile schema"
-        else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
+        else if hasNormalizer then target.lib.normalizeProfile submitted
+        else throw "Selected Foundation lacks a profile normalizer; update Foundation first";
     } // (if hasCapabilities then { capabilities = target.lib.profileCapabilities; } else {})'''
     if data is None:
         data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
-    if submitted["schema"] == 3 and "capabilities" not in data:
+    if "capabilities" not in data:
         raise ValueError("Schema 3 requires explicit selected Foundation capabilities")
     profile = data["profile"]
     require_helper_schema(profile)
@@ -476,7 +455,7 @@ def validate_staged_profile(stage, data=None):
         if submitted["schema"] not in capabilities["normalizeSchemas"] or data["catalog"]["schema"] not in capabilities["catalogSchemas"]:
             raise ValueError("Selected Foundation capabilities do not support this profile or catalog schema")
     if not data["hasNormalizer"]:
-        profile = validate_profile(profile, data["catalog"])
+        raise ValueError("Selected Foundation lacks a profile normalizer; update Foundation first")
     validate_runtime_profile(profile, data["catalog"])
     return profile
 
@@ -484,7 +463,7 @@ def validate_staged_profile(stage, data=None):
 def editor_target(stage, schema, change=None):
     """Resolve editor data from the staged locked target, never the caller catalog."""
     require_helper_schema(read_json(stage / "profile.json"))
-    if schema not in profile_capabilities().get("editSchemas", [2]):
+    if schema not in profile_capabilities().get("editSchemas", []):
         raise ValueError("The installed Foundation helper does not support editing this profile schema")
     request = {"schema": schema, "change": change}
     expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
@@ -494,22 +473,22 @@ def editor_target(stage, schema, change=None):
       hasNormalizer = target.lib ? normalizeProfile;
       hasCapabilities = target.lib ? profileCapabilities;
       hasEditor = (target.lib.profileChanges.schema or 0) == 1;
-      supported = if hasCapabilities then target.lib.profileCapabilities.editSchemas or [2] else [2];
+      supported = if hasCapabilities then target.lib.profileCapabilities.editSchemas or [] else [];
       canEdit = hasEditor && builtins.elem request.schema supported;
       catalogFor = schema: if target.lib ? homeCatalogForSchema then target.lib.homeCatalogForSchema schema else target.lib.homeCatalog;
     in {
       inherit hasNormalizer;
       catalog = catalogFor submitted.schema;
-      profile = if submitted.schema == 3 && !hasCapabilities then throw "Schema 3 requires explicit selected Foundation capabilities"
+      profile = if !hasCapabilities then throw "Schema 3 requires explicit selected Foundation capabilities"
         else if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
         then throw "Selected Foundation does not support this profile schema"
-        else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
-      editorCatalog = if request.schema == 3 && (!canEdit || !(target.lib ? homeCatalogForSchema))
+        else if hasNormalizer then target.lib.normalizeProfile submitted
+        else throw "Selected Foundation lacks a profile normalizer; update Foundation first";
+      editorCatalog = if (!canEdit || !(target.lib ? homeCatalogForSchema))
         then throw "Selected Foundation does not support schema-3 editing; update Foundation first"
         else catalogFor request.schema;
       source = { path = toString target.outPath; narHash = target.narHash or null; rev = target.rev or null; };
       editorSchema = if hasEditor then 1 else 0;
-      canMigrate = hasEditor && builtins.elem 3 supported && (target.lib ? homeCatalogForSchema);
       preview = if request.change == null then null
         else if !canEdit then throw "Selected Foundation does not support profile change previews"
         else target.lib.profileChanges.preview ({ profile = submitted; } // request.change);
@@ -519,9 +498,9 @@ def editor_target(stage, schema, change=None):
     normalized = validate_staged_profile(stage, data)
     if change is not None and data.get("editorSchema") != 1:
         raise ValueError("Selected Foundation does not support this profile preview API")
-    if schema not in profile_capabilities().get("editSchemas", [2]):
+    if schema not in profile_capabilities().get("editSchemas", []):
         raise ValueError("The installed Foundation helper does not support editing this profile schema")
-    if schema == 3 and (data.get("editorSchema") != 1 or 3 not in data.get("capabilities", {}).get("editSchemas", [2])):
+    if data.get("editorSchema") != 1 or 3 not in data.get("capabilities", {}).get("editSchemas", []):
         raise ValueError("Selected Foundation does not advertise schema-3 editing")
     catalog = data["editorCatalog"]
     if type(catalog.get("schema")) is not int or catalog["schema"] not in profile_capabilities()["catalogSchemas"]:
@@ -534,11 +513,10 @@ def profile_hash(root):
     return hashlib.sha256((root / "profile.json").read_bytes()).hexdigest()
 
 
-def selection_change(roles, packages, capabilities, migrate):
+def selection_change(roles, packages, capabilities):
     return {"roles": None if roles is None else (roles.split(",") if roles else []),
             "packages": None if packages is None else (packages.split(",") if packages else []),
-            "capabilities": None if capabilities is None else (capabilities.split(",") if capabilities else []),
-            "migrate": migrate}
+            "capabilities": None if capabilities is None else (capabilities.split(",") if capabilities else [])}
 
 
 def preview_summary(preview):
@@ -573,7 +551,7 @@ def preview_summary(preview):
 def prepare_profile_change(stage, root, original, raw_profile_hash, change):
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
-    schema = 3 if change["migrate"] else submitted.get("schema")
+    schema = submitted["schema"]
     data = editor_target(stage, schema, change)
     preview = data["preview"]
     if not isinstance(preview, dict) or preview.get("status") not in ("preview", "blocked") or preview.get("activationAllowed") is not False:
@@ -596,7 +574,7 @@ def prepare_profile_change(stage, root, original, raw_profile_hash, change):
     return result
 
 
-def read_editor(root, *, migrate=False, preview=False, roles=None, packages=None, capabilities=None):
+def read_editor(root, *, preview=False, roles=None, packages=None, capabilities=None):
     """Read-only commands use /tmp staging and never create a consumer lock file."""
     original = tree_digest(root)
     raw_hash = profile_hash(root)
@@ -605,20 +583,12 @@ def read_editor(root, *, migrate=False, preview=False, roles=None, packages=None
         copy_configuration(root, stage)
         submitted = read_json(stage / "profile.json")
         require_helper_schema(submitted)
-        if migrate and submitted.get("schema") != 2:
-            raise ValueError("Explicit profile conversion requires a schema-2 source")
-        for field in ("capabilities", "host"):
-            if migrate and field in submitted:
-                raise ValueError(f"Existing custom {field} field collides with schema 3; resolve it explicitly before migration")
-        if capabilities is not None and submitted.get("schema") == 2 and not migrate:
-            raise ValueError("Capabilities require explicit --migrate-profile conversion to schema 3")
         if preview:
-            result = prepare_profile_change(stage, root, original, raw_hash, selection_change(roles, packages, capabilities, migrate))
+            result = prepare_profile_change(stage, root, original, raw_hash, selection_change(roles, packages, capabilities))
         else:
-            schema = 3 if migrate else read_json(stage / "profile.json").get("schema")
+            schema = submitted["schema"]
             data = editor_target(stage, schema)
-            result = {"schema": 1, "profile": data["profile"], "catalog": data["editorCatalog"],
-                      "canMigrate": data["canMigrate"] and 3 in profile_capabilities().get("editSchemas", [2])}
+            result = {"schema": 1, "profile": data["profile"], "catalog": data["editorCatalog"]}
         if tree_digest(root) != original or profile_hash(root) != raw_hash:
             raise ValueError("Configuration changed while reading the editor; try again")
         return result
@@ -831,6 +801,7 @@ def available(root):
 
 
 def update(root, check=False):
+    require_helper_schema(read_json(root / "profile.json"))
     with locked(root):
         installed, info, lock = available(root)
         if info is None:
@@ -877,6 +848,7 @@ def update(root, check=False):
 
 
 def migrate(root, info, lock, check=False):
+    require_helper_schema(read_json(root / "profile.json"))
     with locked(root):
         if root.is_symlink() or (root / ".git").exists() or (root / ".jj").exists():
             raise ValueError("Migrate a personal configuration directory, not a Git checkout or symlink; keep the checkout for manual review")
@@ -934,7 +906,7 @@ def initialize(root, profile_path, check=False):
     profile = json.loads(capture(["yq", "-o=json", ".", str(profile_path)]))
     if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
             or profile["schema"] not in profile_capabilities()["initializeSchemas"]):
-        raise ValueError("Unsupported profile schema for this initializer")
+        raise ValueError("Unsupported profile schema for this initializer; recreate the selection with foundation home profile (schema 3) and review it before applying")
     import pwd
     account = pwd.getpwuid(os.getuid())
     supplied = profile.get("identity", {})
@@ -943,9 +915,6 @@ def initialize(root, profile_path, check=False):
     identity = {"username": account.pw_name, "homeDirectory": account.pw_dir}
     if any(supplied.get(key) and supplied[key] != value for key, value in identity.items()):
         raise ValueError("Provisioned identity differs from the current account")
-    if profile["schema"] == 1:
-        profile["schema"] = 2
-        profile.setdefault("packages", [])
     profile["identity"] = {**supplied, **identity}
     with locked(root):
         with tempfile.TemporaryDirectory(prefix=".foundation-init-", dir=root.parent) as temp:
@@ -958,9 +927,10 @@ def initialize(root, profile_path, check=False):
                 commit_stage(root, stage, None, activation)
 
 
-def apply(root, roles=None, packages=None, check=False, capabilities=None, migrate_profile=False, preview=False, approve_preview=None):
+def apply(root, roles=None, packages=None, check=False, capabilities=None, preview=False, approve_preview=None):
+    require_helper_schema(read_json(root / "profile.json"))
     if preview:
-        return read_editor(root, migrate=migrate_profile, preview=True, roles=roles, packages=packages, capabilities=capabilities)
+        return read_editor(root, preview=True, roles=roles, packages=packages, capabilities=capabilities)
     if approve_preview is not None and not re.fullmatch(r"[a-f0-9]{64}", approve_preview):
         raise ValueError("Invalid preview token; request a fresh --preview")
     lock = read_json(root / "flake.lock")
@@ -979,20 +949,13 @@ def apply(root, roles=None, packages=None, check=False, capabilities=None, migra
                 write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             profile = read_json(stage / "profile.json")
             require_helper_schema(profile)
-            if profile.get("schema") == 3 or capabilities is not None or migrate_profile or approve_preview is not None:
-                change = selection_change(roles, packages, capabilities, migrate_profile)
-                result = prepare_profile_change(stage, root, original, raw_hash, change)
-                if result["preview"]["status"] == "blocked":
-                    raise ValueError(result["preview"]["reason"])
-                if approve_preview is not None and approve_preview != result["approvalToken"]:
-                    raise ValueError("Preview is stale or selections changed; request a fresh --preview")
-                if migrate_profile and approve_preview is None and not check:
-                    raise ValueError("Conversion requires a reviewed --preview; repeat with --approve-preview TOKEN")
-                profile = result["preview"]["candidate"]
-            else:
-                for field, value in (("roles", roles), ("packages", packages)):
-                    if value is not None:
-                        profile[field] = value.split(",") if value else []
+            change = selection_change(roles, packages, capabilities)
+            result = prepare_profile_change(stage, root, original, raw_hash, change)
+            if result["preview"]["status"] == "blocked":
+                raise ValueError(result["preview"]["reason"])
+            if approve_preview is not None and approve_preview != result["approvalToken"]:
+                raise ValueError("Preview is stale or selections changed; request a fresh --preview")
+            profile = result["preview"]["candidate"]
             if tree_digest(root) != original or profile_hash(root) != raw_hash:
                 raise ValueError("Configuration changed while preparing the profile; nothing built")
             write_staged_profile(stage, profile)
@@ -1088,7 +1051,6 @@ def main():
             item.add_argument("--roles")
             item.add_argument("--packages")
             item.add_argument("--capabilities")
-            item.add_argument("--migrate-profile", action="store_true")
             mode = item.add_mutually_exclusive_group()
             mode.add_argument("--preview", action="store_true")
             mode.add_argument("--editor-context", action="store_true")
@@ -1119,6 +1081,7 @@ def main():
         if args.command == "update":
             update(root, args.check)
         elif args.command == "migrate":
+            require_helper_schema(read_json(root / "profile.json"))
             releases = published_releases()
             if not releases:
                 raise ValueError("No published Foundation releases are available")
@@ -1129,12 +1092,12 @@ def main():
         elif args.command == "apply":
             if args.editor_context:
                 if args.roles is not None or args.packages is not None or args.capabilities is not None or args.approve_preview or args.check:
-                    raise ValueError("--editor-context only accepts --migrate-profile")
-                print(json.dumps(read_editor(root, migrate=args.migrate_profile), sort_keys=True))
+                    raise ValueError("--editor-context cannot be combined with selection or apply options")
+                print(json.dumps(read_editor(root), sort_keys=True))
             else:
                 if args.preview and (args.approve_preview is not None or args.check):
                     raise ValueError("--preview cannot be combined with --approve-preview or --check")
-                result = apply(root, args.roles, args.packages, args.check, args.capabilities, args.migrate_profile, args.preview, args.approve_preview)
+                result = apply(root, args.roles, args.packages, args.check, args.capabilities, args.preview, args.approve_preview)
                 if args.preview:
                     print(json.dumps(result, sort_keys=True))
         else:

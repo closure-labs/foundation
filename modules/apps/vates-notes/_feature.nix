@@ -7,29 +7,16 @@
       "name" = "finite-vates-notes";
       "provider" = "desktop-entry";
     };
-    "legacyApplication" = {
-      "declaration" = "desktop-entry:finite-vates-notes";
-      "graphical" = false;
-      "name" = "finite-vates-notes";
-      "provider" = "desktop-entry";
-    };
   };
   "dependencies" = [ "providers/desktop-entry" ];
   "schemaDependencies" = { };
   configuration = schema: {
     imports = [
       ./_settings.nix
-    ]
-    ++ (
-      if schema == 3 then
-        [
-          (import ../../profiles/composition/_application.nix {
-            id = "vates-notes";
-            application = (import ./_feature.nix).metadata.application;
-          })
-        ]
-      else
-        [ ]
-    );
+      (import ../../profiles/composition/_application.nix {
+        id = "vates-notes";
+        application = (import ./_feature.nix).metadata.application;
+      })
+    ];
   };
 }

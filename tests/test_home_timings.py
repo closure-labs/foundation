@@ -139,8 +139,8 @@ class Timings(unittest.TestCase):
                         calls.append("build")
                         return Path("/nix/store/fixture")
                     with patch.dict(os.environ, FOUNDATION_TIMINGS=enabled), \
-                            patch.object(home, "capture", return_value=json.dumps({"schema": 2, "identity": {}})), \
-                            patch.object(home, "profile_capabilities", return_value={"initializeSchemas": [2]}), \
+                            patch.object(home, "capture", return_value=json.dumps({"schema": 3, "identity": {}})), \
+                            patch.object(home, "profile_capabilities", return_value={"initializeSchemas": [3]}), \
                             patch.object(home, "source_root", return_value=ROOT), \
                             patch.object(home, "make_template", side_effect=template), \
                             patch.object(home, "build", side_effect=build), \

@@ -19,6 +19,8 @@ FULL_CHECKS = json.loads((ROOT / GRAPH_PATH).read_text())["plans"]["full"]["chec
 
 
 def closure(graph, schema, roots):
+    if type(schema) is not int or schema != 3:
+        raise ValueError("Unsupported home profile schema; expected schema 3")
     visited = set()
     def visit(name, trail):
         if name in trail:
@@ -55,8 +57,7 @@ def load_graph(path=None, validate_sources=False):
             if not file.startswith(directory) or ".." in PurePosixPath(file).parts or file in owners:
                 raise ValueError("Ambiguous feature ownership")
             owners.add(file)
-    for schema in (2, 3):
-        closure(graph, schema, graph["features"])
+    closure(graph, 3, graph["features"])
     for group, profiles in CASE_PROFILES.items():
         if set(graph["cases"][group]) != set(profiles):
             raise ValueError("Stale profile cases")

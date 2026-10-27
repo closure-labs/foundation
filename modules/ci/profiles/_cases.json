@@ -327,54 +327,6 @@
     }
   },
   "legacy": {
-    "schema2-bluefin": {
-      "schema": 2,
-      "foundation": "bluefin",
-      "packages": [
-        "hack-font",
-        "herdr",
-        "jj",
-        "opencode",
-        "uv"
-      ],
-      "roles": [
-        "developer",
-        "sales",
-        "trainer",
-        "support",
-        "executive",
-        "it"
-      ],
-      "identity": {
-        "username": "finite",
-        "homeDirectory": "/var/home/finite"
-      },
-      "hardware": "dell-xps-9350-intel"
-    },
-    "schema2-bluefin-dx": {
-      "schema": 2,
-      "foundation": "bluefin-dx",
-      "packages": [
-        "hack-font",
-        "herdr",
-        "jj",
-        "opencode",
-        "uv"
-      ],
-      "roles": [
-        "developer",
-        "sales",
-        "trainer",
-        "support",
-        "executive",
-        "it"
-      ],
-      "identity": {
-        "username": "finite",
-        "homeDirectory": "/var/home/finite"
-      },
-      "hardware": "dell-xps-9350-intel"
-    },
     "schema3-bluefin": {
       "schema": 3,
       "foundation": "bluefin",

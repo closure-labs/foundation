@@ -1,5 +1,2 @@
-# Production dual reader. New profiles use schema 3; existing schemas stay explicit.
-{catalog}: profile:
-if builtins.isAttrs profile && builtins.isInt (profile.schema or null) && profile.schema == 3
-then (import ../../../lib/profile-drafts {inherit catalog;}).normalize profile
-else (import ../../../lib/normalize-profile-v2.nix {inherit catalog;}) profile
+# Schema-3-only profile validation shared by direct consumers and staged builds.
+{catalog}: (import ../../../lib/profile-drafts {inherit catalog;}).normalize

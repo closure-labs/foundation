@@ -1,4 +1,4 @@
-"""Explicit migration, stale preview guards and transactional recovery."""
+"""Profile changes, stale preview guards and transactional recovery."""
 import json
 import os
 import shutil
@@ -21,7 +21,7 @@ def pure_preview(value, **changes):
 class ProfileChangeContract(unittest.TestCase):
     def test_packages_are_candidate_changes_and_removals_keep_the_original_source(self):
         value = {**profile(), "custom": {"keep": True}}
-        result = pure_preview(value, migrate=True, roles=["family"], packages=[], capabilities=["recording"])
+        result = pure_preview(value, roles=["family"], packages=[], capabilities=["recording"])
         self.assertEqual(result["source"]["packages"], ["jj", "uv"])
         self.assertEqual(result["candidate"]["packages"], [])
         self.assertEqual(result["candidate"]["custom"], value["custom"])
@@ -35,23 +35,9 @@ class ProfileChangeContract(unittest.TestCase):
         self.assertEqual(pure_preview(value, capabilities=[])["candidate"]["capabilities"], [])
         self.assertIn("obs", pure_preview(value, capabilities=[])["changes"]["removedApplications"])
 
-    def test_custom_capabilities_collision_never_overwrites_existing_data(self):
-        for value in (None, [], ["office"], {"private": True}):
-            result = pure_preview({**profile(), "capabilities": value}, migrate=True)
-            self.assertEqual(result["status"], "blocked")
-            self.assertEqual(result["source"]["capabilities"], value)
-            self.assertIsNone(result["candidate"])
-
-    def test_capabilities_on_two_require_explicit_conversion(self):
-        for changes in ({"capabilities": []}, {"capabilities": ["recording"]}):
-            with self.assertRaises(subprocess.CalledProcessError):
-                pure_preview(profile(), **changes)
-
-    def test_schema_two_preview_keeps_legacy_providers(self):
-        result = pure_preview(profile(), roles=["sales"], packages=[])
-        self.assertEqual(result["candidate"]["schema"], 2)
-        self.assertEqual(result["changes"]["providerChanges"], [])
-        self.assertEqual(result["changes"]["graphics"]["before"], result["changes"]["graphics"]["after"])
+    def test_schema_two_preview_is_rejected(self):
+        with self.assertRaises(subprocess.CalledProcessError):
+            pure_preview({**profile(), "schema": 2}, roles=["sales"], packages=[])
 
 
 class ProfileEditor(unittest.TestCase):
@@ -80,7 +66,7 @@ class ProfileEditor(unittest.TestCase):
         return {"profile": preview["source"], "preview": preview, "source": dict(self.source)}
 
     def preview(self, **changes):
-        return home.apply(self.root, migrate_profile=True, preview=True, roles="family", **changes)
+        return home.apply(self.root, preview=True, roles="family", **changes)
 
     def test_preview_is_deterministic_and_has_no_live_writes_or_external_effects(self):
         before = home.tree_digest(self.root)
@@ -91,15 +77,16 @@ class ProfileEditor(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), before)
         self.assertFalse((self.base / ".foundation.lock").exists())
         build.assert_not_called(); brew.assert_not_called(); commit.assert_not_called()
-        self.assertIn("Flathub", first["summary"])
         self.assertIn("do not automatically import", first["summary"])
 
-    def test_conversion_requires_approval_before_build(self):
+    def test_schema_two_is_rejected_before_build(self):
+        value = {**self.value, "schema": 2}
+        home.write_json(self.root / "profile.json", value)
         with patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew:
-            with self.assertRaisesRegex(ValueError, "reviewed --preview"):
-                home.apply(self.root, roles="family", migrate_profile=True)
+            with self.assertRaisesRegex(ValueError, "recreate.*schema 3"):
+                home.apply(self.root, roles="family")
         build.assert_not_called(); brew.assert_not_called()
-        self.assertEqual(home.read_json(self.root / "profile.json"), self.value)
+        self.assertEqual(home.read_json(self.root / "profile.json"), value)
 
     def test_matching_preview_builds_candidate_and_uses_existing_transaction(self):
         review = self.preview(capabilities="recording", packages="")
@@ -107,14 +94,14 @@ class ProfileEditor(unittest.TestCase):
             self.assertEqual(home.read_json(stage / "profile.json"), review["preview"]["candidate"])
             return self.activation
         with patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
-            home.apply(self.root, roles="family", packages="", capabilities="recording", migrate_profile=True, approve_preview=review["approvalToken"])
+            home.apply(self.root, roles="family", packages="", capabilities="recording", approve_preview=review["approvalToken"])
         brew.assert_called_once(); commit.assert_called_once()
         self.assertEqual(commit.call_args.kwargs["expected_profile_hash"], home.profile_hash(self.root))
 
-    def test_build_only_conversion_needs_no_approval_and_preserves_live_profile(self):
+    def test_build_only_change_needs_no_approval_and_preserves_live_profile(self):
         before = home.tree_digest(self.root)
         with patch.object(home, "build", return_value=self.activation) as build, patch.object(home, "prepare_generation") as brew:
-            home.apply(self.root, roles="family", migrate_profile=True, check=True)
+            home.apply(self.root, roles="family", check=True)
         build.assert_called_once(); brew.assert_not_called()
         self.assertEqual(home.tree_digest(self.root), before)
 
@@ -122,7 +109,7 @@ class ProfileEditor(unittest.TestCase):
         review = self.preview(capabilities="recording")
         with patch.object(home, "build") as build:
             with self.assertRaisesRegex(ValueError, "stale"):
-                home.apply(self.root, roles="family", capabilities="notes", migrate_profile=True, approve_preview=review["approvalToken"])
+                home.apply(self.root, roles="family", capabilities="notes", approve_preview=review["approvalToken"])
         build.assert_not_called()
 
     def test_changed_profile_lock_or_personal_module_invalidates_approval(self):
@@ -133,7 +120,7 @@ class ProfileEditor(unittest.TestCase):
             selected.write_bytes(before + b"\n")
             with self.subTest(path=path), patch.object(home, "build") as build:
                 with self.assertRaisesRegex(ValueError, "stale"):
-                    home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+                    home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
                 build.assert_not_called()
             selected.write_bytes(before)
 
@@ -141,12 +128,12 @@ class ProfileEditor(unittest.TestCase):
         review = self.preview()
         self.source["path"] = "/nix/store/different-target"
         with self.assertRaisesRegex(ValueError, "stale"):
-            home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+            home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         self.source["path"] = "/nix/store/fixture-source"
         other = self.base / "other-consumer"
         home.copy_configuration(self.root, other)
         with self.assertRaisesRegex(ValueError, "stale"):
-            home.apply(other, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+            home.apply(other, roles="family", approve_preview=review["approvalToken"])
 
     def link_profile(self):
         linked = self.base / "private-profile.json"
@@ -163,7 +150,7 @@ class ProfileEditor(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), before)
         with patch.object(home, "build") as build:
             with self.assertRaisesRegex(ValueError, "stale"):
-                home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+                home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         build.assert_not_called()
 
     def test_linked_profile_change_during_build_prevents_brew_and_commit(self):
@@ -174,7 +161,7 @@ class ProfileEditor(unittest.TestCase):
             return self.activation
         with patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "changed during the build"):
-                home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+                home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         brew.assert_not_called(); commit.assert_not_called()
         self.assertTrue((self.root / "profile.json").is_symlink())
 
@@ -183,11 +170,11 @@ class ProfileEditor(unittest.TestCase):
         before = home.tree_digest(self.root)
         with patch.object(home, "build", side_effect=ValueError("build failed")), patch.object(home, "prepare_generation") as brew:
             with self.assertRaisesRegex(ValueError, "build failed"):
-                home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+                home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         brew.assert_not_called()
         self.assertEqual(home.tree_digest(self.root), before)
 
-    def test_failed_activation_restores_schema_two_and_previous_generation(self):
+    def test_failed_activation_restores_profile_and_previous_generation(self):
         self.activation_failure_restores_original()
 
     def test_failed_activation_restores_the_original_profile_symlink(self):
@@ -209,16 +196,16 @@ class ProfileEditor(unittest.TestCase):
                 raise subprocess.CalledProcessError(1, command)
         with patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=previous), patch.object(home, "run", side_effect=activate) as run:
             with self.assertRaises(subprocess.CalledProcessError):
-                home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+                home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         self.assertEqual(home.tree_digest(self.root), before)
-        self.assertEqual(home.read_json(self.root / "profile.json")["schema"], 2)
+        self.assertEqual(home.read_json(self.root / "profile.json")["schema"], 3)
         self.assertEqual(run.call_args.args[0], [str(previous / "activate")])
 
-    def test_successful_conversion_backs_up_two_and_updates_the_finite_selection(self):
+    def test_successful_change_backs_up_profile_and_updates_the_finite_selection(self):
         review = self.preview()
         state = self.base / "configuration"
         with patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(state)):
-            home.apply(self.root, roles="family", migrate_profile=True, approve_preview=review["approvalToken"])
+            home.apply(self.root, roles="family", approve_preview=review["approvalToken"])
         self.assertEqual(home.read_json(self.root / "profile.json"), review["preview"]["candidate"])
         self.assertEqual(home.read_json(state / "finite/profile.json"), review["preview"]["candidate"])
         backups = list(self.base.glob("home-manager.previous.*"))
@@ -226,12 +213,12 @@ class ProfileEditor(unittest.TestCase):
         self.assertEqual(home.read_json(backups[0] / "profile.json"), self.value)
 
     def test_malformed_input_is_rejected_without_target_queries_or_live_changes(self):
-        for value in ([], None, {"schema": True}, {"schema": 4}):
+        for value in ([], None, {"schema": True}, {"schema": 2}, {"schema": 4}):
             home.write_json(self.root / "profile.json", value)
             before = home.tree_digest(self.root)
             with patch.object(home, "capture") as capture:
                 with self.assertRaises(ValueError):
-                    home.read_editor(self.root, migrate=True)
+                    home.read_editor(self.root, )
                 capture.assert_not_called()
             self.assertEqual(home.tree_digest(self.root), before)
 

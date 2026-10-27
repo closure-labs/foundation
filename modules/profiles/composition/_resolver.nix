@@ -1,4 +1,4 @@
-# Shared composition contract; migration previews remain non-activating.
+# Shared schema-3 composition contract.
 {
   catalog,
   applicationContract ? import ../../../lib/profile-drafts/contract.nix {inherit catalog;},
@@ -23,37 +23,42 @@
     && builtins.all (name: builtins.isString name && builtins.hasAttr name choices) values
     && builtins.length values == builtins.length (unique values);
   concatMap = f: values: builtins.concatLists (map f values);
-  legacyNormalize = import ../../../lib/normalize-profile-v2.nix {inherit catalog;};
-  draftBaseNormalize = import ../../../lib/normalize-profile-v2.nix {
-    catalog =
-      catalog
-      // {
-        rolesByName = contract.roles;
-        roleNames = ordered contract.roles (builtins.attrNames contract.roles);
-      };
-  };
   normalize = profile:
-    if !builtins.isAttrs profile || !builtins.isInt (profile.schema or null) || profile.schema != 3
-    then fail "expected schema 3"
+    if !builtins.isAttrs profile
+    then fail "expected an object"
+    else if !builtins.isInt (profile.schema or null) || profile.schema != 3
+    then fail "unsupported profile schema; expected schema 3. Back up profile.json and recreate it with foundation home profile before updating or applying."
     else let
       host = hosts.normalize (profile.host or (hosts.fromHardware (profile.hardware or "generic-x86_64")));
       hardware = hosts.hardwareFor host;
-      checked = draftBaseNormalize (profile
-        // {
-          schema = 2;
-          inherit hardware;
-        });
+      identity = profile.identity or null;
       requested = profile.capabilities or [];
     in
-      if profile ? host && profile ? hardware && profile.hardware != hardware
+      if !selection contract.roles (profile.roles or null)
+      then fail "invalid or duplicate roles"
+      else if !selection catalog.packagesByName (profile.packages or null)
+      then fail "invalid or duplicate packages"
+      else if !builtins.elem (profile.foundation or null) catalog.foundationNames
+      then fail "unsupported foundation"
+      else if !builtins.elem hardware catalog.homeHardwareNames
+      then fail "unsupported hardware"
+      else if
+        !builtins.isAttrs identity
+        || !builtins.isString (identity.username or null)
+        || builtins.match "[a-z_][a-z0-9_-]*[$]?" identity.username == null
+        || !builtins.isString (identity.homeDirectory or null)
+        || builtins.match "/.+" identity.homeDirectory == null
+      then fail "invalid account identity"
+      else if profile ? host && profile ? hardware && profile.hardware != hardware
       then fail "host contradicts the derived hardware adapter; omit hardware or use ${hardware}"
       else if !selection contract.capabilities requested
       then fail "invalid or duplicate capabilities"
       else
-        checked
+        profile
         // {
-          schema = 3;
-          inherit host;
+          inherit host hardware;
+          roles = ordered contract.roles profile.roles;
+          packages = ordered catalog.packagesByName profile.packages;
           capabilities = ordered contract.capabilities requested;
         };
   declarationsFor = applications: ids:
@@ -101,92 +106,8 @@
       applicationIds;
       inherit (contract) graphics infrastructure;
     };
-  resolveLegacy = profile: let
-    normalized = legacyNormalize profile;
-    applicationIds = unique (
-      contract.legacy.commonApplications
-      ++ concatMap (name: contract.legacy.roleApplications.${name}) normalized.roles
-      ++ map (name: contract.optionalPackages.${name}) normalized.packages
-    );
-  in {
-    profile = normalized;
-    inherit applicationIds;
-    declarations = declarationsFor contract.legacyApplications applicationIds;
-  };
-  difference = left: right: builtins.filter (value: !builtins.elem value right) left;
 in {
-  inherit contract verification normalize resolve resolveLegacy;
+  inherit contract verification normalize resolve;
   status = "draft";
   activationAllowed = false;
-  previewMigration = {
-    profile,
-    roles ? null,
-    packages ? null,
-    capabilities ? [],
-  }: let
-    old = resolveLegacy profile;
-    collisionFields = builtins.filter (field: builtins.hasAttr field old.profile) ["capabilities" "host"];
-    collision = collisionFields != [];
-    candidate =
-      old.profile
-      // {
-        schema = 3;
-        inherit capabilities;
-        roles =
-          if roles == null
-          then old.profile.roles
-          else roles;
-        packages =
-          if packages == null
-          then old.profile.packages
-          else packages;
-      };
-    next = resolve candidate;
-    common = builtins.filter (id: builtins.elem id next.applicationIds) old.applicationIds;
-    removedDeclarations = difference old.declarations next.declarations;
-    providerChanges = map (id: {
-      application = id;
-      before = contract.legacyApplications.${id}.declaration;
-      after = contract.applications.${id}.declaration;
-    }) (builtins.filter (id: contract.legacyApplications.${id}.declaration != contract.applications.${id}.declaration) common);
-  in
-    if collision
-    then {
-      status = "blocked";
-      activationAllowed = false;
-      reason = "Existing custom ${builtins.head collisionFields} field collides with schema 3; resolve it explicitly before migration";
-      source = old.profile;
-      candidate = null;
-    }
-    else {
-      status = "preview";
-      activationAllowed = false;
-      source = old.profile;
-      candidate = next.profile;
-      inherit (next) classifications effectiveCapabilities;
-      changes = {
-        addedApplications = difference next.applicationIds old.applicationIds;
-        removedApplications = difference old.applicationIds next.applicationIds;
-        addedDeclarations = difference next.declarations old.declarations;
-        inherit removedDeclarations;
-        retainedDeclarations = builtins.filter (declaration: builtins.elem declaration next.declarations) old.declarations;
-        inherit providerChanges;
-        graphics = {
-          before = contract.graphics.legacyBackend;
-          after = contract.graphics.preferredBackend;
-        };
-      };
-      flatpak = {
-        uninstallUnmanaged = false;
-        deleteApplicationData = false;
-        removedDeclarationsMayRemainInstalled = builtins.filter (declaration: builtins.substring 0 8 declaration == "flatpak:") removedDeclarations;
-        migrateApplicationDataAutomatically = false;
-      };
-      requirements = {
-        readerSchema = 3;
-        explicitMigration = true;
-        approveProviderChanges = providerChanges != [];
-        graphicsSessionValidation = true;
-      };
-    };
 }

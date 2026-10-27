@@ -2,7 +2,6 @@
   lib,
   pkgs,
   foundationHost ? null,
-  foundationProfileSchema ? 2,
   ...
 }: let
   panelPolicy = pkgs.writeShellApplication {

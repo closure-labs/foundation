@@ -1,27 +1,16 @@
 # Migration
 
-Use this guide to adopt Foundation in an older home configuration or convert a schema-2 profile to schema 3. Routine release updates are covered in [Activation](ACTIVATION.md#update-foundation). These are separate operations; choose the section that matches your configuration.
+Use this guide to adopt Foundation in an older home configuration or replace an unsupported home profile. Routine release updates are covered in [Activation](ACTIVATION.md#update-foundation). These are separate operations; choose the section that matches your configuration.
 
 Before starting, back up your personal files and application data. Run commands as your desktop user. Build checks do not activate changes.
 
-## Convert an existing profile
+## Replace an unsupported profile
 
-Schema-2 profiles remain supported. To review a conversion to schema 3:
+Foundation accepts only schema-3 home profiles. Older profiles are rejected before building or activating; they are not silently reinterpreted. The former `--migrate-profile` conversion option is no longer available.
 
-```sh
-foundation home configure --migrate-profile
-```
+Before updating an older consumer, back up `profile.json`, personal modules and application data. Generate a fresh schema-3 profile with `foundation home profile`, then deliberately reselect roles, packages, capabilities and host settings. Preserve custom fields only after reviewing their meaning in the new format. Do not merely change the schema number: application providers and defaults differ.
 
-Or preview and build from the CLI:
-
-```sh
-foundation home apply --migrate-profile --roles developer,creative --capabilities recording --preview
-foundation home check --migrate-profile --roles developer,creative --capabilities recording
-```
-
-To activate, repeat the same selections with `--approve-preview TOKEN`, replacing `TOKEN` with `approvalToken` from a fresh preview. The token binds the exact source, configuration and selections. Request another preview if any of them change; keep saved previews outside the consumer directory.
-
-Review provider changes before conversion. Unmanaged Flatpaks and their data remain in place; application data is not copied to native packages automatically. Verify exports, account sync and desktop defaults for affected applications before removing an old provider yourself.
+Review the resulting configuration with `foundation home check` before applying it. Existing unmanaged Flatpaks and their data are retained; application data is not copied to native packages automatically. Verify exports, account sync and desktop defaults before removing an old provider yourself.
 
 ## Adopt Foundation in a legacy configuration
 
@@ -49,9 +38,7 @@ foundation home apply
 
 ## Integration API
 
-`lib.profileDrafts` provides the compatibility resolver and migration previews. `lib.profileChanges.preview` accepts `migrate = true` alongside optional `roles`, `packages` and `capabilities`. Previewing does not write or activate a profile; the controller owns approval, building and activation. The catalog envelope version is separate from the profile schema.
-
-Schema-2 homes retain their original six-role catalog and application providers until explicitly converted. Review the proposed provider changes before approving. See [Public API](API.md) for constructors and catalog interfaces.
+`lib.profileDrafts` resolves schema-3 selections. `lib.profileChanges.preview` accepts optional `roles`, `packages` and `capabilities` for a schema-3 source. Previewing does not write or activate a profile; the controller owns approval, building and activation. The catalog envelope version is separate from the profile schema. See [Public API](API.md).
 
 ## Adopt the Foundation command interface
 

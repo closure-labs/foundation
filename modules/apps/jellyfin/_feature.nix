@@ -8,26 +8,15 @@
       "input" = "nixpkgs";
       "provider" = "nix";
     };
-    "legacyApplication" = {
-      "attribute" = "jellyfin-desktop";
-      "declaration" = "nix:nixpkgs:jellyfin-desktop";
-      "graphical" = true;
-      "input" = "nixpkgs";
-      "provider" = "nix";
-    };
   };
   "dependencies" = [
     "providers/nixpkgs"
     "providers/graphics"
   ];
   "schemaDependencies" = { };
-  configuration =
-    schema:
-    if schema == 3 then
-      (import ../../profiles/composition/_application.nix {
-        id = "jellyfin";
-        application = (import ./_feature.nix).metadata.application;
-      })
-    else
-      { };
+  configuration = schema:
+    (import ../../profiles/composition/_application.nix {
+      id = "jellyfin";
+      application = (import ./_feature.nix).metadata.application;
+    });
 }
