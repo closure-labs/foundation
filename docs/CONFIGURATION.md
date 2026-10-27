@@ -70,4 +70,4 @@ cd ~/.config/home-manager
 nix flake update foundation
 ```
 
-Then [build and activate](ACTIVATION.md#build-then-activate). The URL and lock must select the same immutable commit. Local Git sources use manual pin maintenance; the published-release updater does not replace them with a published release. The checkout and commit must be available when rebuilding elsewhere.
+Then [build and activate](ACTIVATION.md#build-then-activate). The URL and lock must select the same immutable commit. Local Git sources use manual pin maintenance; the staged updater does not replace them with a remote commit. The checkout and commit must be available when rebuilding elsewhere.

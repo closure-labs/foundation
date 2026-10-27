@@ -25,7 +25,7 @@ class SchemaThreeOnly(unittest.TestCase):
                 value = {**home.read_json(root / "profile.json"), "schema": schema}
                 home.write_json(root / "profile.json", value)
                 before = home.tree_digest(root)
-                with patch.object(home, "capture") as capture, patch.object(home, "run") as run, patch.object(home, "published_releases") as releases, patch.object(home, "available") as available:
+                with patch.object(home, "capture") as capture, patch.object(home, "run") as run, patch.object(home, "github_api") as releases, patch.object(home, "available") as available:
                     for action in (home.validate_staged_profile, home.read_editor, home.apply, home.update, lambda root: home.migrate(root, INFO, LOCK)):
                         with self.assertRaisesRegex(ValueError, "recreate.*foundation home profile"):
                             action(root)
@@ -40,7 +40,7 @@ class SchemaThreeOnly(unittest.TestCase):
             home.make_template(ROOT, INFO, root, LOCK)
             home.write_json(root / "profile.json", {"schema": 2})
             before = home.tree_digest(root)
-            with patch.object(sys, "argv", ["foundation", "migrate"]), patch.object(home.os, "geteuid", return_value=1000), patch.object(home, "config_root", return_value=root), patch.object(home, "published_releases") as releases, patch.object(home, "release_data") as release, patch.object(home, "capture") as capture, patch.object(home, "run") as run, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            with patch.object(sys, "argv", ["foundation", "migrate"]), patch.object(home.os, "geteuid", return_value=1000), patch.object(home, "config_root", return_value=root), patch.object(home, "github_api") as releases, patch.object(home, "main_data") as release, patch.object(home, "capture") as capture, patch.object(home, "run") as run, contextlib.redirect_stderr(io.StringIO()) as stderr:
                 self.assertEqual(home.main(), 2)
                 self.assertIn("recreate the selection with foundation home profile", stderr.getvalue())
                 for operation in (releases, release, capture, run):

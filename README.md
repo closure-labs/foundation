@@ -10,7 +10,7 @@ Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation works as a stand
 
 - **Composable profiles.** Mix Developer, Support, Family, Creative and other roles without installing shared applications twice.
 - **Your own configuration.** Keep account details and selections in `profile.json`, with personal settings in `customize.nix` and `modules/local.nix`.
-- **Pinned, reviewable changes.** Build before activation, preview profile changes, and update from published releases with configuration backups.
+- **Pinned, reviewable changes.** Build before activation, preview profile changes, and explicitly adopt reviewed `main` commits with configuration backups.
 
 ## Start here
 
@@ -23,13 +23,13 @@ foundation home configure
 For a new home configuration, generate a profile, check the build, then activate it:
 
 ```sh
-nix run github:closure-labs/foundation/latest-release#home-profile -- \
+nix run github:closure-labs/foundation/main#home-profile -- \
   --foundation bluefin --roles family,media --format json > "$HOME/foundation-profile.json"
 
-nix run github:closure-labs/foundation/latest-release#home-init -- \
+nix run github:closure-labs/foundation/main#home-init -- \
   --profile "$HOME/foundation-profile.json" --check
 
-nix run github:closure-labs/foundation/latest-release#home-init -- \
+nix run github:closure-labs/foundation/main#home-init -- \
   --profile "$HOME/foundation-profile.json"
 ```
 
@@ -67,7 +67,7 @@ foundation home update --check
 foundation home update
 ```
 
-The first command reports available published releases. The second builds and activates an update while preserving personal configuration. See [Activation, updates and recovery](docs/ACTIVATION.md) for build limits, backups and direct Home Manager commands.
+The first command checks for a newer eligible `main` commit. The second builds and activates that exact revision while preserving personal configuration. A new version tag is not required; the lock keeps builds reproducible until you explicitly update. See [Activation, updates and recovery](docs/ACTIVATION.md) for build limits, backups and direct Home Manager commands.
 
 ## Camera troubleshooting
 

@@ -1,6 +1,6 @@
 # Releasing Foundation
 
-Releases are reviewed separately from deployment to consuming systems. `VERSION` and `foundation.json` identify the source version; the [changelog](../CHANGELOG.md) supplies release notes.
+Main delivers source updates without a release or moving delivery branch. Consumers explicitly update `github:closure-labs/foundation/main`, then keep the selected commit and content hash in their lock file. Version tags are optional milestones, reviewed separately from deployment to consuming systems. `VERSION` and `foundation.json` identify the source version; the [changelog](../CHANGELOG.md) supplies release notes.
 
 ## 1. Prepare the release
 
@@ -35,13 +35,13 @@ The tag workflow validates the version, changelog, ancestry and exact-commit CI 
 
 For a failed preparation, correct the issue through review. Retry **Prepare release** with the existing tag only when appropriate; use a new version/tag if a shared release needs correction. The workflow does not publish automatically.
 
-## 4. Verify the release channel
+## 4. Verify the published milestone
 
-Publication triggers **Advance latest release**. It selects the highest published stable version, verifies metadata and a successful exact-commit CI gate, then advances `latest-release` without force-pushing. Drafts, prereleases and unreleased `main` commits are excluded.
+Confirm the release assets and immutable tag identify the reviewed commit. Publishing a release does not move a delivery branch, change consumer locks or trigger activation. `/releases/latest` is a GitHub release-page redirect, not a reference to the newest main commit.
 
-Confirm the channel points to the published tag. For recovery, run that workflow manually on `main`; `python3 scripts/release-channel.py --check` provides a read-only preview in a fetched checkout authenticated with `gh`.
+Main delivery uses the ordinary protected `main` branch and its exact-commit CI. Foundation's staged updater and Finite's adoption automation qualify the selected main revision before proposing or installing it. There is no `latest-release` publisher to operate or repair. Existing consumers should follow [migration guidance](MIGRATION.md#move-an-older-consumer-onto-main).
 
-Consumer adoption is a separate reviewed change to its immutable source pin. Validate its initializer, configuration generation and host activation before rollout.
+Consumer adoption remains a separate reviewed change to an immutable source pin. Validate initializer packaging, configuration generation and host activation before rollout. Do not delete the old remote branch as part of a local code change; any repository cleanup is a separate authorized operation.
 
 ## Repository protections
 

@@ -57,7 +57,7 @@ class ConsumerTests(unittest.TestCase):
         after = home.consumer_lock(LOCK, candidate)
         home.verify_update_lock(before, after, LOCK, candidate)
         after["nodes"]["foundation-pkgs"]["locked"]["rev"] = "unexpected"
-        with self.assertRaisesRegex(ValueError, "published release lock"):
+        with self.assertRaisesRegex(ValueError, "committed source lock"):
             home.verify_update_lock(before, after, LOCK, candidate)
         after = home.consumer_lock(LOCK, candidate)
         for lock in (before, after):
@@ -76,8 +76,8 @@ class ConsumerTests(unittest.TestCase):
     def test_templates_track_channel_with_an_immutable_lock(self):
         text = (self.root / "flake.nix").read_text()
         lock = home.read_json(self.root / "flake.lock")
-        self.assertIn("/latest-release", text)
-        self.assertEqual(lock["nodes"]["foundation"]["original"]["ref"], "latest-release")
+        self.assertIn("/main", text)
+        self.assertEqual(lock["nodes"]["foundation"]["original"]["ref"], "main")
         self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], INFO["rev"])
         self.assertEqual(len(home.REFERENCE.findall((ROOT / "templates/default/flake.nix").read_text())), 1)
 
@@ -191,7 +191,7 @@ class ConsumerTests(unittest.TestCase):
         selected = self.local_pin()
         before = home.tree_digest(self.root)
         output = io.StringIO()
-        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "published_releases") as releases, patch.object(home, "release_data") as release, patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit, contextlib.redirect_stdout(output):
+        with patch.object(home, "capture", return_value=json.dumps(selected)), patch.object(home, "github_api") as releases, patch.object(home, "main_data") as release, patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit, contextlib.redirect_stdout(output):
             self.assertEqual(home.available(self.root), (INFO, None, None))
             home.update(self.root, check=True)
             home.update(self.root)
@@ -200,7 +200,7 @@ class ConsumerTests(unittest.TestCase):
         for action in (releases, release, build, brew, commit):
             action.assert_not_called()
         self.assertIn("Advance the foundation input explicitly", output.getvalue())
-        self.assertIn("Published releases were not checked", output.getvalue())
+        self.assertIn("Upstream main was not checked", output.getvalue())
         result = json.loads(output.getvalue().splitlines()[-1])
         self.assertEqual(result["source"], "local-git")
         self.assertEqual(result["update_policy"], "manual-pin")
@@ -261,6 +261,40 @@ class ConsumerTests(unittest.TestCase):
     def test_channel_update_builds_exact_release_and_preserves_personal_files(self):
         self.check_successful_update(True)
 
+    def test_legacy_channel_migrates_to_main_on_explicit_update(self):
+        (self.root / "flake.nix").write_text(home.consumer_flake(INFO, reference="latest-release"))
+        home.write_json(self.root / "flake.lock", home.consumer_lock(LOCK, INFO, reference="latest-release"))
+        self.check_successful_update(True)
+
+    def test_main_race_or_wrong_original_never_builds_or_changes_live_tree(self):
+        candidate = {**INFO, "rev": "b" * 40}
+        digest = home.tree_digest(self.root)
+        for wrong_original in (False, True):
+            def lock_update(command, **kwargs):
+                stage = Path(command[-1].removeprefix("path:"))
+                value = candidate if wrong_original else {**candidate, "rev": "c" * 40}
+                reference = candidate["rev"] if wrong_original else "main"
+                home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, value, reference=reference))
+            with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build") as build, patch.object(home, "commit_stage") as commit:
+                with self.assertRaises(ValueError): home.update(self.root)
+                build.assert_not_called()
+                commit.assert_not_called()
+            self.assertEqual(home.tree_digest(self.root), digest)
+
+    def test_ci_change_after_build_or_preparation_aborts_before_commit(self):
+        candidate = {**INFO, "rev": "b" * 40, "upstreamCI": {"runId": 1, "runAttempt": 1}}
+        digest = home.tree_digest(self.root)
+        def lock_update(command, **kwargs):
+            stage = Path(command[-1].removeprefix("path:"))
+            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate))
+        for proof in ([ValueError("changed")], [None, ValueError("changed")]):
+            with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", return_value=self.activation) as build, patch.object(home, "revalidate_candidate", side_effect=proof), patch.object(home, "prepare_generation") as prepare, patch.object(home, "commit_stage") as commit:
+                with self.assertRaisesRegex(ValueError, "changed"): home.update(self.root)
+                build.assert_called_once()
+                self.assertEqual(prepare.call_count, len(proof) - 1)
+                commit.assert_not_called()
+            self.assertEqual(home.tree_digest(self.root), digest)
+
     def test_fixed_commit_update_remains_fixed(self):
         self.check_successful_update(False)
 
@@ -278,20 +312,22 @@ class ConsumerTests(unittest.TestCase):
         before = {name: (self.root / name).read_bytes() for name in ("profile.json", "customize.nix", "modules/local.nix")}
         def lock_update(command, **kwargs):
             stage = Path(command[-1].removeprefix("path:"))
-            self.assertIn(candidate["rev"], (stage / "flake.nix").read_text())
-            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate, reference=candidate["rev"]))
+            reference = "main" if tracking else candidate["rev"]
+            self.assertIn(reference, (stage / "flake.nix").read_text())
+            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate, reference=reference))
         def build(stage):
             lock = home.read_json(stage / "flake.lock")
-            reference = "latest-release" if tracking else candidate["rev"]
+            reference = "main" if tracking else candidate["rev"]
             self.assertIn(reference, (stage / "flake.nix").read_text())
             self.assertEqual(lock["nodes"]["foundation"]["original"], home.foundation_reference(reference))
             self.assertEqual(lock["nodes"]["foundation"]["locked"]["rev"], candidate["rev"])
             for name, contents in before.items():
                 self.assertEqual((stage / name).read_bytes(), contents)
             return self.activation
-        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation"), patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), patch.object(home, "run", side_effect=lock_update), patch.object(home, "build", side_effect=build), patch.object(home, "prepare_generation"), patch.object(home, "revalidate_candidate") as revalidate, patch.object(home, "commit_stage") as commit:
             home.update(self.root)
             commit.assert_called_once()
+            self.assertEqual(revalidate.call_count, 2)
 
     def test_migration_rebases_personal_follows_without_changing_sources(self):
         original = {"nixpkgs": {"url": "core"}, "nixpkgs-unstable": {"url": "unstable"}, "personal": {
@@ -434,7 +470,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_no_new_release_is_a_no_op(self):
-        with patch.object(home, "published_releases", return_value=[((0, 1, 0), "v0.1.0"), ((0, 2, 0), "v0.2.0")]):
+        with patch.object(home, "main_data", return_value=(INFO, LOCK)):
             installed, candidate, lock = home.available(self.root)
         self.assertEqual(installed, INFO)
         self.assertIsNone(candidate)
@@ -447,6 +483,12 @@ class ConsumerTests(unittest.TestCase):
             home.migrate(self.root, INFO, LOCK)
 
     def test_migration_preserves_local_espanso_and_personal_input_pins(self):
+        self.check_migration()
+
+    def test_migration_ci_change_after_build_keeps_live_tree(self):
+        self.check_migration(stale=True)
+
+    def check_migration(self, stale=False):
         (self.root / "foundation.json").unlink()
         generated = self.root / "modules/finite.nix"
         generated.write_text("known generated module")
@@ -463,8 +505,19 @@ class ConsumerTests(unittest.TestCase):
             "files": {"modules/finite.nix": [hashlib.sha256(generated.read_bytes()).hexdigest()]},
             "outputs": [hashlib.sha256("outputs=inputs:{};}\n".strip().encode()).hexdigest()],
         })
-        with patch.object(home, "source_root", return_value=fixture), patch.object(home, "capture", return_value=json.dumps({"personal": {"url": "file:///personal", "flake": False}})), patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(self.base)):
+        with patch.object(home, "source_root", return_value=fixture), patch.object(home, "capture", return_value=json.dumps({"personal": {"url": "file:///personal", "flake": False}})), patch.object(home, "build", return_value=self.activation), patch.object(home, "prepare_generation"), patch.object(home, "previous_generation", return_value=None), patch.object(home, "revalidate_candidate") as revalidate, patch.object(home, "run"), patch.dict(os.environ, XDG_CONFIG_HOME=str(self.base)):
+            if stale:
+                digest = home.tree_digest(self.root)
+                revalidate.side_effect = ValueError("CI proof changed")
+                with patch.object(home, "commit_stage") as commit, patch.object(home, "prepare_generation") as prepare:
+                    with self.assertRaisesRegex(ValueError, "CI proof changed"):
+                        home.migrate(self.root, INFO, LOCK)
+                    prepare.assert_not_called()
+                    commit.assert_not_called()
+                self.assertEqual(home.tree_digest(self.root), digest)
+                return
             home.migrate(self.root, INFO, LOCK)
+            self.assertEqual(revalidate.call_count, 2)
         self.assertEqual((self.root / "modules/local.nix").read_text(), personal)
         self.assertFalse(generated.exists())
         lock = home.read_json(self.root / "flake.lock")
@@ -488,7 +541,7 @@ class ConsumerTests(unittest.TestCase):
 
     def test_network_failure_is_visible_without_changes(self):
         digest = home.tree_digest(self.root)
-        with patch.object(home, "published_releases", side_effect=OSError("network unavailable")):
+        with patch.object(home, "main_data", side_effect=OSError("network unavailable")):
             with self.assertRaises(OSError):
                 home.update(self.root)
         self.assertEqual(home.tree_digest(self.root), digest)

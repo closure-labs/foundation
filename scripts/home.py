@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install, migrate and update a personal consumer of published Foundation releases."""
+"""Install, migrate and update a personal consumer of immutable Foundation main revisions."""
 import argparse
 import contextlib
 import copy
@@ -22,10 +22,10 @@ from pathlib import Path
 
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
-RELEASE_CHANNEL = "latest-release"
+MAIN_BRANCH = "main"
 CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak", "nixGL"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
-REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
+REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(main|latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -261,8 +261,8 @@ def foundation_reference(reference):
     return {"type": "github", "owner": "closure-labs", "repo": "foundation", key: reference}
 
 
-def consumer_lock(lock, info, reference=RELEASE_CHANNEL):
-    """Re-root a release's committed graph; follows paths belong to its old root."""
+def consumer_lock(lock, info, reference=MAIN_BRANCH):
+    """Re-root a source's committed graph; follows paths belong to its old root."""
     validate_metadata(info)
     old_root = lock["root"]
     names = {name: "foundation" if name == old_root else "foundation-" + name for name in lock["nodes"]}
@@ -301,7 +301,7 @@ def verify_update_lock(old, new, release_lock, info):
     if set(old_inputs) != set(new_inputs):
         raise ValueError("An update added or removed a personal input")
     if locked_graph(new, new_inputs["foundation"]) != locked_graph(expected, "foundation"):
-        raise ValueError("Foundation dependency pins differ from its published release lock")
+        raise ValueError("Foundation dependency pins differ from its committed source lock")
     for name in old_inputs.keys() - {"foundation"}:
         if locked_graph(old, old_inputs[name]) != locked_graph(new, new_inputs[name]):
             raise ValueError(f"An update changed the personal input {name}")
@@ -337,7 +337,7 @@ def migrate_input_declarations(inputs):
     return extras
 
 
-def consumer_flake(info, extras=None, reference=RELEASE_CHANNEL):
+def consumer_flake(info, extras=None, reference=MAIN_BRANCH):
     extra_text = "\n".join("    " + json.dumps(k) + " = " + nix_value(v) + ";" for k, v in (extras or {}).items())
     return '''{
   # Foundation owns the shared modules; this flake and your personal modules are yours.
@@ -421,7 +421,7 @@ def validate_runtime_profile(profile, catalog):
 @timing("profile-validation")
 def validate_staged_profile(stage, data=None):
     # Read the profile from the same staged flake as its locked Foundation.
-    # Selected releases must provide the schema-3 normalizer and capabilities.
+    # Selected sources must provide the schema-3 normalizer and capabilities.
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
     expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
@@ -695,43 +695,86 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
     print(f"Foundation activated. Previous configuration: {backup if backup.exists() else 'none (first installation)'}")
 
 
-def published_releases():
-    releases = []
-    for page in range(1, 11):
-        request = urllib.request.Request(f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=100&page={page}", headers={"Accept": "application/vnd.github+json", "User-Agent": "Foundation-home-update"})
-        with urllib.request.urlopen(request, timeout=30) as response:
-            batch = json.load(response)
-        for release in batch:
-            tag = release.get("tag_name", "")
-            if release.get("draft") or release.get("prerelease") or not release.get("published_at") or not tag.startswith("v"):
-                continue
-            try:
-                parsed = version(tag[1:])
-            except ValueError:
-                continue
-            releases.append((parsed, tag))
-        if len(batch) < 100:
-            break
-    return sorted(releases)
+def github_api(path):
+    request = urllib.request.Request(f"https://api.github.com/repos/{REPOSITORY}/{path}",
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "Foundation-home-update"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
 
 
-def release_data(tag):
-    ref = f"github:{REPOSITORY}/{tag}"
+def require_main_ci(rev):
+    """No stale-success fallback: the latest canonical run/attempt must pass."""
+    workflow = github_api("actions/workflows/check.yml")
+    if (type(workflow.get("id")) is not int or workflow["id"] <= 0
+            or workflow.get("path") != ".github/workflows/check.yml" or workflow.get("state") != "active"):
+        raise ValueError("Foundation CI workflow identity differs")
+    result = github_api(f"actions/workflows/{workflow['id']}/runs?branch=main&event=push&head_sha={rev}&per_page=100")
+    runs = result.get("workflow_runs")
+    if not isinstance(runs, list) or type(result.get("total_count")) is not int or result["total_count"] != len(runs):
+        raise ValueError("Foundation CI run inventory is incomplete")
+    if not runs:
+        raise ValueError("Latest Foundation main commit has not passed canonical CI; retry after CI succeeds")
+    for run in runs:
+        if type(run.get("run_number")) is not int or type(run.get("id")) is not int:
+            raise ValueError("Foundation CI run identity is malformed")
+    selected = max(runs, key=lambda run: (run["run_number"], run["id"]))
+    run = github_api(f"actions/runs/{selected['id']}")
+    if (run.get("id") != selected["id"] or run.get("workflow_id") != workflow["id"]
+            or run.get("path") != ".github/workflows/check.yml" or run.get("head_sha") != rev
+            or run.get("head_branch") != "main" or run.get("event") != "push"
+            or run.get("repository", {}).get("full_name") != REPOSITORY
+            or run.get("head_repository", {}).get("full_name") != REPOSITORY
+            or type(run.get("run_attempt")) is not int or run["run_attempt"] <= 0):
+        raise ValueError("Foundation CI run is not the canonical main push")
+    if run.get("status") != "completed" or run.get("conclusion") != "success":
+        raise ValueError("Latest Foundation main commit has not passed canonical CI; retry after CI succeeds")
+    jobs = github_api(f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs?per_page=100")
+    if not isinstance(jobs.get("jobs"), list) or jobs.get("total_count") != len(jobs["jobs"]):
+        raise ValueError("Foundation CI job inventory is incomplete")
+    gates = [job for job in jobs["jobs"] if job.get("name") == "CI gate"]
+    if (len(gates) != 1 or gates[0].get("status") != "completed"
+            or gates[0].get("conclusion") != "success" or gates[0].get("head_sha") != rev):
+        raise ValueError("Foundation CI gate did not qualify this revision")
+    # Attempt-specific jobs remain readable after a rerun starts. Re-read the
+    # current run so an old successful attempt cannot authorize installation.
+    current = github_api(f"actions/runs/{run['id']}")
+    identity = ("id", "workflow_id", "path", "head_sha", "head_branch", "event",
+                "repository", "head_repository", "run_attempt", "status", "conclusion")
+    if any(current.get(key) != run.get(key) for key in identity):
+        raise ValueError("Foundation CI qualification changed while checking jobs")
+    return {"workflow": ".github/workflows/check.yml", "runId": run["id"], "runAttempt": run["run_attempt"],
+            "url": f"https://github.com/{REPOSITORY}/actions/runs/{run['id']}"}
+
+
+def main_data():
+    # Resolve once; never evaluate/build a moving ref or accept cached main metadata.
+    ref = f"github:{REPOSITORY}/main"
+    resolved = json.loads(capture(["nix", "flake", "metadata", "--refresh", "--json", ref]))["locked"]
+    if (resolved.get("type") != "github" or resolved.get("owner") != "closure-labs"
+            or resolved.get("repo") != "foundation"
+            or not re.fullmatch(r"[a-f0-9]{40}", resolved.get("rev") or "")
+            or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", resolved.get("narHash") or "")):
+        raise ValueError("Main did not resolve to an immutable Foundation source")
+    rev = resolved["rev"]
+    evidence = require_main_ci(rev)
     expression = '''let f = builtins.getFlake REF; in {
       metadata = builtins.fromJSON (builtins.readFile (f.outPath + "/foundation.json"));
       lock = builtins.fromJSON (builtins.readFile (f.outPath + "/flake.lock"));
       rev = f.rev; narHash = f.narHash; lastModified = f.lastModified;
-    }'''.replace("REF", json.dumps(ref))
-    # Resolve a release tag once, then read and build only its immutable commit.
-    resolved = json.loads(capture(["nix", "flake", "metadata", "--json", ref]))
-    rev = resolved["locked"]["rev"]
-    expression = expression.replace(json.dumps(ref), json.dumps(f"github:{REPOSITORY}/{rev}"))
+    }'''.replace("REF", json.dumps(f"github:{REPOSITORY}/{rev}"))
     data = json.loads(capture(["nix", "eval", "--json", "--expr", expression]))
+    if any(data.get(key) != resolved.get(key) for key in ("rev", "narHash", "lastModified")):
+        raise ValueError("Selected Foundation differs from the resolved main source")
     info = {**data["metadata"], **{key: data[key] for key in ("rev", "narHash", "lastModified")}}
     validate_metadata(info)
-    if info["version"] != tag.removeprefix("v"):
-        raise ValueError("Published tag does not match Foundation release metadata")
-    return info, data["lock"]
+    return {**info, "upstreamCI": evidence}, data["lock"]
+
+
+def revalidate_candidate(info):
+    """Keep the frozen source; require its original CI proof to remain current."""
+    evidence = info.get("upstreamCI")
+    if not isinstance(evidence, dict) or require_main_ci(info["rev"]) != evidence:
+        raise ValueError("Foundation CI qualification changed during preparation; retry the update")
 
 
 def local_foundation_source(source):
@@ -792,11 +835,16 @@ def available(root):
     installed = installed_info(root)
     if local_foundation_source(foundation_source(root)):
         return installed, None, None
-    releases = published_releases()
-    candidates = [tag for number, tag in releases if number > version(installed["version"])]
-    if not candidates:
+    info, lock = main_data()
+    if info["rev"] == installed["rev"]:
+        if info["narHash"] != installed["narHash"]:
+            raise ValueError("Foundation content hash changed for the installed revision")
         return installed, None, None
-    info, lock = release_data(candidates[-1])
+    if version(info["version"]) < version(installed["version"]):
+        raise ValueError("Foundation main would downgrade the installed version")
+    comparison = github_api(f"compare/{installed['rev']}...{info['rev']}")
+    if comparison.get("status") != "ahead" or comparison.get("merge_base_commit", {}).get("sha") != installed["rev"]:
+        raise ValueError("Foundation main is not a forward update of the installed revision; review manually")
     return installed, info, lock
 
 
@@ -807,11 +855,11 @@ def update(root, check=False):
         if info is None:
             if local_foundation_source(foundation_source(root)):
                 print(f"Foundation {installed['version']} is pinned to a local checkout ({installed['rev'][:12]}). "
-                      "Advance the foundation input explicitly, then run foundation home apply. No published-release update applied.")
+                      "Advance the foundation input explicitly, then run foundation home apply. No main update applied.")
             else:
                 print(f"Foundation {installed['version']} is current")
             return
-        print(f"Foundation {installed['version']} -> {info['version']}")
+        print(f"Foundation {installed['version']} ({installed['rev'][:12]}) -> {info['version']} ({info['rev'][:12]})")
         if check:
             return
         original = tree_digest(root)
@@ -820,30 +868,30 @@ def update(root, check=False):
             copy_configuration(root, stage)
             text = (stage / "flake.nix").read_text()
             matches = list(REFERENCE.finditer(text))
-            if len(matches) != 1 or matches[0][2] not in (RELEASE_CHANNEL, installed["rev"], "v" + installed["version"]):
+            if len(matches) != 1 or matches[0][2] not in (MAIN_BRANCH, "latest-release", installed["rev"], "v" + installed["version"]):
                 raise ValueError("The Foundation input was customized; update it manually")
-            tracking = matches[0][2] == RELEASE_CHANNEL
-            text = REFERENCE.sub(lambda m: m[1] + f"github:{REPOSITORY}/{info['rev']}" + m[3], text)
+            tracking = matches[0][2] in (MAIN_BRANCH, "latest-release")
+            reference = MAIN_BRANCH if tracking else info['rev']
+            text = REFERENCE.sub(lambda m: m[1] + f"github:{REPOSITORY}/{reference}" + m[3], text)
             (stage / "flake.nix").write_text(text)
-            # Nix updates this input closure only, retaining personal input pins.
-            run(["nix", "flake", "lock", "path:" + str(stage)])
+            # Let Nix record the declared ref naturally. A moving main is not an
+            # excuse to build another commit: fail closed if resolution races CI.
+            if tracking:
+                run(["nix", "flake", "update", "foundation", "--flake", "path:" + str(stage)])
+            else:
+                run(["nix", "flake", "lock", "path:" + str(stage)])
             new_lock = read_json(stage / "flake.lock")
             verify_update_lock(read_json(root / "flake.lock"), new_lock, lock, info)
-            selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]["locked"]
-            if selected["rev"] != info["rev"] or selected["narHash"] != info["narHash"]:
-                raise ValueError("Resolved Foundation source differs from the reviewed release")
-            if tracking:
-                # Resolve/build the reviewed immutable release, retaining the channel
-                # declaration for the next nh update. Both locked graphs are identical.
-                (stage / "flake.nix").write_text(REFERENCE.sub(
-                    lambda m: m[1] + f"github:{REPOSITORY}/{RELEASE_CHANNEL}" + m[3], text))
-                reference = new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]
-                new_lock["nodes"][reference]["original"] = foundation_reference(RELEASE_CHANNEL)
-                write_json(stage / "flake.lock", new_lock)
+            selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]
+            if (selected["locked"]["rev"] != info["rev"] or selected["locked"]["narHash"] != info["narHash"]
+                    or selected.get("original") != foundation_reference(reference)):
+                raise ValueError("Resolved Foundation source differs from the reviewed main revision")
             write_json(stage / "foundation.json", info)
             write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             activation = build(stage)
+            revalidate_candidate(info)
             prepare_generation(activation)
+            revalidate_candidate(info)
             commit_stage(root, stage, original, activation)
 
 
@@ -893,7 +941,9 @@ def migrate(root, info, lock, check=False):
                 run(["nix", "flake", "lock", "path:" + str(stage)])
             activation = build(stage)
             if not check:
+                revalidate_candidate(info)
                 prepare_generation(activation)
+                revalidate_candidate(info)
                 commit_stage(root, stage, original, activation, replace_tree=True)
 
 
@@ -975,13 +1025,14 @@ def status(root, machine=False, notify=False, review=False):
         return
     installed, candidate, _ = available(root)
     result = {"migration_required": False, "installed_version": installed["version"], "installed_rev": installed["rev"],
-              "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None}
-    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']}\nRun ujust update or foundation home update to build and apply it." if candidate else "No newer published Foundation release is available.")
+              "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None,
+              "available_rev": candidate["rev"] if candidate else None}
+    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']} ({candidate['rev'][:12]})\nRun ujust update or foundation home update to build and apply it." if candidate else "No newer qualified Foundation main revision is available.")
     if local_foundation_source(foundation_source(root)):
         result.update(source="local-git", update_policy="manual-pin")
         text = (f"Installed Foundation: {installed['version']} ({installed['rev'][:12]})\n"
                 "Pinned local checkout. Advance the foundation input explicitly, then run foundation home apply. "
-                "Published releases were not checked.")
+                "Upstream main was not checked.")
     print(json.dumps(result) if machine else text)
     if notify and candidate:
         state = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "foundation"
@@ -1082,10 +1133,7 @@ def main():
             update(root, args.check)
         elif args.command == "migrate":
             require_helper_schema(read_json(root / "profile.json"))
-            releases = published_releases()
-            if not releases:
-                raise ValueError("No published Foundation releases are available")
-            info, lock = release_data(releases[-1][1])
+            info, lock = main_data()
             migrate(root, info, lock, args.check)
         elif args.command == "init":
             initialize(root, args.profile, args.check)
