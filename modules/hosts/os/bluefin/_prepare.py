@@ -11,7 +11,8 @@ BREW = Path('/home/linuxbrew/.linuxbrew/bin/brew')
 BREWFILE = Path('/usr/share/ublue-os/homebrew/cli.Brewfile')
 
 
-def prepare(brew=BREW, brewfile=BREWFILE, run=subprocess.run, sleep=time.sleep):
+def prepare(brew=BREW, brewfile=BREWFILE, run=subprocess.run, sleep=time.sleep,
+            preinstall=Path('/usr/bin/brew-preinstall')):
     # Read only the immutable image's bundle, never a policy copied by Foundation.
     with timing('bluefin-readiness'):
         if not brewfile.is_file() or brewfile.is_symlink():
@@ -36,9 +37,11 @@ def prepare(brew=BREW, brewfile=BREWFILE, run=subprocess.run, sleep=time.sleep):
     with timing('bluefin-stock-install'):
         # The inherited user setup owns its stock preinstall bundles and state.
         # Do not reproduce its taps, removals or optional-bundle selection here.
-        preinstall = Path('/usr/bin/brew-preinstall')
         if preinstall.is_file():
-            run([str(preinstall)], env=env, check=True)
+            # Default blocking start joins an already running oneshot instead
+            # of racing the upstream graphical-session setup. Do not use
+            # --wait: upstream intentionally has RemainAfterExit=true.
+            run(['systemctl', '--user', 'start', 'brew-preinstall.service'], env=env, check=True)
         if ready:
             run([str(brew), 'bundle', 'install', '--no-upgrade', '--file=' + str(brewfile)], env=env, check=True)
     with timing('bluefin-postcheck'):

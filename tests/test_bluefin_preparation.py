@@ -47,6 +47,19 @@ class Preparation(unittest.TestCase):
                 if ready: self.assertIn('--no-upgrade', installs[0])
                 self.assertTrue(all('optional' not in ' '.join(row) for row in calls))
 
+    def test_existing_stock_setup_is_joined_as_a_synchronous_user_service(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            brew, bundle, preinstall = root / 'brew', root / 'cli.Brewfile', root / 'brew-preinstall'
+            brew.touch(); brew.chmod(0o755); bundle.write_text('brew "stock"\n'); preinstall.touch()
+            calls = []
+            def run(command, **kwargs):
+                calls.append(command)
+                return subprocess.CompletedProcess(command, 0, str(root))
+            prepare.prepare(brew, bundle, run=run, preinstall=preinstall)
+            self.assertIn(['systemctl', '--user', 'start', 'brew-preinstall.service'], calls)
+            self.assertFalse(any(str(preinstall) in command for command in calls))
+
     def test_install_failure_prevents_postcheck(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

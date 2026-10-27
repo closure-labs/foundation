@@ -35,7 +35,7 @@ The generic initializer realizes one generation, optionally executes its fixed
 `foundation-prepare` entry, commits configuration, then activates once. The entry
 is installed with pinned Home Manager's `home.extraBuilderCommands` interface.
 Build-only checks never execute preparation or activation. Preparation waits for
-Bluefin's root Brew seed, invokes the inherited user `brew-preinstall` helper when
+Bluefin's root Brew seed, joins the inherited user `brew-preinstall.service` when
 present, and ensures only the inherited CLI bundle with no-upgrade installation.
 It does not toggle `ublue-bling`, replace a user config or select optional bundles.
 A failed preparation leaves the configuration transaction uncommitted.
