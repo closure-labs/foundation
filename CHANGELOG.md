@@ -6,6 +6,14 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-27
+
+- Preserve Bluefin's inherited stock CLI/preinstall bundles, configuration and update mechanisms through a dedicated `hosts/os/bluefin` aspect for both Bluefin profile names and supported profile schemas.
+- Realize one Home Manager generation, run its optional `foundation-prepare`, commit configuration and activate once. Build-only checks skip preparation and activation; personal modules, rollback and profile formats remain preserved.
+- Keep Bluefin's Fzf and Starship binaries with explicit Finite configuration. Declare bbrew, ugrep and uutils-coreutils through pinned Nixpkgs inputs; retain existing catalog providers and unmanaged Flatpaks.
+- Observe supported Nix build/substitution activity and overlap, separate client/shared-daemon resources, inherited Brewfile/cache state, and actual synchronous Flatpak/service work. Keep evaluation coverage unknown, existing resource budgets and activation readiness; no performance savings are claimed.
+- Retain deprecated Brew helper compatibility paths without calling their copied policy during ordinary initialization. Workstation cleanup remains a separate reviewed, manual operation.
+
 ## [0.4.1] - 2026-10-27
 
 - Refresh locked Den, Home Manager, Determinate Nix and Nixpkgs dependencies, and update the CI Nix installer action to v3.24.0.
