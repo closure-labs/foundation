@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Detect Intel IPU7 camera failures caused by a stale host IPA module. Add `foundation home camera` and a guarded activation repair that verifies the matching host module before configuring a per-user workaround, without restarting live audio.
+
 ## [0.4.0] - 2026-10-27
 
 - Replace installed `finite-*` home helpers with `foundation home <action>`, including build-only `foundation home check`. Run the same interface through the native default flake app or `#foundation`; individual home apps remain available.

@@ -3,7 +3,7 @@
 
 ```mermaid
 flowchart LR
-  F["Feature descriptors: 140"] --> C["Pure catalogs and profile roots"]
+  F["Feature descriptors: 141"] --> C["Pure catalogs and profile roots"]
   F --> D["Ordered Den composition"]
   F --> G["Versioned CI graph"]
   C --> D
