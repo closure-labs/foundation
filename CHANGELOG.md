@@ -6,7 +6,11 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
-- Detect Intel IPU7 camera failures caused by a stale host IPA module. Add `foundation home camera` and a guarded activation repair that verifies the matching host module before configuring a per-user workaround, without restarting live audio.
+## [0.4.1] - 2026-10-27
+
+- Restore usable Intel IPU7 camera formats when a stale host IPA processing module prevents Firefox from finding the webcam. The new hardware-detected aspect verifies the matching host module before configuring a per-user repair during activation.
+- Add `foundation home camera` and the native `#home-camera` app for diagnosis and explicit repair. Build-only checks report camera health; repairs preserve personal overrides and never restart live audio automatically.
+- Add a focused camera guide covering diagnosis, repair, service restart, Firefox verification and undo steps.
 
 ## [0.4.0] - 2026-10-27
 
@@ -102,7 +106,8 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/closure-labs/foundation/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/closure-labs/foundation/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/closure-labs/foundation/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/closure-labs/foundation/compare/v0.3.1...v0.3.2

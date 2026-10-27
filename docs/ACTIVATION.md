@@ -38,7 +38,7 @@ home-manager switch --flake ~/.config/home-manager
 
 These use the direct build/activation path. Foundation's staged commands additionally provision shared Brew tools and back up consumer files. Direct Home Manager activation does not provide those safeguards. Schema-2 homes on non-NixOS hosts also need the generated `non-nixos-gpu-setup` helper; schema 3 uses nixGL Mesa instead.
 
-For Intel IPU7 cameras, see [camera health and repair](PROFILES.md#ipu7-camera-health).
+For Intel IPU7 cameras, see [Camera diagnosis and repair](CAMERA.md).
 
 ## Recover from a failure
 
