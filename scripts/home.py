@@ -28,6 +28,34 @@ EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "r
 REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
 
 
+@contextlib.contextmanager
+def timing(stage):
+    """Optional bounded observations; no paths, command output or authority."""
+    if os.environ.get("FOUNDATION_TIMINGS") != "1":
+        yield
+        return
+    started = time.monotonic()
+    started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    outcome, status = "error", None
+    try:
+        yield
+        outcome, status = "success", 0
+    except subprocess.CalledProcessError as error:
+        status = error.returncode
+        raise
+    finally:
+        record = {"schema": 1, "kind": "foundation-stage-timing", "authorizesPublication": False,
+                  "stage": stage, "seconds": round(max(0, time.monotonic() - started), 6),
+                  "startedAt": started_at,
+                  "outcome": outcome, "status": status}
+        try:
+            print("FOUNDATION_TIMING " + json.dumps(record, separators=(",", ":")), file=sys.stderr, flush=True)
+        except (OSError, ValueError):
+            # Diagnostics must not turn a successful activation into a rollback
+            # or hide the actual initialization/build failure.
+            pass
+
+
 def run(command, **kwargs):
     return subprocess.run(command, check=True, text=True, **kwargs)
 
@@ -122,6 +150,7 @@ def build_attempt(command, timeout):
         captured["stderr"].decode("utf-8", errors="replace"))
 
 
+@timing("home-manager-realisation")
 def capture_build(command, *, clock=None, sleep=None, execute=None):
     """Retry realization only; configuration generation and activation run once."""
     clock, sleep, execute = clock or time.monotonic, sleep or time.sleep, execute or build_attempt
@@ -414,6 +443,7 @@ def validate_runtime_profile(profile, catalog):
             raise ValueError("Profile is incompatible with the running Finite image")
 
 
+@timing("profile-validation")
 def validate_staged_profile(stage, data=None):
     # Read the profile from the same staged flake as its locked Foundation.
     # Fallback is capability-based: target validation failures must propagate.
@@ -629,6 +659,7 @@ def previous_generation():
     return profile.resolve() if profile.exists() else None
 
 
+@timing("brew-provisioning")
 def provision_brew(stage):
     # Use the policy and installer from the selected Foundation release.
     expression = 'let root = builtins.getFlake ' + json.dumps("path:" + str(stage)) + '''; f = root.inputs.foundation or root; in {
@@ -637,7 +668,8 @@ def provision_brew(stage):
       policy = builtins.readFile (f.outPath + "/modules/providers/homebrew/_assets/brew-packages.json");
     }'''
     # nix eval --impure only permits the staged local flake reference; its lock is immutable.
-    data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
+    with timing("brew-policy-evaluation"):
+        data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
     with tempfile.TemporaryDirectory(prefix=".foundation-brew-", dir=stage.parent) as temp:
         policy = Path(temp) / "policy.json"
         bootstrap = Path(temp) / "finite-brew-bootstrap"
@@ -645,9 +677,11 @@ def provision_brew(stage):
         bootstrap.write_text(data["bootstrap"])
         (Path(temp) / "finite-brew-migration-status").write_text(data["status"])
         env = dict(os.environ, FINITE_BREW_POLICY=str(policy))
-        run(["bash", str(bootstrap)], env=env)
+        with timing("brew-bootstrap"):
+            run(["bash", str(bootstrap)], env=env)
 
 
+@timing("commit-and-activation")
 def commit_stage(root, stage, original, activation, replace_tree=False, expected_profile_hash=None, replace_customization=False):
     if (tree_digest(root) if root.exists() else None) != original:
         raise ValueError("Configuration changed during the build; nothing installed")
@@ -673,7 +707,8 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
         if consumer:
             for relative in committed_files:
                 replace_file_entry(stage / relative, root / relative)
-        run([str(activation / "activate")])
+        with timing("activation"):
+            run([str(activation / "activate")])
     except BaseException:
         failed = root.with_name(root.name + ".failed." + stamp)
         if consumer:
@@ -689,7 +724,8 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
                 backup.rename(root)
         if previous is not None:
             try:
-                run([str(previous / "activate")])
+                with timing("rollback-activation"):
+                    run([str(previous / "activate")])
             except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 print(f"Previous-generation activation also failed: {error}", file=sys.stderr)
         raise
@@ -899,6 +935,7 @@ def migrate(root, info, lock, check=False):
                 commit_stage(root, stage, original, activation, replace_tree=True)
 
 
+@timing("initialization")
 def initialize(root, profile_path, check=False):
     if root.exists():
         raise ValueError("Configuration already exists; use foundation home migrate or foundation home apply")
