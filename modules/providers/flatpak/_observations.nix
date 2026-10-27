@@ -17,16 +17,20 @@ in
   options.systemd.user.services = lib.mkOption {
     apply = lib.mapAttrs (
       name: unit:
+      let
+        commands = lib.toList (unit.Service.ExecStart or [ ]);
+        original = if builtins.length commands == 1 then builtins.head commands else "";
+      in
       if
         name == "flatpak-managed-install"
-        && unit.Service ? ExecStart
-        && lib.hasPrefix "/nix/store/" (toString unit.Service.ExecStart)
-        && lib.hasSuffix "-flatpak-managed-install" (toString unit.Service.ExecStart)
+        && builtins.length commands == 1
+        && lib.hasPrefix "/nix/store/" (toString original)
+        && lib.hasSuffix "-flatpak-managed-install" (toString original)
       then
         unit
         // {
           Service = unit.Service // {
-            ExecStart = observe unit.Service.ExecStart;
+            ExecStart = [ (observe original) ];
             EnvironmentFile = (lib.toList (unit.Service.EnvironmentFile or [ ])) ++ [
               "-%t/foundation-observation.env"
             ];

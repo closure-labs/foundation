@@ -205,7 +205,7 @@ class StagedValidationTests(unittest.TestCase):
         home.make_template(ROOT, INFO, root, LOCK)
         home.write_json(root / "profile.json", self.value)
         before = home.tree_digest(root)
-        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "validate_staged_profile", side_effect=ValueError("target rejected")), patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.object(home, "installed_info", return_value=INFO), patch.object(home, "validate_staged_profile", side_effect=ValueError("target rejected")), patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             with self.assertRaisesRegex(ValueError, "target rejected"):
                 home.apply(root, roles="missing")
             brew.assert_not_called()
@@ -240,7 +240,7 @@ class StagedValidationTests(unittest.TestCase):
                 "host": evaluate(f'(import {ROOT}/lib/hosts.nix).defaults')})
         change = {"profile": value, "roles": ["media"], "packages": []}
         preview = evaluate(f'(import {ROOT}/lib/profile-changes.nix {{catalog = domain;}}) {home.nix_value(change)}')
-        with patch.object(home, "prepare_profile_change", return_value={"preview": preview}), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "prepare_profile_change", return_value={"preview": preview}), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build", side_effect=check_stage) as build, patch.object(home, "prepare_generation") as brew:
             home.apply(root, roles="media", packages="", check=True)
             build.assert_called_once()
             brew.assert_not_called()

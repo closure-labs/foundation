@@ -45,7 +45,7 @@ def main():
         home.run(["nix", "flake", "lock", "path:" + str(root)])
         original = home.tree_digest(root)
         environment = {"FINITE_RUNNING_PROFILE_PATH": str(base / "no-running-image"), "FINITE_FOUNDATION_CATALOG": "/caller/stale/catalog.json"}
-        with patch.dict(os.environ, environment), patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew, patch.object(home, "commit_stage") as commit:
+        with patch.dict(os.environ, environment), patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew, patch.object(home, "commit_stage") as commit:
             context = home.read_editor(root, migrate=True)
             assert context["profile"]["schema"] == 2
             assert len(context["catalog"]["roles"]) == 10
@@ -64,7 +64,7 @@ def main():
 
         # Build-only exercises the same controller candidate and negotiation;
         # the build boundary is replaced, never an actual GUI package build.
-        with patch.dict(os.environ, environment), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build") as build, patch.object(home, "provision_brew") as brew:
+        with patch.dict(os.environ, environment), patch.object(home, "installed_info", return_value=INFO), patch.object(home, "build") as build, patch.object(home, "prepare_generation") as brew:
             home.apply(root, roles="family,creative", packages="", capabilities="recording", migrate_profile=True,
                        approve_preview=review["approvalToken"], check=True)
             build.assert_called_once(); brew.assert_not_called()

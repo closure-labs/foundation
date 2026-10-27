@@ -1272,7 +1272,7 @@
     },
     {
       "source": "modules/providers/flatpak/_observations.nix",
-      "sha256": "bf2368c8bb77a494ab92bbdf80b260577bc46a07e061942e9767044b301eb6e9",
+      "sha256": "15fcb0c25473cc51ee40c188b92b1e5d52b2b1848af72bd2051648c0ddb76b37",
       "treatment": "explicit Finite user configuration/helper"
     },
     {
