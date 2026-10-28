@@ -14,6 +14,48 @@ def evaluate(expression, check=True):
 
 
 class Features(unittest.TestCase):
+    def test_public_compatibility_aliases_and_generic_imports(self):
+        # Mock canonical aliases, keeping this contract independent of locked inputs.
+        expression = r'''let
+          loader = import ROOT/modules/flake/features/_loader.nix {};
+          den.aspects.foundation = builtins.mapAttrs (id: _: id) loader.features;
+          lib.genAttrs = names: f: builtins.listToAttrs (map (name: { inherit name; value = f name; }) names);
+          exported = (import ROOT/modules/home/construction/_aspects.nix { inherit den lib; }).den.aspects.features;
+          generic = exported.hardware.generic-x86_64.homeManager.imports;
+        in {
+          base = exported.base;
+          host = exported.host;
+          composition = exported.profile-composition;
+          devops = exported.capabilities.devops;
+          roles = exported.roles;
+          machines = exported.machines;
+          cpu = exported.hardware.cpu;
+          gpu = exported.hardware.gpu;
+          models = exported.hardware.models;
+          dell = exported.hardware.dell-xps-9350-intel;
+          genericPathsExist = map builtins.pathExists generic;
+          genericHardware = (import (builtins.elemAt generic 1) {}).home.sessionVariables.FINITE_HARDWARE;
+        }'''.replace("ROOT", str(ROOT))
+        result = json.loads(evaluate(expression).stdout)
+        self.assertEqual(result["base"], "home/base")
+        self.assertEqual(result["host"], "hosts/identity")
+        self.assertEqual(result["composition"], "profiles/composition")
+        self.assertEqual(result["devops"], "capabilities/devops")
+        expected_names = {
+            "roles": ["developer", "sales", "trainer", "support", "executive", "it", "family", "media", "creative", "gaming"],
+            "machines": ["generic", "laptop", "desktop"],
+            "cpu": ["generic", "intel", "amd"],
+            "gpu": ["intel-integrated", "intel-discrete", "amd-integrated", "amd-discrete"],
+            "models": ["generic", "dell-xps-9350"],
+        }
+        for group, prefix in (("roles", "roles"), ("machines", "hosts/machines"),
+                              ("cpu", "hosts/cpu"), ("gpu", "hosts/gpu"), ("models", "hosts/models")):
+            self.assertEqual(set(result[group]), set(expected_names[group]))
+            self.assertEqual(result[group], {name: f"{prefix}/{name}" for name in result[group]})
+        self.assertEqual(result["dell"], "hosts/models/dell-xps-9350")
+        self.assertEqual(result["genericPathsExist"], [True, True])
+        self.assertEqual(result["genericHardware"], "generic-x86_64")
+
     def test_discovery_extension_is_pure_and_private_files_are_ignored(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
