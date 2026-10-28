@@ -99,7 +99,8 @@ class StagedValidationTests(unittest.TestCase):
         self.assertIn("root.inputs.foundation or root", expression)
         self.assertIn("target.lib.normalizeProfile", expression)
         self.assertIn("target.lib.homeCatalog", expression)
-        self.assertIn(r"\${literal}", expression)
+        self.assertIn("%24%7Bliteral%7D", expression)
+        self.assertNotIn("${literal}", expression)
         self.assertNotIn("/caller/stale", expression)
 
     def test_target_without_normalizer_is_rejected(self):
