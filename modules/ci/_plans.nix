@@ -2,6 +2,7 @@
 {
   full.checks = [
     "home"
+    "password-managers"
     "profile-command"
     "nixgl-wrapper"
     "desktop-icons"

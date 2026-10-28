@@ -41,11 +41,59 @@ class Preparation(unittest.TestCase):
                     calls.append(command[1:])
                     self.assertEqual(options['env']['HOMEBREW_NO_AUTO_UPDATE'], '1')
                     return subprocess.CompletedProcess(command, ready if len(calls) == 2 else 0, str(root))
-                prepare.prepare(brew, bundle, run=run)
+                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
                 installs = [row for row in calls if row[:2] == ['bundle', 'install']]
+                checks = [row for row in calls if row[:2] == ['bundle', 'check']]
                 self.assertEqual(len(installs), ready)
                 if ready: self.assertIn('--no-upgrade', installs[0])
+                self.assertEqual(len(checks), 2)
+                self.assertTrue(all('--no-upgrade' in row for row in checks))
                 self.assertTrue(all('optional' not in ' '.join(row) for row in calls))
+
+    def test_outdated_installed_tools_satisfy_checks_without_installing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            brew, bundle = root / 'brew', root / 'cli.Brewfile'
+            brew.touch(); brew.chmod(0o755); bundle.write_text('brew "outdated-but-installed"\n')
+            calls = []
+            def run(command, **kwargs):
+                calls.append(command)
+                # Model Homebrew's distinction: installed dependencies satisfy
+                # --no-upgrade checks, while a normal check demands an upgrade.
+                status = 0
+                if command[1:3] == ['bundle', 'check']:
+                    status = 0 if '--no-upgrade' in command else 1
+                if command[1:3] == ['bundle', 'install']:
+                    self.fail('Installed but outdated stock tools must not trigger installation')
+                if kwargs.get('check') and status:
+                    raise subprocess.CalledProcessError(status, command)
+                return subprocess.CompletedProcess(command, status, str(root))
+            with patch.dict(prepare.os.environ, {}, clear=True):
+                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
+            self.assertEqual(sum(command[1:3] == ['bundle', 'check'] for command in calls), 2)
+
+    def test_genuinely_missing_tools_install_once_and_must_pass_postcheck(self):
+        for install_satisfies_bundle in (True, False):
+            with self.subTest(install_satisfies_bundle=install_satisfies_bundle), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                brew, bundle = root / 'brew', root / 'cli.Brewfile'
+                brew.touch(); brew.chmod(0o755); bundle.write_text('brew "missing"\n')
+                calls, installed = [], False
+                def run(command, **kwargs):
+                    nonlocal installed
+                    calls.append(command)
+                    if command[1:3] == ['bundle', 'install']:
+                        installed = install_satisfies_bundle
+                    status = int(not installed) if command[1:3] == ['bundle', 'check'] else 0
+                    if kwargs.get('check') and status:
+                        raise subprocess.CalledProcessError(status, command)
+                    return subprocess.CompletedProcess(command, status, str(root))
+                if install_satisfies_bundle:
+                    prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
+                else:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
+                self.assertEqual(sum(command[1:3] == ['bundle', 'install'] for command in calls), 1)
 
     def test_existing_stock_setup_is_joined_as_a_synchronous_user_service(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -70,7 +118,8 @@ class Preparation(unittest.TestCase):
                 calls.append(command)
                 if 'install' in command: raise subprocess.CalledProcessError(9, command)
                 return subprocess.CompletedProcess(command, 1, str(root))
-            with self.assertRaises(subprocess.CalledProcessError): prepare.prepare(brew, bundle, run=run)
+            with self.assertRaises(subprocess.CalledProcessError):
+                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
             self.assertEqual(len(calls), 3)
 
     def test_stock_setup_wait_is_bounded_and_does_not_extract_or_elevate(self):

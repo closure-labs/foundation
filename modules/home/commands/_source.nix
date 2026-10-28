@@ -12,6 +12,7 @@ let
     "customize.nix"
     "modules/local.nix"
     "scripts/home.py"
+    "scripts/password_manager_requirements.py"
     "scripts/foundation_observations.py"
     "LICENSE"
     "NOTICE"

@@ -26,6 +26,71 @@ LOCK = {"version": 7, "root": "root", "nodes": {
 }}
 
 
+class MainSourceResolutionTests(unittest.TestCase):
+    def setUp(self):
+        self.resolved = {**home.foundation_reference("main"),
+                         **{key: INFO[key] for key in ("rev", "narHash", "lastModified")}}
+        self.selected = {"metadata": {key: INFO[key] for key in ("schema", "compatibility", "version")},
+                         "lock": LOCK,
+                         **{key: INFO[key] for key in ("rev", "narHash", "lastModified")}}
+        self.evidence = {"runId": 1, "runAttempt": 1}
+
+    def test_omitted_metadata_hash_and_timestamp_use_only_qualified_immutable_source(self):
+        for omitted in ((), ("narHash",), ("lastModified",), ("narHash", "lastModified")):
+            resolved = {key: value for key, value in self.resolved.items() if key not in omitted}
+            with self.subTest(omitted=omitted), patch.object(home, "capture", side_effect=[
+                    json.dumps({"locked": resolved}), json.dumps(self.selected)]) as capture, \
+                    patch.object(home, "require_main_ci", return_value=self.evidence) as ci:
+                self.assertEqual(home.main_data(), ({**INFO, "upstreamCI": self.evidence}, LOCK))
+                ci.assert_called_once_with(INFO["rev"])
+                self.assertIn("--refresh", capture.call_args_list[0].args[0])
+                expression = capture.call_args_list[1].args[0][-1]
+                self.assertIn(f'github:{home.REPOSITORY}/{INFO["rev"]}', expression)
+                self.assertNotIn(f'github:{home.REPOSITORY}/main', expression)
+
+    def test_supplied_malformed_metadata_is_rejected_before_ci_or_evaluation(self):
+        cases = [{"narHash": value} for value in (None, "", "bad", 42)]
+        cases += [{"owner": "attacker"}, {"repo": "other"}, {"type": "git"}, {"rev": "main"},
+                  {"lastModified": None}, {"lastModified": True}, {"lastModified": -1}]
+        for changes in cases:
+            with self.subTest(changes=changes), patch.object(home, "capture", return_value=json.dumps(
+                    {"locked": {**self.resolved, **changes}})) as capture, \
+                    patch.object(home, "require_main_ci") as ci:
+                with self.assertRaisesRegex(ValueError, "immutable Foundation source"):
+                    home.main_data()
+                self.assertEqual(capture.call_count, 1)
+                ci.assert_not_called()
+
+    def test_immutable_evaluation_must_match_supplied_source_identity(self):
+        for changes in ({"rev": "b" * 40}, {"narHash": "sha256-" + "B" * 43 + "="},
+                        {"lastModified": 2}):
+            with self.subTest(changes=changes), patch.object(home, "capture", side_effect=[
+                    json.dumps({"locked": self.resolved}), json.dumps({**self.selected, **changes})]), \
+                    patch.object(home, "require_main_ci", return_value=self.evidence):
+                with self.assertRaisesRegex(ValueError, "differs from the resolved main source"):
+                    home.main_data()
+
+    def test_omitted_metadata_never_allows_invalid_evaluated_source_info(self):
+        resolved = {key: value for key, value in self.resolved.items()
+                    if key not in ("narHash", "lastModified")}
+        cases = [{"narHash": value} for value in (None, "", "bad", 42)]
+        cases += [{"lastModified": value} for value in (None, True, -1, "1")]
+        for changes in cases:
+            with self.subTest(changes=changes), patch.object(home, "capture", side_effect=[
+                    json.dumps({"locked": resolved}), json.dumps({**self.selected, **changes})]), \
+                    patch.object(home, "require_main_ci", return_value=self.evidence):
+                with self.assertRaisesRegex(ValueError, "differs from the resolved main source"):
+                    home.main_data()
+
+    def test_unqualified_main_is_never_evaluated(self):
+        resolved = {key: value for key, value in self.resolved.items() if key != "narHash"}
+        with patch.object(home, "capture", return_value=json.dumps({"locked": resolved})) as capture, \
+                patch.object(home, "require_main_ci", side_effect=ValueError("CI pending")):
+            with self.assertRaisesRegex(ValueError, "CI pending"):
+                home.main_data()
+            self.assertEqual(capture.call_count, 1)
+
+
 class ConsumerTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -294,6 +359,24 @@ class ConsumerTests(unittest.TestCase):
                 self.assertEqual(prepare.call_count, len(proof) - 1)
                 commit.assert_not_called()
             self.assertEqual(home.tree_digest(self.root), digest)
+
+    def test_preparation_failure_preserves_live_consumer_and_does_not_activate(self):
+        candidate = {**INFO, "rev": "b" * 40}
+        digest = home.tree_digest(self.root)
+        def lock_update(command, **kwargs):
+            stage = Path(command[-1].removeprefix("path:"))
+            home.write_json(stage / "flake.lock", home.consumer_lock(LOCK, candidate))
+        failure = subprocess.CalledProcessError(9, ["foundation-prepare"])
+        with patch.object(home, "available", return_value=(INFO, candidate, LOCK)), \
+                patch.object(home, "run", side_effect=lock_update), \
+                patch.object(home, "build", return_value=self.activation), \
+                patch.object(home, "revalidate_candidate"), \
+                patch.object(home, "prepare_generation", side_effect=failure), \
+                patch.object(home, "commit_stage") as commit:
+            with self.assertRaises(subprocess.CalledProcessError):
+                home.update(self.root)
+            commit.assert_not_called()
+        self.assertEqual(home.tree_digest(self.root), digest)
 
     def test_fixed_commit_update_remains_fixed(self):
         self.check_successful_update(False)

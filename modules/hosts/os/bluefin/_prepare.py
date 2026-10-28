@@ -31,7 +31,7 @@ def prepare(brew=BREW, brewfile=BREWFILE, run=subprocess.run, sleep=time.sleep,
         cache_state = 'present' if cache and Path(cache).is_dir() else 'absent'
         emit('bluefin-bundle', 0, details={'brewfileSha256': identity, 'cache': cache_state,
                                          'closurePinned': False})
-        ready = run([str(brew), 'bundle', 'check', '--file=' + str(brewfile)], env=env, check=False).returncode
+        ready = run([str(brew), 'bundle', 'check', '--no-upgrade', '--file=' + str(brewfile)], env=env, check=False).returncode
         if ready not in (0, 1):
             raise subprocess.CalledProcessError(ready, ['brew', 'bundle', 'check'])
     with timing('bluefin-stock-install'):
@@ -47,7 +47,7 @@ def prepare(brew=BREW, brewfile=BREWFILE, run=subprocess.run, sleep=time.sleep,
     with timing('bluefin-postcheck'):
         if hashlib.sha256(brewfile.read_bytes()).hexdigest() != identity:
             raise ValueError('Inherited Brewfile changed during preparation')
-        run([str(brew), 'bundle', 'check', '--file=' + str(brewfile)], env=env, check=True)
+        run([str(brew), 'bundle', 'check', '--no-upgrade', '--file=' + str(brewfile)], env=env, check=True)
         # Finite's config-only Fzf integration requires the upstream binary.
         if brew == BREW:
             run([str(brew), 'list', '--formula', 'fzf'], env=env, check=True)
