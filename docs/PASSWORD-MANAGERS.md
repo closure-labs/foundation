@@ -20,7 +20,8 @@ the generation's activation entry. The requirement records the selected output,
 the real helper and wrapper paths, and their SHA-256 digests. The generation
 retains references to their closures. No privilege bits are set in the store.
 
-On Finite, inspect the built requirement with the OS-owned
+Resolve the generation link with `readlink -f` first. On Finite, inspect that
+canonical immutable store JSON file with the OS-owned
 `/usr/libexec/finite/password-manager-setup inspect --requirement FILE`.
 After reviewing those exact artifacts, an administrator installs them using
 `install` with the requirement and the literal `--approve-package`,
@@ -38,6 +39,8 @@ Build-only checks do not install helpers. Preparation rejects an unmet or
 inconsistent requirement before running generation preparation or activation.
 Keep old helpers and their roots while any retained generation needs them.
 Use the installer's status and conservative removal checks when retiring one.
+Run removal while Home Manager operations are quiescent; concurrent activation
+and removal are not supported.
 
 ## Adopting existing browser manifests
 
