@@ -35,6 +35,10 @@ retains Nix GC roots and the normal SELinux label. Home Manager never calls sudo
 installs a privilege policy, or refreshes a helper automatically. Other hosts
 must supply equivalent administrator-owned integration.
 
+The `onepassword` GID must be greater than 1000. The desktop app rejects lower
+identity groups even when the wrapper has correct ownership and setgid mode.
+Preparation rejects these groups before activation.
+
 Build-only checks do not install helpers. Preparation rejects an unmet or
 inconsistent requirement before running generation preparation or activation.
 Keep old helpers and their roots while any retained generation needs them.

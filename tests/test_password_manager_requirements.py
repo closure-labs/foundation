@@ -40,7 +40,7 @@ class HostRequirements(unittest.TestCase):
         (self.generation / "foundation-password-managers.json").write_text(json.dumps(self.value))
 
     @contextlib.contextmanager
-    def installed(self, gid=200):
+    def installed(self, gid=1001):
         original_read = Path.read_bytes
         original_link = Path.readlink
         def contents(path):
@@ -57,7 +57,7 @@ class HostRequirements(unittest.TestCase):
                 mode = stat.S_IFREG | 0o2755
             else:
                 mode = stat.S_IFDIR | 0o755
-            values = {'st_mode': mode, 'st_uid': 0, 'st_gid': 200}
+            values = {'st_mode': mode, 'st_uid': 0, 'st_gid': gid}
             values.update(self.overrides.get(name, {}))
             return SimpleNamespace(**values)
         def link(path):
@@ -98,9 +98,13 @@ class HostRequirements(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "content differs"):
                 requirements.check_host_requirements(self.generation)
 
-    def test_root_group_is_rejected(self):
+    def test_identity_group_requires_gid_larger_than_1000(self):
         self.write()
-        with self.installed(gid=0), self.assertRaisesRegex(ValueError, 'identity group must not be root'):
+        for gid in (0, 946, 1000):
+            with self.subTest(gid=gid), self.installed(gid=gid), \
+                 self.assertRaisesRegex(ValueError, 'GID must be larger than 1000'):
+                requirements.check_host_requirements(self.generation)
+        with self.installed(gid=1001):
             requirements.check_host_requirements(self.generation)
 
     def test_missing_source_closure_is_rejected(self):

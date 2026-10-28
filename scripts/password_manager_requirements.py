@@ -135,8 +135,8 @@ def check_host_requirements(activation):
     reason = None
     try:
         group = grp.getgrnam("onepassword").gr_gid
-        if group <= 0:
-            raise ValueError("The onepassword identity group must not be root")
+        if group <= 1000:
+            raise ValueError("The onepassword identity group GID must be larger than 1000")
         _check_sources(value)
         # Every containing directory is privileged state, never a user-owned link.
         _parents(destination)
