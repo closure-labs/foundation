@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Advance stable Home Manager and Nixpkgs through their owning modules, with source declarations, lockfile and generated artifacts kept together and restored on update failure. Repair the public generic-x86_64 hardware alias.
+
 - Deliver explicit Foundation updates from `main` without waiting for a version release or maintaining a `latest-release` branch. Consumer locks retain immutable revision and content-hash provenance; staged updates qualify the exact commit, preserve personal inputs and retain build-before-activation recovery. Version tags remain optional milestones.
 
 - Remove legacy home-profile schema-2 readers, catalogs, composition and conversion paths. Home profiles must use schema 3; unsupported persisted profiles fail with replacement guidance before build or activation. See [Migration](docs/MIGRATION.md) before updating an older consumer.
