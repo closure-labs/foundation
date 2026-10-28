@@ -122,6 +122,28 @@ class CiPlanTests(unittest.TestCase):
         self.assertIn("workstation", plan["hosts"])
         self.assertEqual(set(plan["legacy"]), set(ci.LEGACY))
 
+    def test_shared_policy_root_and_constructor_edits_keep_contracts(self):
+        for path in ("modules/providers/nixpkgs/_policy.nix",
+                     "modules/providers/nixpkgs/_package-sets.nix",
+                     "modules/home/construction/_config-root.nix",
+                     "modules/home/construction/_module.nix",
+                     "modules/flake/exports/_api.nix"):
+            with self.subTest(path=path):
+                plan = self.focused([path])
+                self.assertEqual(plan["mode"], "focused")
+                self.assertTrue(plan["contracts"])
+                ci.validate_plan(plan)
+                ci.check_gate(plan, "success", "success")
+                with self.assertRaises(ValueError):
+                    ci.validate_plan({**plan, "contracts": False})
+
+    def test_unrelated_focused_and_documentation_plans_stay_short(self):
+        for paths in (["modules/apps/ghostty/_package.nix"], ["README.md"]):
+            with self.subTest(paths=paths):
+                self.assertFalse(self.focused(paths)["contracts"])
+        combined = self.focused(["README.md", "modules/providers/nixpkgs/_policy.nix"])
+        self.assertTrue(combined["contracts"])
+
     def test_assets_and_changed_file_unions(self):
         paths = ["modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/aliases.zsh",
                  "modules/hosts/models/dell-xps-9350/_assets/dell-ipu7.conf"]
