@@ -20,6 +20,11 @@ See the [generated diagram](ARCHITECTURE.md) for the data flow.
 
 1. Create a directory such as `modules/apps/example/`.
 2. Add `_feature.nix` with its path-derived ID (`apps/example`), pure `metadata`, ordered `dependencies` and `schemaDependencies`. Keep configuration in a lazy `configuration` function. Follow an existing [application descriptor](../modules/apps/firefox/_feature.nix).
+   For ordinary Nix packages without custom settings or recipes, the pure
+   [`_nix-application-feature.nix`](../modules/profiles/composition/_nix-application-feature.nix)
+   helper derives provider metadata and ordered package/graphics dependencies.
+   Keep feature-owned special recipes explicit; Firefox and Ghostty are not
+   migrated to this helper.
 3. Register the descriptor from `default.nix` as a flake-parts module. Framework modules may use a separate `registration.nix`.
 4. Put private Home Manager modules and functions under `_` names, and supporting files under `_assets/`. Public `.nix` files are discovered by import-tree and must be flake-parts modules.
 5. Declare dependencies in the feature that selects the new feature. Discovery makes it available; profile roots determine activation. Avoid maintaining a second application or role list.
