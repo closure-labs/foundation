@@ -1,9 +1,9 @@
 {
-  inputs,
+  foundationPackageSets,
   pkgs,
   ...
 }: let
-  weekly = inputs.nixpkgs-weekly.legacyPackages.${pkgs.stdenv.hostPlatform.system};
+  weekly = foundationPackageSets.nixpkgs-weekly;
 in {
   # Add personal packages and settings here; lists merge with the base modules.
   home.packages =

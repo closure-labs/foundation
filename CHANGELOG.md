@@ -6,6 +6,7 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Add a typed constructor package policy shared across stable, weekly and unstable Nixpkgs. Unfree packages remain allowed by default; explicit deny and allowlist modes fail clearly without dropping selected services.
 - Advance stable Home Manager and Nixpkgs through their owning modules, with source declarations, lockfile and generated artifacts kept together and restored on update failure. Repair the public generic-x86_64 hardware alias.
 
 - Deliver explicit Foundation updates from `main` without waiting for a version release or maintaining a `latest-release` branch. Consumer locks retain immutable revision and content-hash provenance; staged updates qualify the exact commit, preserve personal inputs and retain build-before-activation recovery. Version tags remain optional milestones.

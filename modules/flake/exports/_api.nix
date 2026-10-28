@@ -49,6 +49,7 @@ in {
     profile,
     modules ? [],
     extraInputs ? {},
+    packagePolicy ? {},
   }: let
     normalized = normalizeProfile profile;
     evaluated = lib.evalModules {
@@ -56,6 +57,7 @@ in {
         inputs = inputs // extraInputs;
         foundationProfile = normalized;
         foundationModules = modules;
+        foundationPackagePolicy = packagePolicy;
       };
       modules = [inputs.den.flakeModule inputs.den.flakeOutputs.homeConfigurations ../../home/construction/_module.nix];
     };
