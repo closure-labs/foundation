@@ -12,6 +12,7 @@ let
 in
 {
   home = home.activationPackage;
+  password-managers = (import ../../tests/password-managers.nix {foundation = inputs.self;}).build;
   # Build the actual exported constructor. Fixture metadata keeps path:.
   # checks pure while still exercising the packaged Python module context.
   consumer-template = api.mkConsumerTemplate {

@@ -52,6 +52,10 @@ Use `foundation home --help` to list actions. Native apps such as `#home-update`
 
 ## Make it yours
 
+Nix 1Password GUI selections automatically declare provider-aware browser
+integration. The [password-manager guide](docs/PASSWORD-MANAGERS.md) explains
+the explicit administrator setup for the native helper and rollback behavior.
+
 ```sh
 foundation home apply --roles developer,creative --capabilities recording --preview
 foundation home check --roles developer,creative --capabilities recording

@@ -42,6 +42,7 @@ in
   inherit cases;
   checks = {
     home = default;
+    password-managers = check ["home/password-managers"];
     profile-command = default;
     nixgl-wrapper = selection (defaultProfile // { schema = 3; });
     desktop-icons = selection (

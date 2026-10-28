@@ -30,6 +30,7 @@ REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-la
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from foundation_observations import timing, NixActivities, Resources, activation_observations
+from password_manager_requirements import check_host_requirements
 
 
 def run(command, **kwargs):
@@ -633,6 +634,7 @@ def previous_generation():
 @timing("preparation")
 def prepare_generation(activation):
     """Run an optional executable supplied by this one realized generation."""
+    check_host_requirements(activation)
     executable = activation / "foundation-prepare"
     if not executable.exists() and not executable.is_symlink():
         return
@@ -753,7 +755,10 @@ def main_data():
     if (resolved.get("type") != "github" or resolved.get("owner") != "closure-labs"
             or resolved.get("repo") != "foundation"
             or not re.fullmatch(r"[a-f0-9]{40}", resolved.get("rev") or "")
-            or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", resolved.get("narHash") or "")):
+            or ("narHash" in resolved and (not isinstance(resolved["narHash"], str)
+                or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", resolved["narHash"])))
+            or ("lastModified" in resolved and (type(resolved["lastModified"]) is not int
+                or resolved["lastModified"] < 0))):
         raise ValueError("Main did not resolve to an immutable Foundation source")
     rev = resolved["rev"]
     evidence = require_main_ci(rev)
@@ -763,7 +768,14 @@ def main_data():
       rev = f.rev; narHash = f.narHash; lastModified = f.lastModified;
     }'''.replace("REF", json.dumps(f"github:{REPOSITORY}/{rev}"))
     data = json.loads(capture(["nix", "eval", "--json", "--expr", expression]))
-    if any(data.get(key) != resolved.get(key) for key in ("rev", "narHash", "lastModified")):
+    # Newer Nix metadata can omit the hash (and timestamp) until the immutable
+    # source is materialized. Its evaluated source info is authoritative; any
+    # metadata fields that were supplied must still agree with that exact source.
+    if (data.get("rev") != rev or not isinstance(data.get("narHash"), str)
+            or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", data["narHash"])
+            or type(data.get("lastModified")) is not int or data["lastModified"] < 0
+            or any(key in resolved and data.get(key) != resolved[key]
+                   for key in ("narHash", "lastModified"))):
         raise ValueError("Selected Foundation differs from the resolved main source")
     info = {**data["metadata"], **{key: data[key] for key in ("rev", "narHash", "lastModified")}}
     validate_metadata(info)

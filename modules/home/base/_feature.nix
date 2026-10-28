@@ -34,6 +34,7 @@
     "home/shell"
     "home/activation"
     "home/commands"
+    "home/password-managers"
   ];
   "schemaDependencies" = { };
   configuration = schema: import ./_home.nix;
