@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Add a typed constructor package policy shared across stable, weekly and unstable Nixpkgs. Unfree packages remain allowed by default; explicit deny and allowlist modes fail clearly without dropping selected services.
+
 - Deliver explicit Foundation updates from `main` without waiting for a version release or maintaining a `latest-release` branch. Consumer locks retain immutable revision and content-hash provenance; staged updates qualify the exact commit, preserve personal inputs and retain build-before-activation recovery. Version tags remain optional milestones.
 
 - Remove legacy home-profile schema-2 readers, catalogs, composition and conversion paths. Home profiles must use schema 3; unsupported persisted profiles fail with replacement guidance before build or activation. See [Migration](docs/MIGRATION.md) before updating an older consumer.

@@ -1,4 +1,4 @@
-{
+args@{
   config,
   inputs,
   lib,
@@ -6,8 +6,11 @@
   foundationHost ? null,
   ...
 }: let
-  system = pkgs.stdenv.hostPlatform.system;
-  weekly = inputs.nixpkgs-weekly.legacyPackages.${system};
+  packageSets = args.foundationPackageSets or (import ../../providers/nixpkgs/_package-sets.nix {
+    inherit inputs;
+    system = pkgs.stdenv.hostPlatform.system;
+  });
+  weekly = packageSets.nixpkgs-weekly;
   pipewireCameraPolicies =
     # Upstream Firefox keeps the PipeWire camera backend disabled because it
     # replaces V4L2 without a reliable fallback. Restrict it to the Dell IPU7
