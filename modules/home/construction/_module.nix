@@ -70,10 +70,7 @@ in {
             FINITE_ROLES = lib.concatStringsSep "," canonicalRoles;
           };
         };
-        imports = foundationModules;
-        programs = {
-          nh.homeFlake = "path:${vars.identity.homeDirectory}/.config/home-manager";
-        };
+        imports = foundationModules ++ [./_config-root.nix];
       };
     };
   };

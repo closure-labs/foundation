@@ -203,8 +203,19 @@ def replace_file_entry(source, destination):
         temporary.unlink(missing_ok=True)
 
 
+def path_flake(path):
+    """Encode a local path as a flake reference without interpreting # or ?."""
+    return "path:" + urllib.parse.quote(str(path), safe="/")
+
+
 def config_root():
-    return Path(os.environ.get("FINITE_HOME_FLAKE_PATH", str(Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "home-manager")))
+    # Match NH's evaluated XDG default without freezing the runtime XDG value.
+    # NH_HOME_FLAKE/NH_FLAKE may be remote flake references, not writable paths.
+    explicit = os.environ.get("FINITE_HOME_FLAKE_PATH")
+    if explicit:
+        return Path(explicit)
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    return (Path(xdg) if xdg else Path.home() / ".config") / "home-manager"
 
 
 def source_root():
@@ -425,7 +436,7 @@ def validate_staged_profile(stage, data=None):
     # Selected sources must provide the schema-3 normalizer and capabilities.
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
-    expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
+    expression = 'let root = builtins.getFlake ' + nix_value(path_flake(stage)) + ''';
       target = root.inputs.foundation or root;
       submitted = builtins.fromJSON (builtins.readFile (root.outPath + "/profile.json"));
       hasNormalizer = target.lib ? normalizeProfile;
@@ -467,7 +478,7 @@ def editor_target(stage, schema, change=None):
     if schema not in profile_capabilities().get("editSchemas", []):
         raise ValueError("The installed Foundation helper does not support editing this profile schema")
     request = {"schema": schema, "change": change}
-    expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
+    expression = 'let root = builtins.getFlake ' + nix_value(path_flake(stage)) + ''';
       target = root.inputs.foundation or root;
       submitted = builtins.fromJSON (builtins.readFile (root.outPath + "/profile.json"));
       request = builtins.fromJSON REQUEST;
@@ -603,7 +614,7 @@ def build(stage):
     profile = validate_staged_profile(stage)
     if profile != submitted:
         write_staged_profile(stage, profile)
-    installable = f"path:{stage}#homeConfigurations.{profile['identity']['username']}.activationPackage"
+    installable = f"{path_flake(stage)}#homeConfigurations.{profile['identity']['username']}.activationPackage"
     command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
     if os.environ.get("FOUNDATION_TIMINGS") == "1":
@@ -822,7 +833,7 @@ def installed_info(root):
     if local_foundation_source(source):
         if not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", provenance.get("narHash") or ""):
             raise ValueError("Local Foundation lock must contain a content hash")
-        expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(root.resolve())) + ''';
+        expression = 'let root = builtins.getFlake ' + nix_value(path_flake(root.resolve())) + ''';
           target = root.inputs.foundation;
         in {
           metadata = builtins.fromJSON (builtins.readFile (target.outPath + "/foundation.json"));
@@ -889,9 +900,9 @@ def update(root, check=False):
             # Let Nix record the declared ref naturally. A moving main is not an
             # excuse to build another commit: fail closed if resolution races CI.
             if tracking:
-                run(["nix", "flake", "update", "foundation", "--flake", "path:" + str(stage)])
+                run(["nix", "flake", "update", "foundation", "--flake", path_flake(stage)])
             else:
-                run(["nix", "flake", "lock", "path:" + str(stage)])
+                run(["nix", "flake", "lock", path_flake(stage)])
             new_lock = read_json(stage / "flake.lock")
             verify_update_lock(read_json(root / "flake.lock"), new_lock, lock, info)
             selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]
@@ -950,7 +961,7 @@ def migrate(root, info, lock, check=False):
                     name: ["foundation", *old_inputs[name]] if isinstance(old_inputs[name], list) and old_inputs[name] and old_inputs[name][0] in CORE else old_inputs[name]
                     for name in extras})
                 write_json(stage / "flake.lock", new_lock)
-                run(["nix", "flake", "lock", "path:" + str(stage)])
+                run(["nix", "flake", "lock", path_flake(stage)])
             activation = build(stage)
             if not check:
                 revalidate_candidate(info)
