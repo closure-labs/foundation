@@ -25,7 +25,9 @@ in {
       gpu = named "hosts/gpu" ["intel-integrated" "intel-discrete" "amd-integrated" "amd-discrete"];
       models = named "hosts/models" ["generic" "dell-xps-9350"];
       generic-x86_64.homeManager.imports = [
-      ../base/_membership.nix../../hosts/models/generic/_home.nix];
+        ../base/_membership.nix
+        ../../hosts/models/generic/_home.nix
+      ];
       dell-xps-9350-intel = alias "hosts/models/dell-xps-9350";
     };
   };

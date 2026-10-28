@@ -1,10 +1,14 @@
-{
+args@{
   inputs,
   lib,
   pkgs,
   ...
 }:
 let
+  packageSets = args.foundationPackageSets or (import ../../../providers/nixpkgs/_package-sets.nix {
+    inherit inputs;
+    system = pkgs.stdenv.hostPlatform.system;
+  });
   source = pkgs.runCommand "foundation-bluefin-preparation-source" { } ''
     mkdir -p "$out"
     cp ${./_prepare.py} "$out/prepare.py"
@@ -28,7 +32,7 @@ in
   # Historical copied-policy entries absent from both upstream stock bundles.
   # These are Finite additions; no Brew formula/tap declaration is retained.
   home.packages = [
-    (pkgs.bbrew or inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system}.bbrew)
+    (pkgs.bbrew or packageSets.nixpkgs-unstable.bbrew)
     pkgs.ugrep
     pkgs.uutils-coreutils
   ];

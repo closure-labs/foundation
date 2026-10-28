@@ -14,6 +14,59 @@ inputs.foundation.lib.mkHomeConfiguration {
 
 `modules` defaults to `[]` and `extraInputs` to `{}`. The constructor normalizes the profile and returns a Home Manager configuration. It does not activate it. The supported system is `x86_64-linux`.
 
+### Configuration root
+
+NH and Foundation default to `home-manager` under the XDG config home. NH uses
+Home Manager's evaluated `config.xdg.configHome`; the CLI resolves its runtime
+path in this order:
+
+1. A nonempty `FINITE_HOME_FLAKE_PATH`.
+2. A nonempty `XDG_CONFIG_HOME`, followed by `/home-manager`.
+3. `$HOME/.config/home-manager`.
+
+For a fixed shared location, set the Home Manager option in a personal module:
+
+```nix
+foundation.configRoot = "/var/home/alice/configuration";
+```
+
+It must be an absolute string (not a Nix path copied to the store). Foundation
+uses it for NH's default `programs.nh.homeFlake` and exports
+`FINITE_HOME_FLAKE_PATH` for its helpers. With `null` (the default), Foundation
+does not export that override, so runtime XDG changes keep working. Explicit
+`programs.nh.homeFlake` settings remain available for intentional NH-only use;
+`NH_HOME_FLAKE` and `NH_FLAKE` retain NH's native semantics and are not interpreted
+as writable paths by Foundation. No existing files are moved or migrated.
+### Shared package policy
+
+`mkHomeConfiguration` also accepts a typed `packagePolicy` before any package
+sets are constructed. It applies to Foundation's stable, weekly and unstable
+Nixpkgs imports. Unfree packages are **allowed by default**:
+
+```nix
+packagePolicy = {
+  unfree = "allow"; # "allow", "deny", or "allowlist"
+  allowedUnfreePackages = []; # only valid with "allowlist"
+};
+```
+
+For a restrictive configuration, set `unfree = "deny"`, or use `"allowlist"`
+with version-independent Nixpkgs names such as `allowedUnfreePackages = ["steam"]`.
+Unfree dependencies must also be listed. A rejected selected package fails
+evaluation with a policy-specific error; Foundation never silently drops its
+application or service. Unknown options, invalid modes and non-string names fail
+before package construction. In impure evaluation, restrictive modes reject
+`NIXPKGS_ALLOW_UNFREE=1` with instructions to unset it, because Nixpkgs otherwise
+bypasses license predicates. Do not set this policy in a Home Manager module:
+that is too late to change the package sets passed to Home Manager.
+
+Personal Home Manager modules receive `foundationPackageSets` with `nixpkgs`,
+`nixpkgs-weekly`, and `nixpkgs-unstable` attributes. Use those for personal packages
+that should follow the same policy. Explicitly importing a raw input or using
+its `legacyPackages` bypasses Foundation's policy. Existing personal files are
+not rewritten; the new-consumer example uses the shared weekly package set.
+This policy does not manage Flatpak, Homebrew or independently supplied inputs.
+
 ## Catalogs and profiles
 
 | Entry point | Purpose |

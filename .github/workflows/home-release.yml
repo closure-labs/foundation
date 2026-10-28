@@ -39,12 +39,17 @@ jobs:
           add-paths: |
             flake.nix
             flake.lock
+            modules/providers/nixpkgs/default.nix
+            modules/home/construction/default.nix
+            modules/ci/_graph.json
+            docs/ARCHITECTURE.md
           branch: automation/stable-home-release
           delete-branch: true
           commit-message: 'chore(deps): advance stable Home Manager and Nixpkgs'
           title: 'chore(deps): advance stable Home Manager and Nixpkgs'
           body: |
-            Refreshes flake.lock after fixture checks, workflow lint, default-profile
+            Advances the stable input owners and regenerates flake.nix, flake.lock
+            and the CI graph together after fixture checks, workflow lint, default-profile
             build, and selectable-profile evaluation pass with the new pins.
 
             Review the input revisions and approve any GitHub-required workflow

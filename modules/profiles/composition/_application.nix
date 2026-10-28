@@ -1,9 +1,11 @@
-{ id, application }: { config, inputs, lib, pkgs, foundationComposition, ... }: let
+{ id, application }: args@{ config, inputs, lib, pkgs, foundationComposition, ... }: let
   app = application;
-  sources = {
+  packageSets = args.foundationPackageSets or (import ../../providers/nixpkgs/_package-sets.nix {
+    inherit inputs;
+    system = pkgs.stdenv.hostPlatform.system;
+  });
+  sources = packageSets // {
     nixpkgs = pkgs;
-    nixpkgs-weekly = inputs.nixpkgs-weekly.legacyPackages.${pkgs.stdenv.hostPlatform.system};
-    nixpkgs-unstable = inputs.nixpkgs-unstable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
     devenv = inputs.devenv.packages.${pkgs.stdenv.hostPlatform.system};
   };
   raw = if (app.recipe or null) == "finite-ghostty"

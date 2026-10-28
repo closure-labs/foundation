@@ -33,7 +33,7 @@ def main():
 
     print(f"Nix validation plan: {plan['mode']}", flush=True)
     if plan["contracts"]:
-        for script in ("nix_feature_validation.py", "nix_profile_validation.py", "nix_editor_validation.py", "nix_helper_source_validation.py"):
+        for script in ("nix_feature_validation.py", "nix_package_policy_validation.py", "nix_config_root_validation.py", "nix_profile_validation.py", "nix_editor_validation.py", "nix_helper_source_validation.py"):
             run([sys.executable, "tests/" + script])
     matrix("nix_schema3_validation.py", plan["schema3"])
     matrix("nix_host_validation.py", plan["hosts"])

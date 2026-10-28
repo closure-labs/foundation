@@ -4,6 +4,7 @@
   lib,
   foundationProfile ? builtins.fromJSON (builtins.readFile ../../../profile.json),
   foundationModules ? [../../../customize.nix ../../local.nix],
+  foundationPackagePolicy ? {},
   ...
 }: let
   # The version-controlled profile selects the account, roles and packages.
@@ -13,10 +14,11 @@
   canonicalRoles = vars.roles;
   canonicalPackages = vars.packages;
   composition = (import ../../../lib/profile-drafts {inherit catalog;}).resolve vars;
-  pkgs = import inputs.nixpkgs {
-    inherit system;
-    config.allowUnfree = true;
+  packageSets = import ../../providers/nixpkgs/_package-sets.nix {
+    inherit inputs system;
+    packagePolicy = foundationPackagePolicy;
   };
+  pkgs = packageSets.nixpkgs;
   applications = import ../../../lib/applications.nix {
     inherit pkgs;
     source = ../../..;
@@ -37,6 +39,7 @@ in {
         inherit modules pkgs;
         extraSpecialArgs = {
           inherit inputs;
+          foundationPackageSets = packageSets;
           foundationHost = vars.host;
           foundationComposition = composition;
           finiteHomeAssets = {
@@ -70,10 +73,7 @@ in {
             FINITE_ROLES = lib.concatStringsSep "," canonicalRoles;
           };
         };
-        imports = foundationModules;
-        programs = {
-          nh.homeFlake = "path:${vars.identity.homeDirectory}/.config/home-manager";
-        };
+        imports = foundationModules ++ [./_config-root.nix];
       };
     };
   };
