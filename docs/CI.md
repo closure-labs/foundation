@@ -41,6 +41,35 @@ Automation plans run workflow lint, all fixtures and Python tests, plus the `pro
 
 A dependency label alone never selects this shortcut. In particular, `flake.lock` changes can update Den, Home Manager and shared package sources, affecting every profile; those still run full validation. Manual, release and merge-group runs remain full even for action-pin-only changes.
 
+## Dependency-update ownership
+
+Renovate is the intended owner of GitHub Actions pin updates. The repository
+[`renovate.json`](../renovate.json) limits it to the `github-actions` manager,
+retains digest pins, groups weekly updates on Monday morning UTC and disables
+automerge. Nix updates remain in the existing reviewed lock/stable-pair workflows:
+those regenerate source-owned artifacts and preserve Den's tested gen revision.
+Renovate must not independently rewrite generated `flake.nix` or compete for
+`flake.lock` ownership.
+
+### Complete the Renovate handoff
+
+The configuration alone does not prove that a Renovate app or runner can access
+this repository. Before removing `.github/dependabot.yml`, a maintainer must:
+
+1. Confirm an authorized Renovate installation/runner covers
+   `closure-labs/foundation`; granting app access is a separate owner decision.
+2. Verify a successful Renovate run reads this configuration and discovers the
+   GitHub Actions dependencies, with a reviewed update PR or runner/dashboard
+   evidence when no update is needed.
+3. Remove Dependabot's Actions configuration in a focused follow-up PR, then
+   verify that only Renovate proposes subsequent Actions updates.
+
+Dependabot remains temporarily configured solely to avoid leaving updates
+unowned during this handoff. This is not permanent dual ownership. Do not
+remove the fallback based only on the presence of `renovate.json` or on a
+repository label. No app access, repository rulesets or organization settings
+are changed by this configuration.
+
 ## Keep generated files current
 
 ```sh
