@@ -24,13 +24,15 @@ class NixChecksTests(unittest.TestCase):
     def test_focused_policy_and_root_changes_execute_both_contracts(self):
         for path in ("modules/providers/nixpkgs/_package-sets.nix",
                      "modules/home/construction/_config-root.nix",
-                     "modules/flake/exports/_api.nix"):
+                     "modules/flake/exports/_api.nix",
+                     "modules/hosts/os/bluefin/_home.nix"):
             commands = []
             with self.subTest(path=path):
                 self.run_focused(path, lambda command, **kwargs: commands.append(command))
                 scripts = [command[1] for command in commands if command[0] == nix_checks.sys.executable]
                 self.assertIn("tests/nix_package_policy_validation.py", scripts)
                 self.assertIn("tests/nix_config_root_validation.py", scripts)
+                self.assertIn("tests/nix_bluefin_ownership_validation.py", scripts)
 
     def test_failed_contract_stops_focused_validation(self):
         commands = []

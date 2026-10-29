@@ -35,6 +35,8 @@ Focused changes to the shared Nixpkgs provider, home constructor or public
 exports also run the Nix contract suite. Default profile matrices alone do not
 exercise restrictive package policies, invalid constructor inputs or explicit
 configuration roots; an unchanged dependency graph must not skip those cases.
+Bluefin aspect changes also retain contracts, covering both stock CLI ownership
+and explicitly selected personal packages for Bluefin and Bluefin DX.
 
 ## Automation dependency updates
 

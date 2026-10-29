@@ -127,7 +127,8 @@ class CiPlanTests(unittest.TestCase):
                      "modules/providers/nixpkgs/_package-sets.nix",
                      "modules/home/construction/_config-root.nix",
                      "modules/home/construction/_module.nix",
-                     "modules/flake/exports/_api.nix"):
+                     "modules/flake/exports/_api.nix",
+                     "modules/hosts/os/bluefin/_home.nix"):
             with self.subTest(path=path):
                 plan = self.focused([path])
                 self.assertEqual(plan["mode"], "focused")

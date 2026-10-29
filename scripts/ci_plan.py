@@ -19,7 +19,7 @@ FULL_CHECKS = json.loads((ROOT / GRAPH_PATH).read_text())["plans"]["full"]["chec
 # Standard profile matrices use default policy/root values. Changes to their
 # shared owners must also exercise restrictive policies, invalid inputs and
 # explicit roots through the Nix contract suite, even with an unchanged graph.
-CONTRACT_OWNERS = {"providers/nixpkgs", "home/construction", "flake/exports"}
+CONTRACT_OWNERS = {"providers/nixpkgs", "home/construction", "flake/exports", "hosts/os/bluefin"}
 
 
 def closure(graph, schema, roots):
