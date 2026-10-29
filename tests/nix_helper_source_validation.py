@@ -30,9 +30,10 @@ def main():
         helper = Path(before["helper"])
         for name in ("scripts/home.py", "lib/generate-profile.nix", "lib/profile-capabilities.json", "lib/profile-drafts/contract.nix",
                      "flake.lock", "profile.json", "customize.nix", "modules/local.nix", "legacy-managed.json", "VERSION",
-                     "foundation.json", "LICENSE", "NOTICE", "ORIGIN.md"):
+                     "foundation.json", "LICENSE", "NOTICE", "ORIGIN.md", "templates/default/customize.nix"):
             assert (helper / name).is_file(), name
-        for name in ("flake.nix", "README.md", "tests", "templates", "scripts/ci_plan.py", "modules/ci"):
+        for name in ("flake.nix", "README.md", "tests", "templates/default/flake.nix",
+                     "templates/default/profile.json", "templates/default/modules", "scripts/ci_plan.py", "modules/ci"):
             assert not (helper / name).exists(), name
         source.joinpath("README.md").write_text("Documentation-only change.\n")
         flake = source / "flake.nix"

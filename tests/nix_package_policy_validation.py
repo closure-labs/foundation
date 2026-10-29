@@ -3,6 +3,9 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
+
+from test_home import home, INFO
 
 ROOT = Path(__file__).resolve().parents[1]
 CHANNELS = ("nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable")
@@ -23,7 +26,40 @@ def fixture(policy, channel, name="foundation-policy-fixture"):
     '''.replace("POLICY", policy).replace("CHANNEL", channel).replace("NAME", name)
 
 
+def validate_generated_customization():
+    with tempfile.TemporaryDirectory(prefix="foundation-policy-template-") as temporary:
+        consumer = Path(temporary) / "consumer"
+        home.make_template(ROOT, INFO, consumer)
+        customization = consumer / "customize.nix"
+        text = customization.read_text()
+        assert text.count("# example") == 1, "Expected the public weekly package example"
+        customization.write_text(text.replace("# example", '''(runCommand "foundation-policy-fixture" {
+          meta.license = lib.licenses.unfree;
+        } "touch $out")'''))
+
+        def generated(policy, check=True):
+            return evaluate('''sets = import (f.outPath + "/modules/providers/nixpkgs/_package-sets.nix") {
+                inputs = f.inputs; system = "x86_64-linux"; packagePolicy = POLICY;
+              };
+              custom = import (builtins.toPath CUSTOMIZATION) {
+                inputs = f.inputs; pkgs = sets.nixpkgs; foundationPackageSets = sets;
+              };
+              in map (package: package.drvPath) custom.home.packages'''
+                .replace("POLICY", policy).replace("CUSTOMIZATION", home.nix_value(str(customization))), check=check)
+
+        default = generated("{}", check=False)
+        assert default.returncode == 0, default.stderr
+        allowed = default.stdout
+        assert len(json.loads(allowed)) == 1, allowed
+        assert allowed == generated('{ unfree = "allow"; }').stdout
+        assert allowed == generated('{ unfree = "allowlist"; allowedUnfreePackages = ["foundation-policy-fixture"]; }').stdout
+        for policy in ('{ unfree = "deny"; }', '{ unfree = "allowlist"; }'):
+            rejected = generated(policy, check=False)
+            assert rejected.returncode != 0 and "Foundation packagePolicy rejected unfree package" in rejected.stderr, rejected.stderr
+
+
 def main():
+    validate_generated_customization()
     defaults = json.loads(evaluate('''sets = import (f.outPath + "/modules/providers/nixpkgs/_package-sets.nix") {
       inputs = f.inputs; system = "x86_64-linux";
     }; in builtins.mapAttrs (_: pkgs: pkgs.config.allowUnfree) sets''').stdout)
@@ -60,7 +96,7 @@ def main():
         result = evaluate('policy = import (f.outPath + "/modules/providers/nixpkgs/_policy.nix") { lib = f.inputs.nixpkgs.lib; }; in policy ' + value, check=False)
         assert result.returncode != 0, value
         assert "packagePolicy" in result.stderr, result.stderr
-    print("Package policy: default/explicit allow parity, deny and allowlist across all channels; invalid policies rejected", flush=True)
+    print("Package policy: default/explicit allow parity, deny and allowlist across all channels and generated customization; invalid policies rejected", flush=True)
 
 
 if __name__ == "__main__":

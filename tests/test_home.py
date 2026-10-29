@@ -149,9 +149,12 @@ class ConsumerTests(unittest.TestCase):
     def test_template_copies_are_editable_without_changing_sources_or_existing_files(self):
         source = self.base / "read-only-source"
         (source / "modules").mkdir(parents=True)
+        (source / "templates/default").mkdir(parents=True)
         relatives = ("profile.json", "customize.nix", "modules/local.nix")
+        sources = {relative: source / ("templates/default/customize.nix" if relative == "customize.nix" else relative)
+                   for relative in relatives}
         for relative in relatives:
-            path = source / relative
+            path = sources[relative]
             path.write_text("original\n")
             path.chmod(0o444)
         output = self.base / "editable-template"
@@ -165,10 +168,29 @@ class ConsumerTests(unittest.TestCase):
         home.make_template(source, INFO, output, LOCK)
         for relative in relatives:
             with self.subTest(relative=relative):
-                self.assertEqual((source / relative).read_text(), "original\n")
-                self.assertEqual((source / relative).stat().st_mode & 0o777, 0o444)
+                self.assertEqual(sources[relative].read_text(), "original\n")
+                self.assertEqual(sources[relative].stat().st_mode & 0o777, 0o444)
                 self.assertEqual((output / relative).read_text(), "personal\n")
                 self.assertEqual((output / relative).stat().st_mode & 0o777, 0o440)
+
+    def test_new_customization_uses_the_public_policy_aware_template(self):
+        expected = (ROOT / "templates/default/customize.nix").read_text()
+        self.assertEqual((self.root / "customize.nix").read_text(), expected)
+        self.assertIn("foundationPackageSets.nixpkgs-weekly", expected)
+        self.assertNotIn("legacyPackages", expected)
+
+    def test_helper_bundle_retains_only_the_required_customization_template(self):
+        # This store-copy-only evaluation needs no Nixpkgs, builds or flake fetches.
+        # Keep it in fixtures so even focused helper edits check the actual bundle.
+        expression = 'let source = builtins.toPath ' + home.nix_value(str(ROOT)) + '; in toString (import (source + "/lib/helper-source.nix") source)'
+        helper = Path(json.loads(subprocess.check_output([
+            "nix-instantiate", "--eval", "--read-write-mode", "--strict", "--json", "--expr", expression,
+        ], text=True)))
+        self.assertEqual(sorted(path.name for path in (helper / "templates/default").iterdir()), ["customize.nix"])
+        output = self.base / "packaged-template"
+        home.make_template(helper, INFO, output, LOCK)
+        self.assertEqual((output / "customize.nix").read_bytes(),
+                         (ROOT / "templates/default/customize.nix").read_bytes())
 
     def test_templates_preserve_dangling_personal_symlinks(self):
         for relative in ("profile.json", "customize.nix", "modules/local.nix"):
