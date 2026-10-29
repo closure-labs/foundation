@@ -6,6 +6,7 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Keep policy and configuration-root contract tests enabled for focused changes to their shared implementation owners, rather than relying only on default profile evaluations.
 - Align NH’s Home Manager location with the XDG config home and add optional `foundation.configRoot` for a shared explicit path. Preserve runtime CLI overrides and leave existing configuration files in place.
 - Add a typed constructor package policy shared across stable, weekly and unstable Nixpkgs. Unfree packages remain allowed by default; explicit deny and allowlist modes fail clearly without dropping selected services.
 - Advance stable Home Manager and Nixpkgs through their owning modules, with source declarations, lockfile and generated artifacts kept together and restored on update failure. Repair the public generic-x86_64 hardware alias.

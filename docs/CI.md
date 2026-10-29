@@ -31,6 +31,11 @@ Without that evidence, CI runs full validation. Rename detection is disabled so 
 
 Manual runs, merge groups, release calls and explicit checkout overrides always validate fully. Focused runs request affected build checks plus generated-file checks. Nix's derivation cache determines what actually rebuilds.
 
+Focused changes to the shared Nixpkgs provider, home constructor or public
+exports also run the Nix contract suite. Default profile matrices alone do not
+exercise restrictive package policies, invalid constructor inputs or explicit
+configuration roots; an unchanged dependency graph must not skip those cases.
+
 ## Automation dependency updates
 
 Same-major GitHub Action pin updates use an `automation` plan when the exact base has a successful CI gate and the generated dependency graph is unchanged and valid. The planner compares the complete Git diff: only existing workflow `uses:` lines may change, preserving the action identity and changing only a full commit SHA and its version comment. Documentation may accompany those changes.

@@ -16,6 +16,10 @@ GRAPH_PATH = "modules/ci/_graph.json"
 CASE_PROFILES = json.loads((ROOT / "modules/ci/profiles/_cases.json").read_text())
 SCHEMA3, HOSTS, LEGACY = (list(CASE_PROFILES[group]) for group in ("schema3", "hosts", "legacy"))
 FULL_CHECKS = json.loads((ROOT / GRAPH_PATH).read_text())["plans"]["full"]["checks"]
+# Standard profile matrices use default policy/root values. Changes to their
+# shared owners must also exercise restrictive policies, invalid inputs and
+# explicit roots through the Nix contract suite, even with an unchanged graph.
+CONTRACT_OWNERS = {"providers/nixpkgs", "home/construction", "flake/exports"}
 
 
 def closure(graph, schema, roots):
@@ -175,7 +179,7 @@ def make_plan(paths, full=False, baseline=None, graph=None):
             graph, graph["checks"][name]["schema"], graph["checks"][name]["roots"])]
         if affected:
             checks += [name for name in ("check-flake-file", "ci-graph") if name not in checks]
-        plan.update(mode="focused" if affected else "docs", contracts=False, baseline=baseline,
+        plan.update(mode="focused" if affected else "docs", contracts=bool(affected & CONTRACT_OWNERS), baseline=baseline,
                     graph=graph_digest(graph), checks=checks, **selections)
         return plan
     except (OSError, ValueError, KeyError, TypeError):
