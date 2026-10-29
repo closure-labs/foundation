@@ -9,6 +9,13 @@ in {
   host = builtins.fromJSON c.xdg.configFile."finite/host.json".text;
   environment = c.home.sessionVariables;
   services = builtins.attrNames c.systemd.user.services;
+  dellGrubActivation = c.home.activation.foundationDellGrub.data or null;
+  dellGrubOptOut = if (c.home.sessionVariables.FINITE_HOST_MODEL or "") == "dell-xps-9350"
+    then builtins.hasAttr "foundationDellGrub" (foundation.lib.mkHomeConfiguration {
+      inherit profile;
+      modules = [ { foundation.dellGrub.enable = false; } ];
+    }).config.home.activation
+    else false;
   files = builtins.attrNames c.xdg.configFile;
   batteryPercentage = c.dconf.settings."org/gnome/desktop/interface".show-battery-percentage or null;
   nixgl = c.targets.genericLinux.nixGL.packages != null;
