@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Keep inherited `GDK_BACKEND` overrides out of Bluefin's GNOME portal service so file dialogs and screen sharing remain available. Applications retain their own environment settings.
+
 - Own IPU7 WirePlumber policy system-wide through an explained privileged installer and standalone flake app. Skip sudo when the owned policy matches, and remove the old private-IPA repair mode.
 - Record applied Dell GRUB policy in a root-owned, readable receipt so unchanged Home Manager updates skip sudo. Add explicit privileged verification for protected boot files.
 
