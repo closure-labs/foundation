@@ -1,4 +1,4 @@
-"""Generation preparation is optional and stock bundle installation is bounded."""
+"""Only the Bluefin aspect delegates defaults to its inherited OS service."""
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -29,105 +29,129 @@ class Preparation(unittest.TestCase):
             home.prepare_generation(generation)
             run.assert_called_once_with([str(entry)])
 
-    def test_ready_bundle_never_installs_and_missing_bundle_installs_once(self):
-        for ready in (0, 1):
-            with self.subTest(ready=ready), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
-                brew, bundle = root / 'brew', root / 'cli.Brewfile'
-                brew.write_text('#!/bin/sh\n'); brew.chmod(0o755)
-                bundle.write_text('brew "stock"\n')
+    def fixture(self, root):
+        brew, preinstall = root / 'brew', root / 'brew-preinstall'
+        for path in (brew, preinstall, root / 'fzf'):
+            path.touch(); path.chmod(0o755)
+        defaults = root / 'preinstall.d'; defaults.mkdir()
+        (defaults / 'system-cli.Brewfile').write_text('brew "stock"\n')
+        return brew, preinstall
+
+    def state(self, **changes):
+        fields = dict(LoadState='loaded', ActiveState='active', SubState='exited',
+                      Result='success', ExecMainStatus='0', ConditionResult='yes')
+        fields.update(changes)
+        return ''.join(f'{key}={value}\n' for key, value in fields.items())
+
+    def test_default_service_only_repeatable_without_optional_bundle_or_trust(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); brew, preinstall = self.fixture(root)
+            calls = []
+            def run(command, **options):
+                calls.append(command)
+                self.assertTrue(options['check'])
+                self.assertLessEqual(options['timeout'], 600)
+                return subprocess.CompletedProcess(command, 0, self.state())
+            for _ in range(2):
+                prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+            self.assertEqual([row[2] for row in calls], ['start', 'show'] * 2)
+            self.assertTrue(all(row[:2] == ['systemctl', '--user'] for row in calls))
+            self.assertTrue(all('brew-preinstall.service' in row for row in calls))
+            # No cli.Brewfile exists: default provisioning must not need it.
+            self.assertFalse((root / 'cli.Brewfile').exists())
+
+    def test_broken_upstream_provisioner_fails_before_service(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); brew, preinstall = self.fixture(root)
+            for mode in ('not-executable',):
+                preinstall.chmod(0o644)
+                with patch.object(prepare.subprocess, 'run') as run:
+                    with self.assertRaises(ValueError):
+                        prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+                    run.assert_not_called()
+
+    def test_seed_wait_bounded_and_no_fallback_install(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); brew, preinstall = self.fixture(root); brew.unlink()
+            sleeps = []
+            with self.assertRaises(ValueError):
+                prepare.prepare(brew, sleep=sleeps.append, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+            self.assertEqual(sleeps, [1] * 120)
+
+    def test_service_failure_or_timeout_prevents_postcheck(self):
+        for error in (subprocess.CalledProcessError(1, ['systemctl']),
+                      subprocess.TimeoutExpired(['systemctl'], 600)):
+            with self.subTest(error=error), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); brew, preinstall = self.fixture(root)
+                with patch.object(prepare.subprocess, 'run', side_effect=error) as run:
+                    with self.assertRaises(type(error)):
+                        prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+                    self.assertEqual(run.call_count, 1)
+
+    def test_skipped_failed_incomplete_or_malformed_service_is_not_ready(self):
+        states = [self.state(**change) for change in (
+            {'LoadState':'not-found'}, {'ActiveState':'inactive'}, {'SubState':'running'},
+            {'Result':'exit-code'}, {'ExecMainStatus':'1'}, {'ConditionResult':'no'})]
+        states += ['', self.state() + 'Result=success\n', 'invalid', self.state() + 'Unknown=yes\n']
+        for state in states:
+            with self.subTest(state=state), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); brew, preinstall = self.fixture(root)
+                def run(command, **options):
+                    return subprocess.CompletedProcess(command, 0, state)
+                with self.assertRaises(ValueError):
+                    prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+
+    def test_preinstall_exit_zero_skip_conditions_are_rejected_before_start(self):
+        for case in ('missing-defaults', 'empty-defaults', 'greeter'):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); brew, preinstall = self.fixture(root)
+                defaults = root / 'preinstall.d'
+                if case != 'greeter':
+                    (defaults / 'system-cli.Brewfile').unlink()
+                    if case == 'missing-defaults': defaults.rmdir()
+                env = {'USER': 'gdm-test'} if case == 'greeter' else {'USER': 'alice', 'HOME': str(root)}
+                with patch.dict(prepare.os.environ, env), patch.object(prepare.subprocess, 'run') as run:
+                    with self.assertRaises(ValueError):
+                        prepare.prepare(brew, run=run, preinstall=preinstall,
+                                        preinstall_dir=defaults, fzf_paths=(root / 'fzf',))
+                    run.assert_not_called()
+
+    def test_older_image_checks_seed_without_starting_any_service(self):
+        for condition in ('yes', 'no'):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); brew, preinstall = self.fixture(root); preinstall.unlink()
                 calls = []
                 def run(command, **options):
-                    calls.append(command[1:])
-                    self.assertEqual(options['env']['HOMEBREW_NO_AUTO_UPDATE'], '1')
-                    return subprocess.CompletedProcess(command, ready if len(calls) == 2 else 0, str(root))
-                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
-                installs = [row for row in calls if row[:2] == ['bundle', 'install']]
-                checks = [row for row in calls if row[:2] == ['bundle', 'check']]
-                self.assertEqual(len(installs), ready)
-                if ready: self.assertIn('--no-upgrade', installs[0])
-                self.assertEqual(len(checks), 2)
-                self.assertTrue(all('--no-upgrade' in row for row in checks))
-                self.assertTrue(all('optional' not in ' '.join(row) for row in calls))
-
-    def test_outdated_installed_tools_satisfy_checks_without_installing(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            brew, bundle = root / 'brew', root / 'cli.Brewfile'
-            brew.touch(); brew.chmod(0o755); bundle.write_text('brew "outdated-but-installed"\n')
-            calls = []
-            def run(command, **kwargs):
-                calls.append(command)
-                # Model Homebrew's distinction: installed dependencies satisfy
-                # --no-upgrade checks, while a normal check demands an upgrade.
-                status = 0
-                if command[1:3] == ['bundle', 'check']:
-                    status = 0 if '--no-upgrade' in command else 1
-                if command[1:3] == ['bundle', 'install']:
-                    self.fail('Installed but outdated stock tools must not trigger installation')
-                if kwargs.get('check') and status:
-                    raise subprocess.CalledProcessError(status, command)
-                return subprocess.CompletedProcess(command, status, str(root))
-            with patch.dict(prepare.os.environ, {}, clear=True):
-                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
-            self.assertEqual(sum(command[1:3] == ['bundle', 'check'] for command in calls), 2)
-
-    def test_genuinely_missing_tools_install_once_and_must_pass_postcheck(self):
-        for install_satisfies_bundle in (True, False):
-            with self.subTest(install_satisfies_bundle=install_satisfies_bundle), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
-                brew, bundle = root / 'brew', root / 'cli.Brewfile'
-                brew.touch(); brew.chmod(0o755); bundle.write_text('brew "missing"\n')
-                calls, installed = [], False
-                def run(command, **kwargs):
-                    nonlocal installed
                     calls.append(command)
-                    if command[1:3] == ['bundle', 'install']:
-                        installed = install_satisfies_bundle
-                    status = int(not installed) if command[1:3] == ['bundle', 'check'] else 0
-                    if kwargs.get('check') and status:
-                        raise subprocess.CalledProcessError(status, command)
-                    return subprocess.CompletedProcess(command, status, str(root))
-                if install_satisfies_bundle:
-                    prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
-                else:
-                    with self.assertRaises(subprocess.CalledProcessError):
-                        prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
-                self.assertEqual(sum(command[1:3] == ['bundle', 'install'] for command in calls), 1)
+                    return subprocess.CompletedProcess(command, 0, self.state(
+                        ActiveState='inactive', SubState='dead', ConditionResult=condition))
+                prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+                self.assertEqual(calls[0][:3], ['systemctl', 'show', 'brew-setup.service'])
+                self.assertEqual(len(calls), 1)
 
-    def test_existing_stock_setup_is_joined_as_a_synchronous_user_service(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            brew, bundle, preinstall = root / 'brew', root / 'cli.Brewfile', root / 'brew-preinstall'
-            brew.touch(); brew.chmod(0o755); bundle.write_text('brew "stock"\n'); preinstall.touch()
-            calls = []
-            def run(command, **kwargs):
-                calls.append(command)
-                return subprocess.CompletedProcess(command, 0, str(root))
-            prepare.prepare(brew, bundle, run=run, preinstall=preinstall)
-            self.assertIn(['systemctl', '--user', 'start', 'brew-preinstall.service'], calls)
-            self.assertFalse(any(str(preinstall) in command for command in calls))
+    def test_older_seed_failure_or_stalled_start_fails_closed(self):
+        for active, result in (('failed', 'exit-code'), ('activating', 'success')):
+            with tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary); brew, preinstall = self.fixture(root); preinstall.unlink()
+                sleeps = []
+                def run(command, **options):
+                    return subprocess.CompletedProcess(command, 0, self.state(ActiveState=active, Result=result))
+                with self.assertRaises(ValueError):
+                    prepare.prepare(brew, run=run, sleep=sleeps.append, preinstall=preinstall,
+                                    fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
+                self.assertEqual(len(sleeps), 120 if active == 'activating' else 0)
 
-    def test_install_failure_prevents_postcheck(self):
+    def test_missing_or_nonexecutable_stock_fzf_fails(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            brew, bundle = root / 'brew', root / 'cli.Brewfile'
-            brew.touch(); brew.chmod(0o755); bundle.write_text('brew "stock"\n')
-            calls = []
-            def run(command, **kwargs):
-                calls.append(command)
-                if 'install' in command: raise subprocess.CalledProcessError(9, command)
-                return subprocess.CompletedProcess(command, 1, str(root))
-            with self.assertRaises(subprocess.CalledProcessError):
-                prepare.prepare(brew, bundle, run=run, preinstall=root / 'missing-preinstall')
-            self.assertEqual(len(calls), 3)
-
-    def test_stock_setup_wait_is_bounded_and_does_not_extract_or_elevate(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); bundle = root / 'cli.Brewfile'; bundle.write_text('')
-            sleeps = []
-            with self.assertRaises(ValueError): prepare.prepare(root / 'missing', bundle, sleep=sleeps.append)
-            self.assertEqual(sleeps, [1] * 120)
+            root = Path(temporary); brew, preinstall = self.fixture(root)
+            def run(command, **options):
+                return subprocess.CompletedProcess(command, 0, self.state())
+            for mode in ('missing', 'not-executable'):
+                fzf = root / 'fzf'
+                if mode == 'missing': fzf.unlink()
+                else: fzf.touch(); fzf.chmod(0o644)
+                with self.assertRaisesRegex(ValueError, 'fzf'):
+                    prepare.prepare(brew, run=run, preinstall=preinstall, fzf_paths=(root / 'fzf',), preinstall_dir=root / 'preinstall.d')
 
 
 if __name__ == '__main__': unittest.main()

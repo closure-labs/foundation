@@ -20,11 +20,13 @@ in
   # HM's pinned Fzf module cannot be enabled without installing its package,
   # so keep the explicit Finite shell integration as declarative configuration.
   programs.zsh.initContent = lib.mkOrder 910 ''
-    if [[ -x /home/linuxbrew/.linuxbrew/bin/fzf ]]; then
+    if [[ -x /usr/bin/fzf ]]; then
+      source <(/usr/bin/fzf --zsh)
+    elif [[ -x /home/linuxbrew/.linuxbrew/bin/fzf ]]; then
       source <(/home/linuxbrew/.linuxbrew/bin/fzf --zsh)
     fi
   '';
-  # Bluefin's inherited CLI bundle owns bbrew, ugrep and uutils-coreutils.
+  # Optional Bluefin CLI bundles remain user opt-ins, including bbrew/ugrep/uutils.
   # Do not add second Nix copies here or filter explicit personal packages.
   # Pinned Home Manager 24f2190 exposes this generation builder extension.
   # The generic initializer executes this fixed generation-relative entry only.

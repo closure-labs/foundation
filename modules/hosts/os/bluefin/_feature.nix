@@ -1,7 +1,7 @@
 {
   id = "hosts/os/bluefin";
   metadata = {
-    ownership = "Inherited Bluefin CLI bundle and user environment";
+    ownership = "Bluefin-owned default provisioning and user environment";
   };
   dependencies = [
     "providers/nixpkgs"

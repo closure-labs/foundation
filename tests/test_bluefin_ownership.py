@@ -32,6 +32,8 @@ class BluefinOwnershipTests(unittest.TestCase):
         self.assertEqual(actual["packages"], [])
         self.assertEqual(actual["shell"]["order"], 910)
         self.assertIn("/home/linuxbrew/.linuxbrew/bin/fzf --zsh", actual["shell"]["content"])
+        self.assertLess(actual["shell"]["content"].index("/usr/bin/fzf --zsh"),
+                        actual["shell"]["content"].index("/home/linuxbrew/.linuxbrew/bin/fzf --zsh"))
         self.assertIn('"$out/foundation-prepare"', actual["preparation"])
 
 
