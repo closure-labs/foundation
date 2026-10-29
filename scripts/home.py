@@ -382,7 +382,10 @@ def make_template(source, info, output, lock=None, extras=None):
     for relative in ("profile.json", "customize.nix", "modules/local.nix"):
         destination = output / relative
         if not destination.exists() and not destination.is_symlink():
-            shutil.copy2(source / relative, destination)
+            # The repository's own customization remains personal. New consumers
+            # use the public scaffold, including its shared package-policy sets.
+            template = "templates/default/customize.nix" if relative == "customize.nix" else relative
+            shutil.copy2(source / template, destination)
             # Store sources are read-only; personal configuration must be editable.
             destination.chmod(destination.stat().st_mode | 0o200)
 

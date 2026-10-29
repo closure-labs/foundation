@@ -10,6 +10,7 @@ let
     "legacy-managed.json"
     "profile.json"
     "customize.nix"
+    "templates/default/customize.nix"
     "modules/local.nix"
     "scripts/home.py"
     "scripts/password_manager_requirements.py"
@@ -21,6 +22,8 @@ let
   parents = [
     "modules"
     "scripts"
+    "templates"
+    "templates/default"
   ];
 in
 builtins.path {
