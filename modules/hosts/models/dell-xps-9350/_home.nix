@@ -10,6 +10,7 @@
     text = builtins.readFile ./_assets/dell-xps-9350-panel-policy;
   };
 in {
+  imports = [ ./_grub.nix ];
   home.sessionVariables.FINITE_HARDWARE = "dell-xps-9350-intel";
   xdg.configFile =
     {

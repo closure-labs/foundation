@@ -69,3 +69,7 @@ Schema 3 uses nixGL Mesa for graphical Nix applications, with verified Flathub e
 ## IPU7 camera health
 
 Foundation checks exposed IPU7 controllers at runtime and can repair a verified host IPA module mismatch. Follow [Camera diagnosis and repair](CAMERA.md) for commands, restart instructions and limitations.
+
+The Dell model also enables the [GRUB graphical-console installer](DELL-GRUB.md)
+on supported EFI OSTree hosts. Activation explains its administrator request;
+`foundation.dellGrub.enable = false` opts out.

@@ -27,6 +27,10 @@ def main():
         assert {key for key in actual["environment"] if key.startswith("FINITE_GPU_")} == markers
         assert actual["batteryPercentage"] is (True if laptop else None)
         assert ("finite-dell-xps-9350-panel" in actual["services"]) == is_dell
+        assert (actual["dellGrubActivation"] is not None) == is_dell
+        assert actual["dellGrubOptOut"] is False
+        if is_dell:
+            assert "install --dry-run" in actual["dellGrubActivation"]
         assert ("wireplumber/wireplumber.conf.d/50-finite-dell-ipu7.conf" in actual["files"]) == (is_dell and declared["camera"])
         assert not any(any(word in service for word in ("fprint", "tuned", "tlp", "lid-switch")) for service in actual["services"])
         assert not {"DRI_PRIME", "LIBVA_DRIVER_NAME", "LD_LIBRARY_PATH"}.intersection(actual["environment"])

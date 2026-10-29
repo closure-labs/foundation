@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Enable a graphical GRUB console on EFI OSTree Dell XPS 13 9350 hosts during Home Manager activation, with an explained sudo request, backed-up configuration, an opt-out and an explicit uninstaller.
+
 - Generate new consumers with the public policy-aware customization template, including packaged initializers. Preserve existing personal customization files and symlinks.
 - Keep policy and configuration-root contract tests enabled for focused changes to their shared implementation owners, rather than relying only on default profile evaluations.
 - Align NH’s Home Manager location with the XDG config home and add optional `foundation.configRoot` for a shared explicit path. Preserve runtime CLI overrides and leave existing configuration files in place.
