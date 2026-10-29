@@ -1,14 +1,9 @@
-args@{
-  inputs,
+{
   lib,
   pkgs,
   ...
 }:
 let
-  packageSets = args.foundationPackageSets or (import ../../../providers/nixpkgs/_package-sets.nix {
-    inherit inputs;
-    system = pkgs.stdenv.hostPlatform.system;
-  });
   source = pkgs.runCommand "foundation-bluefin-preparation-source" { } ''
     mkdir -p "$out"
     cp ${./_prepare.py} "$out/prepare.py"
@@ -21,7 +16,7 @@ let
   };
 in
 {
-  # The pinned image owns Fzf and Starship via preinstall.d/system-cli.Brewfile.
+  # Keep the existing integration with Bluefin's stock Fzf binary.
   # HM's pinned Fzf module cannot be enabled without installing its package,
   # so keep the explicit Finite shell integration as declarative configuration.
   programs.zsh.initContent = lib.mkOrder 910 ''
@@ -29,13 +24,8 @@ in
       source <(/home/linuxbrew/.linuxbrew/bin/fzf --zsh)
     fi
   '';
-  # Historical copied-policy entries absent from both upstream stock bundles.
-  # These are Finite additions; no Brew formula/tap declaration is retained.
-  home.packages = [
-    (pkgs.bbrew or packageSets.nixpkgs-unstable.bbrew)
-    pkgs.ugrep
-    pkgs.uutils-coreutils
-  ];
+  # Bluefin's inherited CLI bundle owns bbrew, ugrep and uutils-coreutils.
+  # Do not add second Nix copies here or filter explicit personal packages.
   # Pinned Home Manager 24f2190 exposes this generation builder extension.
   # The generic initializer executes this fixed generation-relative entry only.
   home.extraBuilderCommands = ''
