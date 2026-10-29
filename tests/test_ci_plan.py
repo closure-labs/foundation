@@ -147,7 +147,7 @@ class CiPlanTests(unittest.TestCase):
 
     def test_assets_and_changed_file_unions(self):
         paths = ["modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/aliases.zsh",
-                 "modules/hosts/models/dell-xps-9350/_assets/dell-ipu7.conf"]
+                 "modules/hosts/camera/ipu7/_policy.conf"]
         union = self.focused(paths)
         for group in ("schema3", "hosts", "legacy", "checks"):
             self.assertEqual(set(union[group]), set().union(*(self.focused([p])[group] for p in paths)))

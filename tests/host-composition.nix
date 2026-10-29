@@ -16,6 +16,11 @@ in {
       modules = [ { foundation.dellGrub.enable = false; } ];
     }).config.home.activation
     else false;
+  ipu7Activation = c.home.activation.foundationIpu7.data or null;
+  ipu7OptOut = builtins.hasAttr "foundationIpu7" (foundation.lib.mkHomeConfiguration {
+    inherit profile;
+    modules = [ { foundation.ipu7.system.enable = false; } ];
+  }).config.home.activation;
   files = builtins.attrNames c.xdg.configFile;
   batteryPercentage = c.dconf.settings."org/gnome/desktop/interface".show-battery-percentage or null;
   nixgl = c.targets.genericLinux.nixGL.packages != null;

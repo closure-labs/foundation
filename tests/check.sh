@@ -24,6 +24,8 @@ PY
 bash tests/brew-providers.sh
 bash tests/dell-panel-policy.sh
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_dell_grub.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_ipu7_camera.py
+PYTHONDONTWRITEBYTECODE=1 python3 tests/test_ipu7_system.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_home.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_bluefin_preparation.py
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_password_manager_requirements.py

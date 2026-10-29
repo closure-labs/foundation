@@ -23,13 +23,16 @@ class GrubTests(unittest.TestCase):
         font = root / 'font.pf2'
         font.write_bytes(b'FILE\x00\x00\x00\x04PFF2fake font')
         self.boot = boot
-        for name, value in [('BOOT', boot), ('STATE', boot / 'foundation-dell-grub'), ('FONT', font)]:
+        for name, value in [('BOOT', boot), ('STATE', boot / 'foundation-dell-grub'), ('FONT', font), ('RECEIPT', root / 'receipt.json')]:
             mock = patch.object(grub, name, value)
             mock.start()
             self.addCleanup(mock.stop)
         # Fixture directories belong to the test user, not root. Production
         # directory validation is exercised separately with mocked stat results.
         self.real_validate = grub.validate_boot
+        mock = patch.object(grub, 'receipt_paths', return_value=True)
+        mock.start()
+        self.addCleanup(mock.stop)
         mock = patch.object(grub, 'validate_boot')
         mock.start()
         self.addCleanup(mock.stop)
@@ -116,11 +119,46 @@ class GrubTests(unittest.TestCase):
 
     def test_explanation_precedes_fixed_sudo_command(self):
         events = []
-        with patch.object(grub, 'supported', return_value=True), patch.object(grub.os, 'geteuid', return_value=1000), patch.object(grub.sys, 'argv', ['installer', 'install']), patch('builtins.print', side_effect=lambda *a, **k: events.append(str(a))), patch.object(grub.subprocess, 'run', side_effect=lambda *a, **k: events.append(a[0])):
+        with patch.object(grub, 'recorded', return_value=False), patch.object(grub, 'supported', return_value=True), patch.object(grub.os, 'geteuid', return_value=1000), patch.object(grub.sys, 'argv', ['installer', 'install']), patch('builtins.print', side_effect=lambda *a, **k: events.append(str(a))), patch.object(grub.subprocess, 'run', side_effect=lambda *a, **k: events.append(a[0])):
             grub.main()
         self.assertIn('Administrator access', events[0])
         self.assertEqual(events[1][:4], ['/usr/bin/sudo', '--', grub.sys.executable, '-I'])
         self.assertEqual(events[1][-1], 'install')
+
+    def test_receipt_skips_sudo_and_boot_inspection(self):
+        grub.install()
+        with patch.object(grub, 'supported', return_value=True), patch.object(grub.sys, 'argv', ['installer', 'install']), patch.object(grub.subprocess, 'run') as sudo, patch.object(grub, 'validate_boot') as inspect:
+            grub.main()
+            sudo.assert_not_called()
+            inspect.assert_not_called()
+
+    def test_policy_or_machine_change_invalidates_receipt(self):
+        grub.install()
+        identity = grub.receipt_identity()
+        with patch.object(grub, 'receipt_identity', return_value=identity | {'policy': 'new'}):
+            self.assertFalse(grub.recorded())
+        with patch.object(grub, 'receipt_identity', return_value=identity | {'machine': 'other'}):
+            self.assertFalse(grub.recorded())
+
+    def test_uninstall_invalidates_receipt(self):
+        grub.install()
+        self.assertTrue(grub.recorded())
+        grub.uninstall()
+        self.assertFalse(grub.recorded())
+
+    def test_untrusted_receipt_never_suppresses_install(self):
+        grub.install()
+        with patch.object(grub, 'receipt_paths', return_value=False):
+            self.assertFalse(grub.recorded())
+
+    def test_explicit_verify_bypasses_receipt_and_checks_boot(self):
+        grub.install()
+        with patch.object(grub.sys, 'argv', ['installer', 'verify']), patch.object(grub.os, 'geteuid', return_value=0), patch.object(grub.os, 'open', wraps=grub.os.open) as opened:
+            # A fixture lock, not the real /run lock.
+            with patch.object(grub, 'LOCK', self.boot / 'test.lock'):
+                grub.main()
+                self.assertTrue(grub.recorded())
+                self.assertTrue(opened.called)
 
     def test_unsafe_boot_directory_rejected(self):
         # On an unprivileged test runner the root ownership check must reject it.

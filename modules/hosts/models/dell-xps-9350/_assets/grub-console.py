@@ -14,6 +14,7 @@ BOOT = Path('/boot/grub2')
 STATE = BOOT / 'foundation-dell-grub'
 FONT = Path('/usr/share/grub/unicode.pf2')
 LOCK = Path('/run/lock/foundation-dell-grub.lock')
+RECEIPT = Path('/var/lib/foundation/dell-grub/receipt.json')
 BLOCK = b'''# Foundation Dell XPS 13 9350 graphical console
 insmod efi_gop
 insmod gfxterm
@@ -110,6 +111,59 @@ def load_state():
     return state, original, expected, current
 
 
+def receipt_paths(create=False):
+    """Only root-owned, non-writable directories and a regular receipt qualify."""
+    try:
+        for path in list(reversed(RECEIPT.parent.parents)) + [RECEIPT.parent]:
+            if create and not path.exists():
+                path.mkdir(mode=0o755)
+            info = path.lstat()
+            if not stat.S_ISDIR(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022:
+                return False
+        if RECEIPT.exists() or RECEIPT.is_symlink():
+            info = RECEIPT.lstat()
+            return stat.S_ISREG(info.st_mode) and info.st_uid == 0 and not info.st_mode & 0o022
+        return create
+    except OSError:
+        return False
+
+
+def receipt_identity():
+    # Compare the backing mount, not its transient mount ID. No /boot reads.
+    mounts = []
+    for line in Path('/proc/self/mountinfo').read_text().splitlines():
+        fields = line.split()
+        mount = fields[4]
+        if mount == '/' or mount == '/boot':
+            split = fields.index('-')
+            mounts.append((len(mount), fields[2:5] + fields[split + 1:split + 3]))
+    if not mounts:
+        raise RuntimeError('Cannot identify the boot filesystem')
+    return dict(schema=1, policy=digest(Path(__file__).read_bytes()),
+                machine=Path('/etc/machine-id').read_text().strip(),
+                bootMount=max(mounts)[1])
+
+
+def recorded():
+    try:
+        return receipt_paths() and json.loads(RECEIPT.read_text()) == receipt_identity()
+    except (OSError, ValueError, RuntimeError):
+        return False
+
+
+def record():
+    if not receipt_paths(create=True):
+        raise RuntimeError('Refusing unsafe GRUB receipt path')
+    atomic(RECEIPT, json.dumps(receipt_identity(), sort_keys=True).encode())
+
+
+def forget():
+    if RECEIPT.exists() or RECEIPT.is_symlink():
+        if not receipt_paths():
+            raise RuntimeError('Refusing unsafe GRUB receipt path')
+        RECEIPT.unlink()
+
+
 def install():
     validate_boot()
     regular(FONT)
@@ -120,6 +174,7 @@ def install():
     if loaded:
         state, original, expected, current = loaded
         if current == expected:
+            record()
             print('Dell GRUB graphical console is already installed.')
             return
     else:
@@ -138,11 +193,13 @@ def install():
         atomic(STATE / 'unicode.pf2', font)
         atomic(STATE / 'manifest.json', json.dumps(state).encode(), 0o600)
     atomic(BOOT / 'console.cfg', expected)
+    record()
     print('Installed Dell GRUB graphical console. It takes effect on the next boot.')
 
 
 def uninstall():
     validate_boot()
+    forget()
     loaded = load_state()
     if not loaded:
         print('No Foundation-managed GRUB console is installed.')
@@ -162,7 +219,7 @@ def uninstall():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('install', 'uninstall'))
+    parser.add_argument('action', choices=('install', 'uninstall', 'verify'))
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     if args.action == 'install' and not supported():
@@ -170,6 +227,9 @@ def main():
         return
     if args.dry_run:
         print(f'Dry run: would {args.action} Dell GRUB graphical console in /boot/grub2; no sudo or writes.')
+        return
+    if args.action == 'install' and recorded():
+        print('Dell GRUB policy already recorded for this machine and boot filesystem; skipping sudo. Use verify to inspect /boot.')
         return
     if os.geteuid() != 0:
         print(f'Dell XPS 13 9350: {args.action} GRUB graphical console to avoid slow firmware text rendering.\n'
@@ -181,7 +241,16 @@ def main():
     fd = os.open(LOCK, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     with os.fdopen(fd, 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        (install if args.action == 'install' else uninstall)()
+        if args.action == 'verify':
+            validate_boot()
+            forget()
+            loaded = load_state()
+            if not loaded or loaded[2] != loaded[3]:
+                raise RuntimeError('Managed GRUB console is not installed')
+            record()
+            print('Verified GRUB console, font and backup in /boot.')
+        else:
+            (install if args.action == 'install' else uninstall)()
 
 
 if __name__ == '__main__':

@@ -21,9 +21,25 @@ Authentication failure fails the activation step; it is not reported as success.
 Home Manager activation is not transactional: earlier user configuration steps
 may already have run. Re-run activation after resolving authentication errors.
 
-Because `/boot/grub2` can be root-only, authentication may be needed even to
-verify an already installed configuration. Once authenticated, repeat installs
-leave matching files unchanged. The font is copied from the host's
+After a successful privileged install, Foundation writes a root-owned, readable
+receipt to `/var/lib/foundation/dell-grub/receipt.json`. It binds the installer
+policy, machine identity and backing boot filesystem. An unchanged activation
+checks this receipt without reading `/boot` and skips sudo. Missing or invalid
+receipts, a changed installer policy or a different boot filesystem require a
+new explained privileged install. The private backup remains under `/boot`.
+
+The receipt records what Foundation applied; it does not detect administrator
+edits to protected boot files after installation. Explicit verification bypasses
+the receipt, inspects the console, font and backup, and refreshes the receipt
+only on success:
+
+```sh
+foundation-dell-grub verify
+# Or: nix run .#dell-grub -- verify
+```
+
+Verification failures invalidate the public receipt. Uninstall invalidates it
+before restoring the previous configuration. The font is copied from the host's
 `/usr/share/grub/unicode.pf2`; GRUB never needs the Nix store during boot.
 An existing installation retains its copied font across host font updates.
 

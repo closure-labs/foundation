@@ -6,6 +6,9 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Own IPU7 WirePlumber policy system-wide through an explained privileged installer and standalone flake app. Skip sudo when the owned policy matches, and remove the old private-IPA repair mode.
+- Record applied Dell GRUB policy in a root-owned, readable receipt so unchanged Home Manager updates skip sudo. Add explicit privileged verification for protected boot files.
+
 - Keep Bluefin optional CLI bundles opt-in: its aspect now joins and verifies only the OS-owned default provisioning service, without installing optional packages or defining Homebrew tap trust.
 
 - Stop adding duplicate Nix bbrew, ugrep and uutils-coreutils on Bluefin and Bluefin DX; their inherited stock CLI bundle owns these tools. Preserve explicit personal packages and existing shell/preparation integration. FINite adoption requires a separate Foundation pin update after merge.
