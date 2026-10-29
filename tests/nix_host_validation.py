@@ -31,7 +31,9 @@ def main():
         assert actual["dellGrubOptOut"] is False
         if is_dell:
             assert "install --dry-run" in actual["dellGrubActivation"]
-        assert ("wireplumber/wireplumber.conf.d/50-finite-dell-ipu7.conf" in actual["files"]) == (is_dell and declared["camera"])
+        assert "wireplumber/wireplumber.conf.d/50-finite-dell-ipu7.conf" not in actual["files"]
+        assert (actual["ipu7Activation"] is not None) == declared["camera"]
+        assert actual["ipu7OptOut"] is False
         assert not any(any(word in service for word in ("fprint", "tuned", "tlp", "lid-switch")) for service in actual["services"])
         assert not {"DRI_PRIME", "LIBVA_DRIVER_NAME", "LD_LIBRARY_PATH"}.intersection(actual["environment"])
         assert actual["nixgl"] is True and actual["gpu"] is False and actual["vulkan"] is False
