@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Keep Bluefin optional CLI bundles opt-in: its aspect now joins and verifies only the OS-owned default provisioning service, without installing optional packages or defining Homebrew tap trust.
+
 - Stop adding duplicate Nix bbrew, ugrep and uutils-coreutils on Bluefin and Bluefin DX; their inherited stock CLI bundle owns these tools. Preserve explicit personal packages and existing shell/preparation integration. FINite adoption requires a separate Foundation pin update after merge.
 - Enable a graphical GRUB console on EFI OSTree Dell XPS 13 9350 hosts during Home Manager activation, with an explained sudo request, backed-up configuration, an opt-out and an explicit uninstaller.
 
