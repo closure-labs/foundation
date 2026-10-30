@@ -6,6 +6,7 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Keep inherited `GDK_BACKEND` overrides out of Bluefin's GNOME portal service so file dialogs and screen sharing remain available. Applications retain their own environment settings.
 - Reject consumer `extraInputs` that replace Foundation-owned pins; unrelated personal inputs and Home Manager module overrides remain supported. Rename colliding personal inputs or stop forwarding them.
 
 - Own IPU7 WirePlumber policy system-wide through an explained privileged installer and standalone flake app. Skip sudo when the owned policy matches, and remove the old private-IPA repair mode.

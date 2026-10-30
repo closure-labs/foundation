@@ -8,6 +8,7 @@ Start with a profile, add your own settings, then build and activate your home.
 | Edit my profile and personal Nix settings | [Configuration](CONFIGURATION.md) |
 | Choose roles, extra applications and hardware | [Profiles and hardware](PROFILES.md) |
 | Build, activate, update or recover | [Activation, updates and recovery](ACTIVATION.md) |
+| Restore missing file dialogs or screen sharing | [Desktop portals](DESKTOP-PORTALS.md) |
 | Diagnose an Intel IPU7 webcam missing from Firefox | [Camera diagnosis and repair](CAMERA.md) |
 | Adopt an older configuration or replace an unsupported profile | [Migration](MIGRATION.md) |
 | Keep personal Espanso files in Git | [Espanso](ESPANSO.md) |

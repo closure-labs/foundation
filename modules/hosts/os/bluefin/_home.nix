@@ -16,6 +16,14 @@ let
   };
 in
 {
+  # GNOME's portal rejects inherited GDK_BACKEND fallback lists and then
+  # exports Settings alone, breaking Save As dialogs and screen sharing.
+  # Scope the correction to the host portal; applications keep their own env.
+  xdg.configFile."systemd/user/xdg-desktop-portal-gnome.service.d/20-display-backend.conf".text = lib.mkDefault ''
+    [Service]
+    UnsetEnvironment=GDK_BACKEND
+  '';
+
   # Keep the existing integration with Bluefin's stock Fzf binary.
   # HM's pinned Fzf module cannot be enabled without installing its package,
   # so keep the explicit Finite shell integration as declarative configuration.
