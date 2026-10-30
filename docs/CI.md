@@ -14,7 +14,11 @@ bash tests/nix-check.sh
 
 Use `bash tests/nix-check.sh --no-build` for evaluation only. Matrix batches are capped at two profiles; add `--batch-size 1` to evaluate one at a time.
 
-Full runs cover contracts, all 21 profile cases and seven build checks: `home`, `profile-command`, `nixgl-wrapper`, `desktop-icons`, `profile-generation`, `check-flake-file` and `ci-graph`.
+Full runs cover contracts, every [declared profile case](../modules/ci/profiles/_cases.json)
+and all [flake-owned full-plan checks](../modules/ci/_plans.nix). These include
+the home, password-manager, consumer-template, profile-generation, graphical
+wrapper/icon and generated-file checks. The generated graph validates this
+catalog against the actual flake outputs; do not maintain a separate manual count.
 
 ## How affected checks are selected
 

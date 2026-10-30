@@ -14,6 +14,17 @@ inputs.foundation.lib.mkHomeConfiguration {
 
 `modules` defaults to `[]` and `extraInputs` to `{}`. The constructor normalizes the profile and returns a Home Manager configuration. It does not activate it. The supported system is `x86_64-linux`.
 
+`extraInputs` adds unrelated personal inputs; it cannot replace any input name
+already owned by Foundation, including `self`, Nixpkgs channels and Home Manager.
+Collisions fail before home construction and list the conflicting names. For
+example, rename a consumer's separate `nixpkgs` input to `personal-nixpkgs`, then
+reference `inputs.personal-nixpkgs` from a personal module. This retains its
+independent pin without changing Foundation's package sets. Personal module
+overrides remain supported; shared pin changes belong in Foundation's source,
+and license selection belongs in `packagePolicy` below. Existing consumers that
+passed colliding names must rename those inputs or stop forwarding them, even
+when an old alias pointed to the same source.
+
 ### Configuration root
 
 NH and Foundation default to `home-manager` under the XDG config home. NH uses

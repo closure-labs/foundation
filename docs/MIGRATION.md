@@ -23,7 +23,7 @@ foundation home migrate
 
 If the helpers are not installed, run `nix run github:closure-labs/foundation/main#home-migrate -- --check` first, then repeat without `--check` to migrate.
 
-Migration adopts Foundation's dependency pins while preserving your profile, personal modules and additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration.
+Migration adopts Foundation's dependency pins while preserving your profile, personal modules and unrelated additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration. Other retained input names that collide with Foundation's inputs (for example `flake-parts`, `flake-file` or `import-tree`) also require the rename described below; migration does not rewrite personal module references.
 
 ## Move an older consumer onto main
 
@@ -49,6 +49,18 @@ This manual path resolves current `main` without the staged updater's CI qualifi
 ## Integration API
 
 `lib.profileDrafts` resolves schema-3 selections. `lib.profileChanges.preview` accepts optional `roles`, `packages` and `capabilities` for a schema-3 source. Previewing does not write or activate a profile; the controller owns approval, building and activation. The catalog envelope version is separate from the profile schema. See [Public API](API.md).
+
+### Keep personal inputs separate from Foundation-owned pins
+
+`mkHomeConfiguration.extraInputs` now rejects names already owned by Foundation,
+instead of silently replacing those inputs. Consumers that only forward unrelated
+inputs need no change. If your consumer forwards `nixpkgs`, `home-manager`,
+`flake-parts` or another owned name, stop forwarding it when it was only an alias. For an
+independent personal dependency, rename it (for example `personal-nixpkgs`) and
+update personal modules to reference that name. This applies even when the old
+alias pointed to the same source. Keep shared pin changes in Foundation's source;
+use the constructor's `packagePolicy` for license selection. See the
+[constructor API](API.md#construct-a-home) for the supported arguments.
 
 ## Adopt the Foundation command interface
 
