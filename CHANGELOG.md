@@ -6,6 +6,8 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Reject consumer `extraInputs` that replace Foundation-owned pins; unrelated personal inputs and Home Manager module overrides remain supported. Rename colliding personal inputs or stop forwarding them.
+
 - Own IPU7 WirePlumber policy system-wide through an explained privileged installer and standalone flake app. Skip sudo when the owned policy matches, and remove the old private-IPA repair mode.
 - Record applied Dell GRUB policy in a root-owned, readable receipt so unchanged Home Manager updates skip sudo. Add explicit privileged verification for protected boot files.
 
