@@ -2,7 +2,7 @@ name: Update Nix dependencies
 
 on:
   schedule:
-    - cron: '23 8 * * 1'
+    - cron: '23 */4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -17,9 +17,6 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -28,14 +25,43 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
       - name: Refresh dependency pins
         run: python3 scripts/update-locks.py
+      - name: Detect changed pins
+        id: changes
+        run: |
+          if ! git diff --quiet -- flake.nix flake.lock; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
       - name: Validate the proposed dependency pins
+        if: steps.changes.outputs.changed == 'true'
         run: |
           nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
           bash tests/nix-check.sh
+      - name: Create repository-scoped Decider token
+        if: steps.changes.outputs.changed == 'true'
+        id: decider
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.DECIDER_CLIENT }}
+          private-key: ${{ secrets.DECIDER_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Verify Decider identity
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          APP_SLUG: ${{ steps.decider.outputs.app-slug }}
+          EXPECTED_BOT: ${{ vars.DECIDER_BOT_LOGIN }}
+        run: |
+          test -n "$EXPECTED_BOT"
+          test "${APP_SLUG}[bot]" = "$EXPECTED_BOT"
       - name: Open a reviewed dependency update
+        if: steps.changes.outputs.changed == 'true'
+        id: pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.decider.outputs.token }}
+          base: main
           add-paths: |
             flake.nix
             flake.lock
@@ -47,5 +73,12 @@ jobs:
             Refreshes flake.lock after fixture checks, workflow lint, default-profile
             build, and selectable-profile evaluation pass with the new pins.
 
-            Review the input revisions and approve any GitHub-required workflow
-            runs before merging. This workflow never merges its own PR.
+            Auto-merge waits for a human approval and the required CI gate.
+            New revisions dismiss stale approvals under the main branch ruleset.
+      - name: Enable approval-gated auto-merge
+        if: steps.pr.outputs.pull-request-number != '' && steps.pr.outputs.pull-request-operation != 'closed'
+        env:
+          GH_TOKEN: ${{ steps.decider.outputs.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pull-request-number }}
+          EXPECTED_BOT: ${{ vars.DECIDER_BOT_LOGIN }}
+        run: python3 scripts/enable-lock-automerge.py
