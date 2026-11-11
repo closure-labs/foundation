@@ -116,7 +116,7 @@ class ProfileGeneration(unittest.TestCase):
         consumer.mkdir()
         (consumer / "sentinel").write_text("unchanged")
         before = home.tree_digest(consumer)
-        with patch.object(home, "capture", wraps=home.capture) as capture, patch.object(home, "build") as build, patch.object(home, "commit_stage") as commit, patch.object(home, "provision_brew") as brew:
+        with patch.object(home, "capture", wraps=home.capture) as capture, patch.object(home, "build") as build, patch.object(home, "commit_stage") as commit, patch.object(home, "prepare_generation") as brew:
             home.generate_profile(options(roles="family"))
         command = capture.call_args.args[0]
         self.assertEqual(command[0], "nix-instantiate")
@@ -132,17 +132,21 @@ class ProfileGeneration(unittest.TestCase):
         data = evaluate(f'''let domainWithImages = domain // {{
           foundationsByName = builtins.mapAttrs (name: value: value // {{profiles.generic-x86_64.name = if name == "bluefin" then "finite" else "finite-dev";}}) domain.foundationsByName;
         }}; projectCurrent = schema: import {ROOT}/lib/profile-catalog.nix {{domainCatalog = domainWithImages; inherit lib schema; version = "fixture";}};
-        in {{current = projectCurrent 3; legacy = projectCurrent 2;}}''')
+        in {{current = projectCurrent 3;}}''')
         current = data["current"]
         self.assertEqual(current["profileSchema"], 3)
         self.assertEqual(current["profileCapabilities"]["writeSchema"], 3)
         self.assertEqual(current["classifications"]["professional"]["roles"], ROLE_NAMES)
         self.assertEqual(current["classifications"]["personal"]["roles"], ["family", "media", "creative", "gaming"])
         self.assertEqual(current["foundations"]["bluefin"]["profiles"], {"generic-x86_64": "finite"})
-        self.assertEqual(len(data["legacy"]["roles"]), 6)
-        self.assertEqual(data["legacy"]["profileSchema"], 2)
         self.assertIn("recording", current["capabilities"])
         self.assertIn("amd-discrete", current["hosts"]["gpus"])
+
+    def test_catalog_rejects_unsupported_profile_schemas(self):
+        for schema in (1, 2, 4):
+            result = evaluate(f'(import {ROOT}/lib/profile-catalog.nix {{domainCatalog = domain; inherit lib; version = "fixture"; schema = {schema};}})', check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("expected schema 3", result.stderr)
 
     def test_default_templates_are_identical_and_normalize_as_schema_three(self):
         value = home.read_json(ROOT / "profile.json")

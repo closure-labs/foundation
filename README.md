@@ -1,220 +1,84 @@
 # Foundation
 
-A Foundation for reproducible Linux workstations, intended to be
-[Finite](ORIGIN.md)'s default Nix Home Manager flake. No psychohistory required.
+**A reproducible Linux home, configured around the way you work.**
 
-Foundation is a standalone, source-controlled flake extracted from Finite. The
-modules, assets, helper scripts and dependency lock live in this repository.
-It does not import or require a Finite checkout. The existing `finite-*` command
-names and configuration paths are retained.
+Foundation manages your applications, shell and desktop settings with Nix Home Manager. Combine work and personal roles, add the tools you need, and keep your choices in a small configuration you own.
 
-This configuration targets **x86_64 Linux with Bluefin or Bluefin DX**. It expects
-Homebrew at `/home/linuxbrew/.linuxbrew`, a working Nix installation with flakes,
-and a graphical session for Flatpak and the role selector.
+Built for **x86_64 Linux on Bluefin or Bluefin DX**, Foundation works as a standalone home configuration or as part of Finite. It manages your home environment; the operating system owns drivers, firmware and system services.
 
-## Personal configurations
+## What you get
 
-Finite provisions a small personal flake at `~/.config/home-manager` importing a
-published Foundation release through `latest-release`. Foundation owns the shared modules and dependency
-pins; you own `profile.json`, `customize.nix`, and `modules/local.nix`.
+- **Composable profiles.** Mix Developer, Support, Family, Creative and other roles without installing shared applications twice.
+- **Your own configuration.** Keep account details and selections in `profile.json`, with personal settings in `customize.nix` and `modules/local.nix`.
+- **Pinned, reviewable changes.** Build before activation, preview profile changes, and explicitly adopt reviewed `main` commits with configuration backups.
 
-The constructor is also available to other consumers:
+## Start here
 
-```nix
-inputs.foundation.lib.mkHomeConfiguration {
-  profile = builtins.fromJSON (builtins.readFile ./profile.json);
-  modules = [./customize.nix ./modules/local.nix];
-  extraInputs = builtins.removeAttrs inputs ["self" "foundation"];
-}
+Use a regular desktop account with Nix flakes enabled, Homebrew at `/home/linuxbrew/.linuxbrew`, and a graphical session. If you already have a Foundation configuration at `~/.config/home-manager`, open its selector:
+
+```sh
+foundation home configure
 ```
 
-New profiles use schema 3 with Bluefin or Bluefin DX, independent host hardware,
-Professional/Personal roles and optional capabilities. Generate JSON or YAML
-with `finite-home-profile`; see the [generation guide](docs/architecture/ARCH-profile-generation.md).
-Account identity must match the desktop user. Keep
-`home.stateVersion` unchanged when updating.
+For a new home configuration, generate a profile, check the build, then activate it:
 
-## Updates and migration
+```sh
+nix run github:closure-labs/foundation/main#home-profile -- \
+  --foundation bluefin --roles family,media --format json > "$HOME/foundation-profile.json"
 
-New personal flakes track `github:closure-labs/foundation/latest-release`.
-This branch advances only to published stable releases with passing CI, never
-unreleased `main` commits. `flake.lock` still records the exact commit and source
-hash, so switching without an update keeps the same version.
+nix run github:closure-labs/foundation/main#home-init -- \
+  --profile "$HOME/foundation-profile.json" --check
 
-`nh home switch -u` updates the lock to the latest release and activates it.
-It updates all flake inputs; use `nh home switch -U foundation` to update only
-Foundation. Keep workstation-specific sources pinned in your personal modules.
-These direct NH commands use NH's build and activation path; Foundation's staged
-updater below additionally provisions shared Brew tools and backs up consumer files.
-
-To opt an existing consumer into release tracking, change only its Foundation URL
-in `flake.nix` to `github:closure-labs/foundation/latest-release`, then update the
-Foundation input. Existing fixed-commit consumers remain supported.
-Foundation commands read the selected version from `flake.lock` even when an NH
-update leaves the cached `foundation.json` at an older version.
-
-`finite-home-update --check` reports published releases. `finite-home-update`
-stages a new release, builds with a 5 GiB memory limit, provisions required shared
-Homebrew tools, backs up the configuration and activates the generation. Finite
-also includes this step in explicit `ujust update` runs. Background checks only
-notify. Root execution is rejected.
-
-Set an explicit build budget when a larger profile needs it, for example
-`FOUNDATION_BUILD_MEMORY_MAX=6G finite-home-update`. This keeps the one-job,
-one-core and 512 MiB swap limits; the default is 5 GiB. The same budget applies
-to `finite-home-apply`, initialization and migration builds. A killed build
-reports the budget used and suggests checking the user journal before retrying;
-it does not activate the candidate or automatically increase the limit.
-
-Personal inputs and modules remain local. Release metadata and `flake.lock` pin
-the exact source and dependency closure. Unsupported compatibility versions or
-failed builds leave the current configuration in place. An activation failure
-restores the configuration and attempts the previous generation's activation;
-external Homebrew and Flatpak side effects are not transactional.
-
-`finite-home-migrate --check` builds a migration without installing it.
-`finite-home-migrate` adopts Foundation's tested dependency pins while preserving
-the profile, personal modules and additional inputs. Modified upstream modules,
-custom output functions, Git checkouts and symlink roots require manual migration.
-Backups remain next to the configuration as `home-manager.previous.*`.
-
-`finite-configure` selects roles and optional packages; `finite-home-apply` builds
-and applies those profile changes using the same transaction. `nh home build`
-and `nh home switch` remain available for direct use.
-
-The standalone Home Manager CLI is installed alongside NH. Run
-`home-manager switch --flake ~/.config/home-manager` to activate your personal
-flake directly.
-
-Staged builds validate and order selections using the locked Foundation
-revision's `lib.normalizeProfile` API. Older releases use their own catalog with
-a schema-2 compatibility validator. Account and running-image checks still run
-locally. Initialization explicitly converts schema 1 to schema 2 and rejects
-unsupported versions; it does not overwrite a newer schema version.
-`finite-home-init --capabilities` reports the executing helper's supported
-initialization, normalization and catalog schemas without accessing a consumer.
-The catalog and `lib.profileCapabilities` expose the selected source's support;
-staging requires both sides to understand the input. Foundation's generator and
-new templates emit schema 3; existing profiles retain their format.
-
-The [schema-3 composition contract](docs/architecture/ARCH-profile-schema3.md)
-now has production readers and Home Manager composition for explicitly supplied
-profiles. It provides smaller Professional/Personal defaults, optional
-capabilities and graphical Nixpkgs apps wrapped with nixGL Mesa. Verified Flathub
-exceptions remain where matching Nix packages are unavailable. Existing schema-2
-profiles keep their current applications, providers and graphics backend.
-
-`lib.homeCatalog` and `lib.homeCatalogForSchema 3` expose the same
-ten-role/capability catalog. `lib.homeCatalogForSchema 2` retains the six-role
-view for existing profiles.
-Schema-3 profiles also accept independent laptop/desktop, Intel/AMD CPU,
-integrated/discrete GPU, model, camera and fingerprint declarations. See
-[host composition](docs/architecture/ARCH-host-composition.md) and the
-[Dell workstation candidate](examples/workstations/dale-xps-9350.json).
-
-`lib.resolveProfile` resolves schema-3 composition. `lib.profileChanges` provides
-the versioned change-preview API; the older draft preview remains available.
-`finite-configure` edits schema 3 with Personal roles and additional capabilities.
-Use `finite-configure --migrate-profile` to explicitly review conversion from
-schema 2. Generating a new profile does not convert an existing consumer.
-Validate physical graphics/app behavior before
-migrating a workstation. Legacy configurations with a personal input named
-`nixGL` require manual migration to preserve its pin and followers.
-
-For the CLI, run `finite-home-apply --migrate-profile --preview` with the desired
-`--roles`, `--packages` and `--capabilities`, then repeat those selections with
-`--approve-preview TOKEN` from the review. `--check` builds without installing.
-On an existing schema-3 profile, omitted capabilities are preserved and
-`--capabilities ''` clears explicit additions. The editor uses the consumer's
-locked catalog and requires editing support in both the helper and selected
-Foundation. See the [editor and recovery contract](docs/architecture/ARCH-profile-editor.md).
-
-Developer, Sales, Trainer, Support, Executive, and IT are classified as
-**Professional** in the selector and catalog. They remain individually
-selectable with their existing applications. **Personal** is registered as a
-peer category, with Family, Media, Creative and Gaming available to explicitly
-supplied or explicitly converted schema-3 profiles. Schema-2 editing retains six
-Professional roles.
-These categories do not change schema-2 profiles or the Bluefin/DX image choice.
-See the [Personal profiles](docs/PERSONAL-PROFILES.md) for Family,
-Media, Creative and Gaming compositions and optional applications.
-
-The flake and its lock determine the Home Manager package set. Activation adds
-that already-built set to the user Nix profile, which exposes its commands on
-`PATH`; this step does not select new package versions. Foundation uses
-`nix profile add` when available, with compatibility for older Nix.
-
-Keep private Git-backed Espanso declarations in personal modules; see
-[the snapshot workflow](docs/ESPANSO.md). Foundation defaults contain no private
-sources or workstation matchfiles.
-
-## Standalone checkout
-
-The repository root still exports `homeConfigurations` from its own profile and
-personal modules. Set `profile.json` to your account, build before activation,
-and use the checkout's `modules/finite-home-apply` helper to provision shared Brew
-tools and activate. Standalone maintainers update their Git checkout explicitly;
-release-update commands target importing personal flakes.
-
-A personal flake can pin this local jj checkout with a
-`git+file:///absolute/path/to/foundation?rev=FULL_COMMIT` Foundation input.
-The declaration and lock must select the same immutable commit. Editing uses
-that locked source; update/status report manual pin maintenance and skip
-published releases. Advance the input explicitly, then run `finite-home-apply`.
-No helper changes jj history or advances a local pin automatically.
-
-The Support role's Espanso backend requires administrator-managed keyboard access.
-For schema 2 on non-NixOS hosts, run the generated `non-nixos-gpu-setup` helper
-after first activation as described by Home Manager. Schema 3 uses nixGL Mesa
-instead. Foundation never grants keyboard access.
-
-## Maintain the repository
-
-See the [profile architecture and workstation review](docs/PROFILE-ARCHITECTURE.md)
-for the proposed professional/personal profile composition, recent Den findings,
-hardware boundaries, and the original staged migration plan. Current schema-3
-composition and host behavior are documented in the contracts linked above.
-The [refactor implementation plan](docs/plans/PLAN-profile-refactor.md) records
-the implemented classification slice and the later application/hardware work.
-
-Use `jj status`, `jj diff` and `jj describe` to review and record changes. This
-repository has its own `flake.lock`; update dependencies intentionally:
-
-```bash
-nix flake update INPUT_NAME
-nh home build
-nh home switch
+nix run github:closure-labs/foundation/main#home-init -- \
+  --profile "$HOME/foundation-profile.json"
 ```
 
-Review and record both the configuration and lock changes. The copied pins were
-preserved during extraction. Provenance is recorded in [ORIGIN.md](ORIGIN.md).
+Choose `bluefin-dx` if that is your installed foundation. Initialization creates `~/.config/home-manager` and refuses to replace an existing configuration. The last command realizes the home, runs optional generation preparation, and activates it. On Bluefin, preparation ensures the inherited stock CLI bundle and user setup; Finite additions are declarative Nix/Flatpak packages. See [Bluefin ownership](docs/bluefin-user-environment.md).
 
-Run the small local fixture checks with installed Bash, jq, Python 3 and Nix:
+Follow [Getting started](docs/GETTING-STARTED.md) for prerequisites, hardware choices and checkout-based setup.
 
-```bash
-bash tests/check.sh
+## Run the Foundation command
+
+After activation, use `foundation home <action>`. `foundation home check` builds without activating; `foundation home apply` builds and activates.
+
+From a reviewed source checkout, the native flake app exposes the same interface:
+
+```sh
+nix run path:. -- home --help
+nix run path:.#foundation -- home check
 ```
 
-CI runs those fixtures, workflow lint, release metadata checks, and
-`nix flake check`, which builds the configured Home Manager activation package.
-It also evaluates all roles and optional packages with Dell hardware on both
-foundations and checks locked legacy, bridge and candidate validation targets.
-CI never activates a configuration. Run the full checks on a host
-with enough memory and disk space for the desktop package set:
+Use `foundation home --help` to list actions. Native apps such as `#home-update` and `#home-profile` also remain available. See [Migration](docs/MIGRATION.md#adopt-the-foundation-command-interface) when updating older command integrations.
 
-```bash
-nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
-bash tests/nix-check.sh
+## Make it yours
+
+Nix 1Password GUI selections automatically declare provider-aware browser
+integration. The [password-manager guide](docs/PASSWORD-MANAGERS.md) explains
+the explicit administrator setup for the native helper and rollback behavior.
+
+```sh
+foundation home apply --roles developer,creative --capabilities recording --preview
+foundation home check --roles developer,creative --capabilities recording
+foundation home apply --roles developer,creative --capabilities recording
 ```
 
-The required status is **CI gate**. See [CONTRIBUTING.md](CONTRIBUTING.md) for
-contribution checks and [docs/RELEASING.md](docs/RELEASING.md) for repository
-protection setup and the release checklist. Version tags prepare a draft
-GitHub release after CI passes. Weekly workflows propose reviewed Nix lock and
-GitHub Actions updates.
+These commands replace the named selections; omitted selections stay unchanged. Use [Configuration](docs/CONFIGURATION.md) for personal Nix settings and [Profiles and hardware](docs/PROFILES.md) for available choices. For older configurations, start with [Migration](docs/MIGRATION.md).
 
-## License
+## Keep it current
 
-Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The bundled Zsh
-assets retain their original MIT license. See [CHANGELOG.md](CHANGELOG.md) for
-release notes and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+```sh
+foundation home update --check
+foundation home update
+```
+
+The first command checks for a newer eligible `main` commit. The second builds and activates that exact revision while preserving personal configuration. A new version tag is not required; the lock keeps builds reproducible until you explicitly update. See [Activation, updates and recovery](docs/ACTIVATION.md) for build limits, backups and direct Home Manager commands.
+
+## Camera troubleshooting
+
+If Firefox cannot find an Intel IPU7 webcam, run `foundation home camera`. Foundation can detect and repair a verified host processing-module mismatch. Follow [Camera diagnosis and repair](docs/CAMERA.md) for the next steps, including when to restart services.
+
+## Documentation
+
+[All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+
+Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. Use `foundation home <action>` to manage your configuration; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).

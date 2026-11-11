@@ -115,31 +115,6 @@ class DraftContractTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("verification", result.stderr)
 
-    def test_migration_preview_preserves_fields_and_identifies_provider_changes(self):
-        value = {**profile(), "custom": {"preserve": True}}
-        actual = run_draft("previewMigration", {"profile": value, "roles": ["developer", "creative"]})
-        self.assertEqual(actual["status"], "preview")
-        self.assertFalse(actual["activationAllowed"])
-        self.assertEqual(actual["candidate"]["custom"], value["custom"])
-        self.assertEqual(actual["candidate"]["packages"], ["jj", "uv"])
-        self.assertEqual(actual["candidate"]["hardware"], value["hardware"])
-        changes = {row["application"]: row for row in actual["changes"]["providerChanges"]}
-        self.assertEqual(changes["pinta"]["before"], "flatpak:flathub:com.github.PintaProject.Pinta")
-        self.assertEqual(changes["pinta"]["after"], "nix:nixpkgs:pinta")
-        self.assertFalse(actual["flatpak"]["uninstallUnmanaged"])
-        self.assertFalse(actual["flatpak"]["deleteApplicationData"])
-        self.assertFalse(actual["flatpak"]["migrateApplicationDataAutomatically"])
-
-    def test_custom_capabilities_collision_blocks_instead_of_overwriting(self):
-        for custom in ([], ["office"], {"private": True}, None):
-            value = {**profile(), "capabilities": custom}
-            with self.subTest(custom=custom):
-                actual = run_draft("previewMigration", {"profile": value})
-                self.assertEqual(actual["status"], "blocked")
-                self.assertEqual(actual["source"]["capabilities"], custom)
-                self.assertIsNone(actual["candidate"])
-                self.assertFalse(actual["activationAllowed"])
-
     def test_production_reader_catalog_and_default_writer_use_three(self):
         actual = evaluate(f'''{{
           catalog = import {ROOT}/lib/profile-catalog.nix {{ domainCatalog = domain; inherit lib; version = "fixture"; }};
@@ -148,26 +123,8 @@ class DraftContractTests(unittest.TestCase):
         self.assertTrue(actual["canRead"]["success"])
         self.assertEqual(len(actual["catalog"]["roles"]), 10)
         self.assertIn("family", actual["catalog"]["roles"])
-        self.assertEqual(actual["catalog"]["profileCapabilities"]["normalizeSchemas"], [2, 3])
+        self.assertEqual(actual["catalog"]["profileCapabilities"]["normalizeSchemas"], [3])
         self.assertEqual(actual["catalog"]["profileCapabilities"]["writeSchema"], 3)
-
-    def test_legacy_inventory_covers_actual_module_declarations(self):
-        actual = evaluate(f'import {ROOT}/tests/profile-inventory.nix')
-        applications = self.contract["legacyApplications"]
-        expected_common = sorted(applications[name]["declaration"] for name in self.contract["legacy"]["commonApplications"])
-        self.assertEqual(actual["common"], expected_common)
-        for name, application_ids in self.contract["legacy"]["roleApplications"].items():
-            with self.subTest(role=name):
-                self.assertEqual(actual["roles"][name], sorted(applications[app]["declaration"] for app in application_ids))
-        used = set(self.contract["legacy"]["commonApplications"])
-        for values in self.contract["legacy"]["roleApplications"].values():
-            used.update(values)
-        self.assertEqual(len(used), 44)
-        owned = {app for capability in self.contract["capabilities"].values() for app in capability["applications"]}
-        self.assertTrue(used.issubset(owned))
-
-    def test_legacy_resolver_remains_strictly_schema_two(self):
-        self.assertNotEqual(run_draft("resolveLegacy", draft(), check=False).returncode, 0)
 
     def test_production_three_normalizer_preserves_capabilities_and_extensions(self):
         value = draft(roles=["family", "developer"], capabilities=["recording", "office"], custom={"keep": True})

@@ -1,8 +1,16 @@
 {
   "schema": 1,
-  "initializeSchemas": [1, 2, 3],
-  "normalizeSchemas": [2, 3],
+  "initializeSchemas": [
+    3
+  ],
+  "normalizeSchemas": [
+    3
+  ],
   "writeSchema": 3,
-  "editSchemas": [2, 3],
-  "catalogSchemas": [3]
+  "editSchemas": [
+    3
+  ],
+  "catalogSchemas": [
+    3
+  ]
 }

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: DeterminateSystems/determinate-nix-action@e847f25223456b3058e12f7fc9d777b6a6f25060 # v3.23.2
+      - uses: DeterminateSystems/determinate-nix-action@92957199488000b908fdad19f63711000965d8f3 # v3.24.1
       - uses: DeterminateSystems/magic-nix-cache-action@84c0677f58dcedf3b91f8223ce36a9ea5b3c84b7 # v15
       - name: Refresh dependency pins
         run: python3 scripts/advance-home-release.py
@@ -39,12 +39,17 @@ jobs:
           add-paths: |
             flake.nix
             flake.lock
+            modules/providers/nixpkgs/default.nix
+            modules/home/construction/default.nix
+            modules/ci/_graph.json
+            docs/ARCHITECTURE.md
           branch: automation/stable-home-release
           delete-branch: true
           commit-message: 'chore(deps): advance stable Home Manager and Nixpkgs'
           title: 'chore(deps): advance stable Home Manager and Nixpkgs'
           body: |
-            Refreshes flake.lock after fixture checks, workflow lint, default-profile
+            Advances the stable input owners and regenerates flake.nix, flake.lock
+            and the CI graph together after fixture checks, workflow lint, default-profile
             build, and selectable-profile evaluation pass with the new pins.
 
             Review the input revisions and approve any GitHub-required workflow

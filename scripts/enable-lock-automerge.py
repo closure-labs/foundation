@@ -15,7 +15,8 @@ def validate(pr, files, rules, bot, repository):
             or pr['head']['ref'] != 'automation/flake-lock'
             or pr['head']['repo']['full_name'] != repository):
         raise ValueError('Unexpected dependency PR identity or branches')
-    if not files or not set(files) <= {'flake.nix', 'flake.lock'}:
+    if not files or not set(files) <= {'flake.nix', 'flake.lock', 'modules/flake/framework/default.nix',
+                                           'modules/ci/_graph.json', 'docs/ARCHITECTURE.md'}:
         raise ValueError('Dependency PR changes unexpected files')
     reviews = [r['parameters'] for r in rules if r['type'] == 'pull_request']
     checks = [c for r in rules if r['type'] == 'required_status_checks'

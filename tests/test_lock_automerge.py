@@ -24,7 +24,8 @@ class LockAutoMergeTests(unittest.TestCase):
                         'ci-decider[bot]', 'closure-labs/foundation')
 
     def test_protected_update(self):
-        self.validate(['flake.nix', 'flake.lock'])
+        self.validate(['flake.nix', 'flake.lock', 'modules/flake/framework/default.nix',
+                       'modules/ci/_graph.json', 'docs/ARCHITECTURE.md'])
 
     def test_wrong_author_or_fork(self):
         self.pr['user']['login'] = 'someone'

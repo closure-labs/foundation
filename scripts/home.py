@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install, migrate and update a personal consumer of published Foundation releases."""
+"""Install, migrate and update a personal consumer of immutable Foundation main revisions."""
 import argparse
 import contextlib
 import copy
@@ -22,10 +22,15 @@ from pathlib import Path
 
 REPOSITORY = "closure-labs/foundation"
 COMPATIBILITY = 1
-RELEASE_CHANNEL = "latest-release"
+MAIN_BRANCH = "main"
 CORE = {"den", "gen", "devenv", "nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable", "home-manager", "determinate", "nix-flatpak", "nixGL"}
 EXCLUDED = {".git", ".jj", ".agents", ".aws", ".codex", ".direnv", ".devenv", "result"}
-REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
+REFERENCE = re.compile(r'^(\s*(?:inputs\.)?foundation\.url = ")github:closure-labs/foundation/(main|latest-release|[a-f0-9]{40}|v[0-9]+\.[0-9]+\.[0-9]+)(";)$', re.MULTILINE)
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from foundation_observations import timing, NixActivities, Resources, activation_observations
+from password_manager_requirements import check_host_requirements
 
 
 def run(command, **kwargs):
@@ -39,6 +44,21 @@ def capture(command):
 
 def download_retryable(output):
     """416 is transient only after this command interrupted the same URL."""
+    if '@nix ' in output:
+        messages = []
+        for line in output.splitlines():
+            if line.startswith('@nix '):
+                try:
+                    record = json.loads(line[5:])
+                    if record.get('action') == 'msg' and isinstance(record.get('msg'), str):
+                        messages.append(record['msg'])
+                    elif record.get('action') not in ('start', 'stop', 'result'):
+                        return False
+                except (ValueError, TypeError, AttributeError):
+                    return False
+            else:
+                messages.append(line)
+        output = '\n'.join(messages)
     output = re.sub(r"\x1b\[[0-9;]*m", "", output)
     terminal = (r"HTTP (?:error |response:? )?4(?!(?:08|16|29)\b)[0-9]{2}\b|"
                 r"hash mismatch|NAR hash mismatch|signature.*(?:invalid|failed)|does not match expected hash|"
@@ -83,6 +103,8 @@ def download_retryable(output):
 def build_attempt(command, timeout):
     """Stream diagnostics and bound the whole process group, including nested retries."""
     captured = {"stdout": bytearray(), "stderr": bytearray()}
+    activities = NixActivities()
+    resources = Resources()
     with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True) as process:
         with selectors.DefaultSelector() as ready:
             ready.register(process.stdout, selectors.EVENT_READ, "stdout")
@@ -90,6 +112,7 @@ def build_attempt(command, timeout):
             deadline = time.monotonic() + timeout
             try:
                 while ready.get_map():
+                    resources.sample(process.pid)
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise subprocess.TimeoutExpired(command, timeout)
@@ -101,6 +124,7 @@ def build_attempt(command, timeout):
                         name = key.data
                         captured[name].extend(chunk)
                         if name == "stderr":
+                            activities.feed(chunk)
                             sys.stderr.write(chunk.decode("utf-8", errors="replace"))
                             sys.stderr.flush()
                             # Lack of retained proof makes an old 416 terminal.
@@ -117,11 +141,14 @@ def build_attempt(command, timeout):
                     pass
                 process.wait()
                 raise
+    resources.finish()
+    activities.finish()
     return subprocess.CompletedProcess(command, status,
         captured["stdout"].decode("utf-8", errors="replace"),
         captured["stderr"].decode("utf-8", errors="replace"))
 
 
+@timing("home-manager-realisation")
 def capture_build(command, *, clock=None, sleep=None, execute=None):
     """Retry realization only; configuration generation and activation run once."""
     clock, sleep, execute = clock or time.monotonic, sleep or time.sleep, execute or build_attempt
@@ -176,8 +203,19 @@ def replace_file_entry(source, destination):
         temporary.unlink(missing_ok=True)
 
 
+def path_flake(path):
+    """Encode a local path as a flake reference without interpreting # or ?."""
+    return "path:" + urllib.parse.quote(str(path), safe="/")
+
+
 def config_root():
-    return Path(os.environ.get("FINITE_HOME_FLAKE_PATH", str(Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "home-manager")))
+    # Match NH's evaluated XDG default without freezing the runtime XDG value.
+    # NH_HOME_FLAKE/NH_FLAKE may be remote flake references, not writable paths.
+    explicit = os.environ.get("FINITE_HOME_FLAKE_PATH")
+    if explicit:
+        return Path(explicit)
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    return (Path(xdg) if xdg else Path.home() / ".config") / "home-manager"
 
 
 def source_root():
@@ -211,7 +249,7 @@ def profile_capabilities():
 def require_helper_schema(profile, field="normalizeSchemas"):
     if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
             or profile["schema"] not in profile_capabilities()[field]):
-        raise ValueError("The installed Foundation helper does not support this profile schema")
+        raise ValueError("The installed Foundation helper does not support this profile schema; recreate the selection with foundation home profile (schema 3) and review it before applying")
 
 
 def version(value):
@@ -235,8 +273,8 @@ def foundation_reference(reference):
     return {"type": "github", "owner": "closure-labs", "repo": "foundation", key: reference}
 
 
-def consumer_lock(lock, info, reference=RELEASE_CHANNEL):
-    """Re-root a release's committed graph; follows paths belong to its old root."""
+def consumer_lock(lock, info, reference=MAIN_BRANCH):
+    """Re-root a source's committed graph; follows paths belong to its old root."""
     validate_metadata(info)
     old_root = lock["root"]
     names = {name: "foundation" if name == old_root else "foundation-" + name for name in lock["nodes"]}
@@ -275,7 +313,7 @@ def verify_update_lock(old, new, release_lock, info):
     if set(old_inputs) != set(new_inputs):
         raise ValueError("An update added or removed a personal input")
     if locked_graph(new, new_inputs["foundation"]) != locked_graph(expected, "foundation"):
-        raise ValueError("Foundation dependency pins differ from its published release lock")
+        raise ValueError("Foundation dependency pins differ from its committed source lock")
     for name in old_inputs.keys() - {"foundation"}:
         if locked_graph(old, old_inputs[name]) != locked_graph(new, new_inputs[name]):
             raise ValueError(f"An update changed the personal input {name}")
@@ -311,7 +349,7 @@ def migrate_input_declarations(inputs):
     return extras
 
 
-def consumer_flake(info, extras=None, reference=RELEASE_CHANNEL):
+def consumer_flake(info, extras=None, reference=MAIN_BRANCH):
     extra_text = "\n".join("    " + json.dumps(k) + " = " + nix_value(v) + ";" for k, v in (extras or {}).items())
     return '''{
   # Foundation owns the shared modules; this flake and your personal modules are yours.
@@ -344,7 +382,10 @@ def make_template(source, info, output, lock=None, extras=None):
     for relative in ("profile.json", "customize.nix", "modules/local.nix"):
         destination = output / relative
         if not destination.exists() and not destination.is_symlink():
-            shutil.copy2(source / relative, destination)
+            # The repository's own customization remains personal. New consumers
+            # use the public scaffold, including its shared package-policy sets.
+            template = "templates/default/customize.nix" if relative == "customize.nix" else relative
+            shutil.copy2(source / template, destination)
             # Store sources are read-only; personal configuration must be editable.
             destination.chmod(destination.stat().st_mode | 0o200)
 
@@ -379,28 +420,6 @@ def copy_configuration(source, target):
     ])
 
 
-def validate_profile(profile, catalog):
-    """Schema-2 fallback for selected releases without a Nix normalizer."""
-    if not isinstance(profile, dict) or type(profile.get("schema")) is not int or profile["schema"] != 2:
-        raise ValueError("Unsupported profile schema; migrate a schema-1 profile with the existing initializer first")
-    for field, choices in (("roles", catalog["roles"]), ("packages", catalog["packages"])):
-        requested = profile.get(field)
-        if (not isinstance(requested, list) or any(not isinstance(x, str) or x not in choices for x in requested)
-                or len(set(requested)) != len(requested)):
-            raise ValueError(f"Invalid or duplicate {field}")
-        profile[field] = sorted(requested, key=lambda x: (choices[x]["order"], x))
-    if any(not isinstance(profile.get(field), str) or profile[field] not in catalog[choices]
-           for field, choices in (("foundation", "foundations"), ("hardware", "hardware"))):
-        raise ValueError("Unsupported host foundation or hardware")
-    identity = profile.get("identity", {})
-    if (not isinstance(identity, dict) or not isinstance(identity.get("username"), str)
-            or not re.fullmatch(r"[a-z_][a-z0-9_-]*[$]?", identity["username"])
-            or not isinstance(identity.get("homeDirectory"), str)
-            or not re.fullmatch(r"/.+", identity["homeDirectory"])):
-        raise ValueError("Invalid account identity")
-    return profile
-
-
 def validate_runtime_profile(profile, catalog):
     """Account and running-image checks belong to the invoking machine."""
     identity = profile["identity"]
@@ -414,12 +433,13 @@ def validate_runtime_profile(profile, catalog):
             raise ValueError("Profile is incompatible with the running Finite image")
 
 
+@timing("profile-validation")
 def validate_staged_profile(stage, data=None):
     # Read the profile from the same staged flake as its locked Foundation.
-    # Fallback is capability-based: target validation failures must propagate.
+    # Selected sources must provide the schema-3 normalizer and capabilities.
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
-    expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
+    expression = 'let root = builtins.getFlake ' + nix_value(path_flake(stage)) + ''';
       target = root.inputs.foundation or root;
       submitted = builtins.fromJSON (builtins.readFile (root.outPath + "/profile.json"));
       hasNormalizer = target.lib ? normalizeProfile;
@@ -427,15 +447,16 @@ def validate_staged_profile(stage, data=None):
     in {
       inherit hasNormalizer;
       catalog = if target.lib ? homeCatalogForSchema then target.lib.homeCatalogForSchema submitted.schema else target.lib.homeCatalog;
-      profile = if submitted.schema == 3 && !hasCapabilities
+      profile = if !hasCapabilities
         then throw "Schema 3 requires explicit selected Foundation capabilities"
         else if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
         then throw "Selected Foundation does not support this profile schema"
-        else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
+        else if hasNormalizer then target.lib.normalizeProfile submitted
+        else throw "Selected Foundation lacks a profile normalizer; update Foundation first";
     } // (if hasCapabilities then { capabilities = target.lib.profileCapabilities; } else {})'''
     if data is None:
         data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
-    if submitted["schema"] == 3 and "capabilities" not in data:
+    if "capabilities" not in data:
         raise ValueError("Schema 3 requires explicit selected Foundation capabilities")
     profile = data["profile"]
     require_helper_schema(profile)
@@ -449,7 +470,7 @@ def validate_staged_profile(stage, data=None):
         if submitted["schema"] not in capabilities["normalizeSchemas"] or data["catalog"]["schema"] not in capabilities["catalogSchemas"]:
             raise ValueError("Selected Foundation capabilities do not support this profile or catalog schema")
     if not data["hasNormalizer"]:
-        profile = validate_profile(profile, data["catalog"])
+        raise ValueError("Selected Foundation lacks a profile normalizer; update Foundation first")
     validate_runtime_profile(profile, data["catalog"])
     return profile
 
@@ -457,32 +478,32 @@ def validate_staged_profile(stage, data=None):
 def editor_target(stage, schema, change=None):
     """Resolve editor data from the staged locked target, never the caller catalog."""
     require_helper_schema(read_json(stage / "profile.json"))
-    if schema not in profile_capabilities().get("editSchemas", [2]):
+    if schema not in profile_capabilities().get("editSchemas", []):
         raise ValueError("The installed Foundation helper does not support editing this profile schema")
     request = {"schema": schema, "change": change}
-    expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(stage)) + ''';
+    expression = 'let root = builtins.getFlake ' + nix_value(path_flake(stage)) + ''';
       target = root.inputs.foundation or root;
       submitted = builtins.fromJSON (builtins.readFile (root.outPath + "/profile.json"));
       request = builtins.fromJSON REQUEST;
       hasNormalizer = target.lib ? normalizeProfile;
       hasCapabilities = target.lib ? profileCapabilities;
       hasEditor = (target.lib.profileChanges.schema or 0) == 1;
-      supported = if hasCapabilities then target.lib.profileCapabilities.editSchemas or [2] else [2];
+      supported = if hasCapabilities then target.lib.profileCapabilities.editSchemas or [] else [];
       canEdit = hasEditor && builtins.elem request.schema supported;
       catalogFor = schema: if target.lib ? homeCatalogForSchema then target.lib.homeCatalogForSchema schema else target.lib.homeCatalog;
     in {
       inherit hasNormalizer;
       catalog = catalogFor submitted.schema;
-      profile = if submitted.schema == 3 && !hasCapabilities then throw "Schema 3 requires explicit selected Foundation capabilities"
+      profile = if !hasCapabilities then throw "Schema 3 requires explicit selected Foundation capabilities"
         else if hasCapabilities && !(builtins.elem submitted.schema target.lib.profileCapabilities.normalizeSchemas)
         then throw "Selected Foundation does not support this profile schema"
-        else if hasNormalizer then target.lib.normalizeProfile submitted else submitted;
-      editorCatalog = if request.schema == 3 && (!canEdit || !(target.lib ? homeCatalogForSchema))
+        else if hasNormalizer then target.lib.normalizeProfile submitted
+        else throw "Selected Foundation lacks a profile normalizer; update Foundation first";
+      editorCatalog = if (!canEdit || !(target.lib ? homeCatalogForSchema))
         then throw "Selected Foundation does not support schema-3 editing; update Foundation first"
         else catalogFor request.schema;
       source = { path = toString target.outPath; narHash = target.narHash or null; rev = target.rev or null; };
       editorSchema = if hasEditor then 1 else 0;
-      canMigrate = hasEditor && builtins.elem 3 supported && (target.lib ? homeCatalogForSchema);
       preview = if request.change == null then null
         else if !canEdit then throw "Selected Foundation does not support profile change previews"
         else target.lib.profileChanges.preview ({ profile = submitted; } // request.change);
@@ -492,9 +513,9 @@ def editor_target(stage, schema, change=None):
     normalized = validate_staged_profile(stage, data)
     if change is not None and data.get("editorSchema") != 1:
         raise ValueError("Selected Foundation does not support this profile preview API")
-    if schema not in profile_capabilities().get("editSchemas", [2]):
+    if schema not in profile_capabilities().get("editSchemas", []):
         raise ValueError("The installed Foundation helper does not support editing this profile schema")
-    if schema == 3 and (data.get("editorSchema") != 1 or 3 not in data.get("capabilities", {}).get("editSchemas", [2])):
+    if data.get("editorSchema") != 1 or 3 not in data.get("capabilities", {}).get("editSchemas", []):
         raise ValueError("Selected Foundation does not advertise schema-3 editing")
     catalog = data["editorCatalog"]
     if type(catalog.get("schema")) is not int or catalog["schema"] not in profile_capabilities()["catalogSchemas"]:
@@ -507,11 +528,10 @@ def profile_hash(root):
     return hashlib.sha256((root / "profile.json").read_bytes()).hexdigest()
 
 
-def selection_change(roles, packages, capabilities, migrate):
+def selection_change(roles, packages, capabilities):
     return {"roles": None if roles is None else (roles.split(",") if roles else []),
             "packages": None if packages is None else (packages.split(",") if packages else []),
-            "capabilities": None if capabilities is None else (capabilities.split(",") if capabilities else []),
-            "migrate": migrate}
+            "capabilities": None if capabilities is None else (capabilities.split(",") if capabilities else [])}
 
 
 def preview_summary(preview):
@@ -546,7 +566,7 @@ def preview_summary(preview):
 def prepare_profile_change(stage, root, original, raw_profile_hash, change):
     submitted = read_json(stage / "profile.json")
     require_helper_schema(submitted)
-    schema = 3 if change["migrate"] else submitted.get("schema")
+    schema = submitted["schema"]
     data = editor_target(stage, schema, change)
     preview = data["preview"]
     if not isinstance(preview, dict) or preview.get("status") not in ("preview", "blocked") or preview.get("activationAllowed") is not False:
@@ -569,7 +589,7 @@ def prepare_profile_change(stage, root, original, raw_profile_hash, change):
     return result
 
 
-def read_editor(root, *, migrate=False, preview=False, roles=None, packages=None, capabilities=None):
+def read_editor(root, *, preview=False, roles=None, packages=None, capabilities=None):
     """Read-only commands use /tmp staging and never create a consumer lock file."""
     original = tree_digest(root)
     raw_hash = profile_hash(root)
@@ -578,20 +598,12 @@ def read_editor(root, *, migrate=False, preview=False, roles=None, packages=None
         copy_configuration(root, stage)
         submitted = read_json(stage / "profile.json")
         require_helper_schema(submitted)
-        if migrate and submitted.get("schema") != 2:
-            raise ValueError("Explicit profile conversion requires a schema-2 source")
-        for field in ("capabilities", "host"):
-            if migrate and field in submitted:
-                raise ValueError(f"Existing custom {field} field collides with schema 3; resolve it explicitly before migration")
-        if capabilities is not None and submitted.get("schema") == 2 and not migrate:
-            raise ValueError("Capabilities require explicit --migrate-profile conversion to schema 3")
         if preview:
-            result = prepare_profile_change(stage, root, original, raw_hash, selection_change(roles, packages, capabilities, migrate))
+            result = prepare_profile_change(stage, root, original, raw_hash, selection_change(roles, packages, capabilities))
         else:
-            schema = 3 if migrate else read_json(stage / "profile.json").get("schema")
+            schema = submitted["schema"]
             data = editor_target(stage, schema)
-            result = {"schema": 1, "profile": data["profile"], "catalog": data["editorCatalog"],
-                      "canMigrate": data["canMigrate"] and 3 in profile_capabilities().get("editSchemas", [2])}
+            result = {"schema": 1, "profile": data["profile"], "catalog": data["editorCatalog"]}
         if tree_digest(root) != original or profile_hash(root) != raw_hash:
             raise ValueError("Configuration changed while reading the editor; try again")
         return result
@@ -605,9 +617,13 @@ def build(stage):
     profile = validate_staged_profile(stage)
     if profile != submitted:
         write_staged_profile(stage, profile)
-    installable = f"path:{stage}#homeConfigurations.{profile['identity']['username']}.activationPackage"
+    installable = f"{path_flake(stage)}#homeConfigurations.{profile['identity']['username']}.activationPackage"
     command = ["systemd-run", "--user", "--scope", "--quiet", "-p", "MemoryMax=" + memory_max, "-p", "MemorySwapMax=512M", "-p", "CPUQuota=100%",
                "nix", "build", "--max-jobs", "1", "--cores", "1", "--no-update-lock-file", "--no-link", "--print-out-paths", installable]
+    if os.environ.get("FOUNDATION_TIMINGS") == "1":
+        command.insert(4, "--unit=foundation-realisation-" + str(os.getpid()) + ".scope")
+        command.insert(-1, "--log-format")
+        command.insert(-1, "internal-json")
     try:
         paths = capture_build(command).splitlines()
     except subprocess.CalledProcessError as error:
@@ -629,25 +645,19 @@ def previous_generation():
     return profile.resolve() if profile.exists() else None
 
 
-def provision_brew(stage):
-    # Use the policy and installer from the selected Foundation release.
-    expression = 'let root = builtins.getFlake ' + json.dumps("path:" + str(stage)) + '''; f = root.inputs.foundation or root; in {
-      bootstrap = builtins.readFile (f.outPath + "/modules/finite-brew-bootstrap");
-      status = builtins.readFile (f.outPath + "/modules/finite-brew-migration-status");
-      policy = builtins.readFile (f.outPath + "/modules/aspects/base/brew-packages.json");
-    }'''
-    # nix eval --impure only permits the staged local flake reference; its lock is immutable.
-    data = json.loads(capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))
-    with tempfile.TemporaryDirectory(prefix=".foundation-brew-", dir=stage.parent) as temp:
-        policy = Path(temp) / "policy.json"
-        bootstrap = Path(temp) / "finite-brew-bootstrap"
-        policy.write_text(data["policy"])
-        bootstrap.write_text(data["bootstrap"])
-        (Path(temp) / "finite-brew-migration-status").write_text(data["status"])
-        env = dict(os.environ, FINITE_BREW_POLICY=str(policy))
-        run(["bash", str(bootstrap)], env=env)
+@timing("preparation")
+def prepare_generation(activation):
+    """Run an optional executable supplied by this one realized generation."""
+    check_host_requirements(activation)
+    executable = activation / "foundation-prepare"
+    if not executable.exists() and not executable.is_symlink():
+        return
+    if not executable.is_file() or not os.access(executable, os.X_OK):
+        raise ValueError("Generation preparation entry is not executable")
+    run([str(executable)])
 
 
+@timing("commit-and-activation")
 def commit_stage(root, stage, original, activation, replace_tree=False, expected_profile_hash=None, replace_customization=False):
     if (tree_digest(root) if root.exists() else None) != original:
         raise ValueError("Configuration changed during the build; nothing installed")
@@ -673,7 +683,8 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
         if consumer:
             for relative in committed_files:
                 replace_file_entry(stage / relative, root / relative)
-        run([str(activation / "activate")])
+        with timing("activation"), activation_observations():
+            run([str(activation / "activate")])
     except BaseException:
         failed = root.with_name(root.name + ".failed." + stamp)
         if consumer:
@@ -689,7 +700,8 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
                 backup.rename(root)
         if previous is not None:
             try:
-                run([str(previous / "activate")])
+                with timing("rollback-activation"):
+                    run([str(previous / "activate")])
             except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
                 print(f"Previous-generation activation also failed: {error}", file=sys.stderr)
         raise
@@ -699,43 +711,96 @@ def commit_stage(root, stage, original, activation, replace_tree=False, expected
     print(f"Foundation activated. Previous configuration: {backup if backup.exists() else 'none (first installation)'}")
 
 
-def published_releases():
-    releases = []
-    for page in range(1, 11):
-        request = urllib.request.Request(f"https://api.github.com/repos/{REPOSITORY}/releases?per_page=100&page={page}", headers={"Accept": "application/vnd.github+json", "User-Agent": "Foundation-home-update"})
-        with urllib.request.urlopen(request, timeout=30) as response:
-            batch = json.load(response)
-        for release in batch:
-            tag = release.get("tag_name", "")
-            if release.get("draft") or release.get("prerelease") or not release.get("published_at") or not tag.startswith("v"):
-                continue
-            try:
-                parsed = version(tag[1:])
-            except ValueError:
-                continue
-            releases.append((parsed, tag))
-        if len(batch) < 100:
-            break
-    return sorted(releases)
+def github_api(path):
+    request = urllib.request.Request(f"https://api.github.com/repos/{REPOSITORY}/{path}",
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "Foundation-home-update"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
 
 
-def release_data(tag):
-    ref = f"github:{REPOSITORY}/{tag}"
+def require_main_ci(rev):
+    """No stale-success fallback: the latest canonical run/attempt must pass."""
+    workflow = github_api("actions/workflows/check.yml")
+    if (type(workflow.get("id")) is not int or workflow["id"] <= 0
+            or workflow.get("path") != ".github/workflows/check.yml" or workflow.get("state") != "active"):
+        raise ValueError("Foundation CI workflow identity differs")
+    result = github_api(f"actions/workflows/{workflow['id']}/runs?branch=main&event=push&head_sha={rev}&per_page=100")
+    runs = result.get("workflow_runs")
+    if not isinstance(runs, list) or type(result.get("total_count")) is not int or result["total_count"] != len(runs):
+        raise ValueError("Foundation CI run inventory is incomplete")
+    if not runs:
+        raise ValueError("Latest Foundation main commit has not passed canonical CI; retry after CI succeeds")
+    for run in runs:
+        if type(run.get("run_number")) is not int or type(run.get("id")) is not int:
+            raise ValueError("Foundation CI run identity is malformed")
+    selected = max(runs, key=lambda run: (run["run_number"], run["id"]))
+    run = github_api(f"actions/runs/{selected['id']}")
+    if (run.get("id") != selected["id"] or run.get("workflow_id") != workflow["id"]
+            or run.get("path") != ".github/workflows/check.yml" or run.get("head_sha") != rev
+            or run.get("head_branch") != "main" or run.get("event") != "push"
+            or run.get("repository", {}).get("full_name") != REPOSITORY
+            or run.get("head_repository", {}).get("full_name") != REPOSITORY
+            or type(run.get("run_attempt")) is not int or run["run_attempt"] <= 0):
+        raise ValueError("Foundation CI run is not the canonical main push")
+    if run.get("status") != "completed" or run.get("conclusion") != "success":
+        raise ValueError("Latest Foundation main commit has not passed canonical CI; retry after CI succeeds")
+    jobs = github_api(f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs?per_page=100")
+    if not isinstance(jobs.get("jobs"), list) or jobs.get("total_count") != len(jobs["jobs"]):
+        raise ValueError("Foundation CI job inventory is incomplete")
+    gates = [job for job in jobs["jobs"] if job.get("name") == "CI gate"]
+    if (len(gates) != 1 or gates[0].get("status") != "completed"
+            or gates[0].get("conclusion") != "success" or gates[0].get("head_sha") != rev):
+        raise ValueError("Foundation CI gate did not qualify this revision")
+    # Attempt-specific jobs remain readable after a rerun starts. Re-read the
+    # current run so an old successful attempt cannot authorize installation.
+    current = github_api(f"actions/runs/{run['id']}")
+    identity = ("id", "workflow_id", "path", "head_sha", "head_branch", "event",
+                "repository", "head_repository", "run_attempt", "status", "conclusion")
+    if any(current.get(key) != run.get(key) for key in identity):
+        raise ValueError("Foundation CI qualification changed while checking jobs")
+    return {"workflow": ".github/workflows/check.yml", "runId": run["id"], "runAttempt": run["run_attempt"],
+            "url": f"https://github.com/{REPOSITORY}/actions/runs/{run['id']}"}
+
+
+def main_data():
+    # Resolve once; never evaluate/build a moving ref or accept cached main metadata.
+    ref = f"github:{REPOSITORY}/main"
+    resolved = json.loads(capture(["nix", "flake", "metadata", "--refresh", "--json", ref]))["locked"]
+    if (resolved.get("type") != "github" or resolved.get("owner") != "closure-labs"
+            or resolved.get("repo") != "foundation"
+            or not re.fullmatch(r"[a-f0-9]{40}", resolved.get("rev") or "")
+            or ("narHash" in resolved and (not isinstance(resolved["narHash"], str)
+                or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", resolved["narHash"])))
+            or ("lastModified" in resolved and (type(resolved["lastModified"]) is not int
+                or resolved["lastModified"] < 0))):
+        raise ValueError("Main did not resolve to an immutable Foundation source")
+    rev = resolved["rev"]
+    evidence = require_main_ci(rev)
     expression = '''let f = builtins.getFlake REF; in {
       metadata = builtins.fromJSON (builtins.readFile (f.outPath + "/foundation.json"));
       lock = builtins.fromJSON (builtins.readFile (f.outPath + "/flake.lock"));
       rev = f.rev; narHash = f.narHash; lastModified = f.lastModified;
-    }'''.replace("REF", json.dumps(ref))
-    # Resolve a release tag once, then read and build only its immutable commit.
-    resolved = json.loads(capture(["nix", "flake", "metadata", "--json", ref]))
-    rev = resolved["locked"]["rev"]
-    expression = expression.replace(json.dumps(ref), json.dumps(f"github:{REPOSITORY}/{rev}"))
+    }'''.replace("REF", json.dumps(f"github:{REPOSITORY}/{rev}"))
     data = json.loads(capture(["nix", "eval", "--json", "--expr", expression]))
+    # Newer Nix metadata can omit the hash (and timestamp) until the immutable
+    # source is materialized. Its evaluated source info is authoritative; any
+    # metadata fields that were supplied must still agree with that exact source.
+    if (data.get("rev") != rev or not isinstance(data.get("narHash"), str)
+            or not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", data["narHash"])
+            or type(data.get("lastModified")) is not int or data["lastModified"] < 0
+            or any(key in resolved and data.get(key) != resolved[key]
+                   for key in ("narHash", "lastModified"))):
+        raise ValueError("Selected Foundation differs from the resolved main source")
     info = {**data["metadata"], **{key: data[key] for key in ("rev", "narHash", "lastModified")}}
     validate_metadata(info)
-    if info["version"] != tag.removeprefix("v"):
-        raise ValueError("Published tag does not match Foundation release metadata")
-    return info, data["lock"]
+    return {**info, "upstreamCI": evidence}, data["lock"]
+
+
+def revalidate_candidate(info):
+    """Keep the frozen source; require its original CI proof to remain current."""
+    evidence = info.get("upstreamCI")
+    if not isinstance(evidence, dict) or require_main_ci(info["rev"]) != evidence:
+        raise ValueError("Foundation CI qualification changed during preparation; retry the update")
 
 
 def local_foundation_source(source):
@@ -771,7 +836,7 @@ def installed_info(root):
     if local_foundation_source(source):
         if not re.fullmatch(r"sha256-[A-Za-z0-9+/]{43}=", provenance.get("narHash") or ""):
             raise ValueError("Local Foundation lock must contain a content hash")
-        expression = 'let root = builtins.getFlake ' + nix_value("path:" + str(root.resolve())) + ''';
+        expression = 'let root = builtins.getFlake ' + nix_value(path_flake(root.resolve())) + ''';
           target = root.inputs.foundation;
         in {
           metadata = builtins.fromJSON (builtins.readFile (target.outPath + "/foundation.json"));
@@ -796,25 +861,31 @@ def available(root):
     installed = installed_info(root)
     if local_foundation_source(foundation_source(root)):
         return installed, None, None
-    releases = published_releases()
-    candidates = [tag for number, tag in releases if number > version(installed["version"])]
-    if not candidates:
+    info, lock = main_data()
+    if info["rev"] == installed["rev"]:
+        if info["narHash"] != installed["narHash"]:
+            raise ValueError("Foundation content hash changed for the installed revision")
         return installed, None, None
-    info, lock = release_data(candidates[-1])
+    if version(info["version"]) < version(installed["version"]):
+        raise ValueError("Foundation main would downgrade the installed version")
+    comparison = github_api(f"compare/{installed['rev']}...{info['rev']}")
+    if comparison.get("status") != "ahead" or comparison.get("merge_base_commit", {}).get("sha") != installed["rev"]:
+        raise ValueError("Foundation main is not a forward update of the installed revision; review manually")
     return installed, info, lock
 
 
 def update(root, check=False):
+    require_helper_schema(read_json(root / "profile.json"))
     with locked(root):
         installed, info, lock = available(root)
         if info is None:
             if local_foundation_source(foundation_source(root)):
                 print(f"Foundation {installed['version']} is pinned to a local checkout ({installed['rev'][:12]}). "
-                      "Advance the foundation input explicitly, then run finite-home-apply. No published-release update applied.")
+                      "Advance the foundation input explicitly, then run foundation home apply. No main update applied.")
             else:
                 print(f"Foundation {installed['version']} is current")
             return
-        print(f"Foundation {installed['version']} -> {info['version']}")
+        print(f"Foundation {installed['version']} ({installed['rev'][:12]}) -> {info['version']} ({info['rev'][:12]})")
         if check:
             return
         original = tree_digest(root)
@@ -823,39 +894,40 @@ def update(root, check=False):
             copy_configuration(root, stage)
             text = (stage / "flake.nix").read_text()
             matches = list(REFERENCE.finditer(text))
-            if len(matches) != 1 or matches[0][2] not in (RELEASE_CHANNEL, installed["rev"], "v" + installed["version"]):
+            if len(matches) != 1 or matches[0][2] not in (MAIN_BRANCH, "latest-release", installed["rev"], "v" + installed["version"]):
                 raise ValueError("The Foundation input was customized; update it manually")
-            tracking = matches[0][2] == RELEASE_CHANNEL
-            text = REFERENCE.sub(lambda m: m[1] + f"github:{REPOSITORY}/{info['rev']}" + m[3], text)
+            tracking = matches[0][2] in (MAIN_BRANCH, "latest-release")
+            reference = MAIN_BRANCH if tracking else info['rev']
+            text = REFERENCE.sub(lambda m: m[1] + f"github:{REPOSITORY}/{reference}" + m[3], text)
             (stage / "flake.nix").write_text(text)
-            # Nix updates this input closure only, retaining personal input pins.
-            run(["nix", "flake", "lock", "path:" + str(stage)])
+            # Let Nix record the declared ref naturally. A moving main is not an
+            # excuse to build another commit: fail closed if resolution races CI.
+            if tracking:
+                run(["nix", "flake", "update", "foundation", "--flake", path_flake(stage)])
+            else:
+                run(["nix", "flake", "lock", path_flake(stage)])
             new_lock = read_json(stage / "flake.lock")
             verify_update_lock(read_json(root / "flake.lock"), new_lock, lock, info)
-            selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]["locked"]
-            if selected["rev"] != info["rev"] or selected["narHash"] != info["narHash"]:
-                raise ValueError("Resolved Foundation source differs from the reviewed release")
-            if tracking:
-                # Resolve/build the reviewed immutable release, retaining the channel
-                # declaration for the next nh update. Both locked graphs are identical.
-                (stage / "flake.nix").write_text(REFERENCE.sub(
-                    lambda m: m[1] + f"github:{REPOSITORY}/{RELEASE_CHANNEL}" + m[3], text))
-                reference = new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]
-                new_lock["nodes"][reference]["original"] = foundation_reference(RELEASE_CHANNEL)
-                write_json(stage / "flake.lock", new_lock)
+            selected = new_lock["nodes"][new_lock["nodes"][new_lock["root"]]["inputs"]["foundation"]]
+            if (selected["locked"]["rev"] != info["rev"] or selected["locked"]["narHash"] != info["narHash"]
+                    or selected.get("original") != foundation_reference(reference)):
+                raise ValueError("Resolved Foundation source differs from the reviewed main revision")
             write_json(stage / "foundation.json", info)
             write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             activation = build(stage)
-            provision_brew(stage)
+            revalidate_candidate(info)
+            prepare_generation(activation)
+            revalidate_candidate(info)
             commit_stage(root, stage, original, activation)
 
 
 def migrate(root, info, lock, check=False):
+    require_helper_schema(read_json(root / "profile.json"))
     with locked(root):
         if root.is_symlink() or (root / ".git").exists() or (root / ".jj").exists():
             raise ValueError("Migrate a personal configuration directory, not a Git checkout or symlink; keep the checkout for manual review")
         if (root / "foundation.json").exists():
-            raise ValueError("Already a Foundation consumer; use finite-home-update")
+            raise ValueError("Already a Foundation consumer; use foundation home update")
         manifest = read_json(source_root() / "legacy-managed.json")
         for relative, hashes in manifest["files"].items():
             path = root / relative
@@ -892,22 +964,25 @@ def migrate(root, info, lock, check=False):
                     name: ["foundation", *old_inputs[name]] if isinstance(old_inputs[name], list) and old_inputs[name] and old_inputs[name][0] in CORE else old_inputs[name]
                     for name in extras})
                 write_json(stage / "flake.lock", new_lock)
-                run(["nix", "flake", "lock", "path:" + str(stage)])
+                run(["nix", "flake", "lock", path_flake(stage)])
             activation = build(stage)
             if not check:
-                provision_brew(stage)
+                revalidate_candidate(info)
+                prepare_generation(activation)
+                revalidate_candidate(info)
                 commit_stage(root, stage, original, activation, replace_tree=True)
 
 
+@timing("initialization")
 def initialize(root, profile_path, check=False):
     if root.exists():
-        raise ValueError("Configuration already exists; use finite-home-migrate or finite-home-apply")
+        raise ValueError("Configuration already exists; use foundation home migrate or foundation home apply")
     metadata = os.environ.get("FINITE_FOUNDATION_METADATA")
     info = read_json(metadata) if metadata else {}
     profile = json.loads(capture(["yq", "-o=json", ".", str(profile_path)]))
     if (not isinstance(profile, dict) or type(profile.get("schema")) is not int
             or profile["schema"] not in profile_capabilities()["initializeSchemas"]):
-        raise ValueError("Unsupported profile schema for this initializer")
+        raise ValueError("Unsupported profile schema for this initializer; recreate the selection with foundation home profile (schema 3) and review it before applying")
     import pwd
     account = pwd.getpwuid(os.getuid())
     supplied = profile.get("identity", {})
@@ -916,9 +991,6 @@ def initialize(root, profile_path, check=False):
     identity = {"username": account.pw_name, "homeDirectory": account.pw_dir}
     if any(supplied.get(key) and supplied[key] != value for key, value in identity.items()):
         raise ValueError("Provisioned identity differs from the current account")
-    if profile["schema"] == 1:
-        profile["schema"] = 2
-        profile.setdefault("packages", [])
     profile["identity"] = {**supplied, **identity}
     with locked(root):
         with tempfile.TemporaryDirectory(prefix=".foundation-init-", dir=root.parent) as temp:
@@ -927,19 +999,20 @@ def initialize(root, profile_path, check=False):
             write_staged_profile(stage, profile)
             activation = build(stage)
             if not check:
-                provision_brew(stage)
+                prepare_generation(activation)
                 commit_stage(root, stage, None, activation)
 
 
-def apply(root, roles=None, packages=None, check=False, capabilities=None, migrate_profile=False, preview=False, approve_preview=None):
+def apply(root, roles=None, packages=None, check=False, capabilities=None, preview=False, approve_preview=None):
+    require_helper_schema(read_json(root / "profile.json"))
     if preview:
-        return read_editor(root, migrate=migrate_profile, preview=True, roles=roles, packages=packages, capabilities=capabilities)
+        return read_editor(root, preview=True, roles=roles, packages=packages, capabilities=capabilities)
     if approve_preview is not None and not re.fullmatch(r"[a-f0-9]{64}", approve_preview):
         raise ValueError("Invalid preview token; request a fresh --preview")
     lock = read_json(root / "flake.lock")
     importing = "foundation" in lock["nodes"][lock["root"]].get("inputs", {})
     if not importing and not (root / "foundation.json").exists():
-        raise ValueError("Legacy configuration: run finite-home-migrate first")
+        raise ValueError("Legacy configuration: run foundation home migrate first")
     with locked(root):
         original = tree_digest(root)
         raw_hash = profile_hash(root)
@@ -952,20 +1025,13 @@ def apply(root, roles=None, packages=None, check=False, capabilities=None, migra
                 write_json(stage / "finite-template.json", {"schema": 1, "generator": "finite-home-init", "version": info["version"]})
             profile = read_json(stage / "profile.json")
             require_helper_schema(profile)
-            if profile.get("schema") == 3 or capabilities is not None or migrate_profile or approve_preview is not None:
-                change = selection_change(roles, packages, capabilities, migrate_profile)
-                result = prepare_profile_change(stage, root, original, raw_hash, change)
-                if result["preview"]["status"] == "blocked":
-                    raise ValueError(result["preview"]["reason"])
-                if approve_preview is not None and approve_preview != result["approvalToken"]:
-                    raise ValueError("Preview is stale or selections changed; request a fresh --preview")
-                if migrate_profile and approve_preview is None and not check:
-                    raise ValueError("Conversion requires a reviewed --preview; repeat with --approve-preview TOKEN")
-                profile = result["preview"]["candidate"]
-            else:
-                for field, value in (("roles", roles), ("packages", packages)):
-                    if value is not None:
-                        profile[field] = value.split(",") if value else []
+            change = selection_change(roles, packages, capabilities)
+            result = prepare_profile_change(stage, root, original, raw_hash, change)
+            if result["preview"]["status"] == "blocked":
+                raise ValueError(result["preview"]["reason"])
+            if approve_preview is not None and approve_preview != result["approvalToken"]:
+                raise ValueError("Preview is stale or selections changed; request a fresh --preview")
+            profile = result["preview"]["candidate"]
             if tree_digest(root) != original or profile_hash(root) != raw_hash:
                 raise ValueError("Configuration changed while preparing the profile; nothing built")
             write_staged_profile(stage, profile)
@@ -973,7 +1039,7 @@ def apply(root, roles=None, packages=None, check=False, capabilities=None, migra
             if tree_digest(root) != original or profile_hash(root) != raw_hash:
                 raise ValueError("Configuration changed during the build; nothing installed")
             if not check:
-                provision_brew(stage)
+                prepare_generation(activation)
                 commit_stage(root, stage, original, activation, expected_profile_hash=raw_hash)
 
 
@@ -981,17 +1047,18 @@ def status(root, machine=False, notify=False, review=False):
     lock = read_json(root / "flake.lock")
     if "foundation" not in lock["nodes"][lock["root"]].get("inputs", {}):
         result = {"migration_required": True, "update_available": False}
-        print(json.dumps(result) if machine else "Legacy Home Manager configuration: run finite-home-migrate to adopt Foundation")
+        print(json.dumps(result) if machine else "Legacy Home Manager configuration: run foundation home migrate to adopt Foundation")
         return
     installed, candidate, _ = available(root)
     result = {"migration_required": False, "installed_version": installed["version"], "installed_rev": installed["rev"],
-              "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None}
-    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']}\nRun ujust update or finite-home-update to build and apply it." if candidate else "No newer published Foundation release is available.")
+              "update_available": candidate is not None, "available_version": candidate["version"] if candidate else None,
+              "available_rev": candidate["rev"] if candidate else None}
+    text = f"Installed Foundation: {installed['version']}\n" + (f"Available Foundation: {candidate['version']} ({candidate['rev'][:12]})\nRun ujust update or foundation home update to build and apply it." if candidate else "No newer qualified Foundation main revision is available.")
     if local_foundation_source(foundation_source(root)):
         result.update(source="local-git", update_policy="manual-pin")
         text = (f"Installed Foundation: {installed['version']} ({installed['rev'][:12]})\n"
-                "Pinned local checkout. Advance the foundation input explicitly, then run finite-home-apply. "
-                "Published releases were not checked.")
+                "Pinned local checkout. Advance the foundation input explicitly, then run foundation home apply. "
+                "Upstream main was not checked.")
     print(json.dumps(result) if machine else text)
     if notify and candidate:
         state = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "foundation"
@@ -1061,7 +1128,6 @@ def main():
             item.add_argument("--roles")
             item.add_argument("--packages")
             item.add_argument("--capabilities")
-            item.add_argument("--migrate-profile", action="store_true")
             mode = item.add_mutually_exclusive_group()
             mode.add_argument("--preview", action="store_true")
             mode.add_argument("--editor-context", action="store_true")
@@ -1092,22 +1158,20 @@ def main():
         if args.command == "update":
             update(root, args.check)
         elif args.command == "migrate":
-            releases = published_releases()
-            if not releases:
-                raise ValueError("No published Foundation releases are available")
-            info, lock = release_data(releases[-1][1])
+            require_helper_schema(read_json(root / "profile.json"))
+            info, lock = main_data()
             migrate(root, info, lock, args.check)
         elif args.command == "init":
             initialize(root, args.profile, args.check)
         elif args.command == "apply":
             if args.editor_context:
                 if args.roles is not None or args.packages is not None or args.capabilities is not None or args.approve_preview or args.check:
-                    raise ValueError("--editor-context only accepts --migrate-profile")
-                print(json.dumps(read_editor(root, migrate=args.migrate_profile), sort_keys=True))
+                    raise ValueError("--editor-context cannot be combined with selection or apply options")
+                print(json.dumps(read_editor(root), sort_keys=True))
             else:
                 if args.preview and (args.approve_preview is not None or args.check):
                     raise ValueError("--preview cannot be combined with --approve-preview or --check")
-                result = apply(root, args.roles, args.packages, args.check, args.capabilities, args.migrate_profile, args.preview, args.approve_preview)
+                result = apply(root, args.roles, args.packages, args.check, args.capabilities, args.preview, args.approve_preview)
                 if args.preview:
                     print(json.dumps(result, sort_keys=True))
         else:

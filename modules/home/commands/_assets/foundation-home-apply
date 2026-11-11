@@ -1,0 +1,3 @@
+set -euo pipefail
+export FINITE_HOME_FLAKE_PATH="${FINITE_HOME_FLAKE_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)}"
+exec python3 "$(dirname "${BASH_SOURCE[0]}")/../../../../scripts/home.py" apply "$@"

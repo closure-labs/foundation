@@ -6,6 +6,61 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Keep inherited `GDK_BACKEND` overrides out of Bluefin's GNOME portal service so file dialogs and screen sharing remain available. Applications retain their own environment settings.
+- Reject consumer `extraInputs` that replace Foundation-owned pins; unrelated personal inputs and Home Manager module overrides remain supported. Rename colliding personal inputs or stop forwarding them.
+
+- Own IPU7 WirePlumber policy system-wide through an explained privileged installer and standalone flake app. Skip sudo when the owned policy matches, and remove the old private-IPA repair mode.
+- Record applied Dell GRUB policy in a root-owned, readable receipt so unchanged Home Manager updates skip sudo. Add explicit privileged verification for protected boot files.
+
+- Keep Bluefin optional CLI bundles opt-in: its aspect now joins and verifies only the OS-owned default provisioning service, without installing optional packages or defining Homebrew tap trust.
+
+- Stop adding duplicate Nix bbrew, ugrep and uutils-coreutils on Bluefin and Bluefin DX; their inherited stock CLI bundle owns these tools. Preserve explicit personal packages and existing shell/preparation integration. FINite adoption requires a separate Foundation pin update after merge.
+- Enable a graphical GRUB console on EFI OSTree Dell XPS 13 9350 hosts during Home Manager activation, with an explained sudo request, backed-up configuration, an opt-out and an explicit uninstaller.
+
+- Generate new consumers with the public policy-aware customization template, including packaged initializers. Preserve existing personal customization files and symlinks.
+- Keep policy and configuration-root contract tests enabled for focused changes to their shared implementation owners, rather than relying only on default profile evaluations.
+- Align NH’s Home Manager location with the XDG config home and add optional `foundation.configRoot` for a shared explicit path. Preserve runtime CLI overrides and leave existing configuration files in place.
+- Add a typed constructor package policy shared across stable, weekly and unstable Nixpkgs. Unfree packages remain allowed by default; explicit deny and allowlist modes fail clearly without dropping selected services.
+- Advance stable Home Manager and Nixpkgs through their owning modules, with source declarations, lockfile and generated artifacts kept together and restored on update failure. Repair the public generic-x86_64 hardware alias.
+
+- Deliver explicit Foundation updates from `main` without waiting for a version release or maintaining a `latest-release` branch. Consumer locks retain immutable revision and content-hash provenance; staged updates qualify the exact commit, preserve personal inputs and retain build-before-activation recovery. Version tags remain optional milestones.
+
+- Remove legacy home-profile schema-2 readers, catalogs, composition and conversion paths. Home profiles must use schema 3; unsupported persisted profiles fail with replacement guidance before build or activation. See [Migration](docs/MIGRATION.md) before updating an older consumer.
+
+
+## [0.5.1] - 2026-10-27
+
+- Repair the exported Home Manager consumer-template builder so the initialization helper can import its observation module from the packaged source tree.
+- Build the actual consumer-template export in the full hosted check set, catching packaging failures before a Foundation release is adopted by Finite. Preserve complete release provenance and the existing helper-isolation checks.
+
+## [0.5.0] - 2026-10-27
+
+- Preserve Bluefin's inherited stock CLI/preinstall bundles, configuration and update mechanisms through a dedicated `hosts/os/bluefin` aspect for both Bluefin profile names and supported profile schemas.
+- Realize one Home Manager generation, run its optional `foundation-prepare`, commit configuration and activate once. Build-only checks skip preparation and activation; personal modules, rollback and profile formats remain preserved.
+- Keep Bluefin's Fzf and Starship binaries with explicit Finite configuration. Declare bbrew, ugrep and uutils-coreutils through pinned Nixpkgs inputs; retain existing catalog providers and unmanaged Flatpaks.
+- Observe supported Nix build/substitution activity and overlap, separate client/shared-daemon resources, inherited Brewfile/cache state, and actual synchronous Flatpak/service work. Keep evaluation coverage unknown, existing resource budgets and activation readiness; no performance savings are claimed.
+- Retain deprecated Brew helper compatibility paths without calling their copied policy during ordinary initialization. Workstation cleanup remains a separate reviewed, manual operation.
+
+## [0.4.1] - 2026-10-27
+
+- Refresh locked Den, Home Manager, Determinate Nix and Nixpkgs dependencies, and update the CI Nix installer action to v3.24.0.
+
+- Shorten CI for verified same-major GitHub Action pin updates: retain workflow lint, fixtures and Nix smoke builds while skipping the full profile matrix. Runtime dependency and workflow logic changes retain full validation.
+
+- Restore usable Intel IPU7 camera formats when a stale host IPA processing module prevents Firefox from finding the webcam. The new hardware-detected aspect verifies the matching host module before configuring a per-user repair during activation.
+- Add `foundation home camera` and the native `#home-camera` app for diagnosis and explicit repair. Build-only checks report camera health; repairs preserve personal overrides and never restart live audio automatically.
+- Add a focused camera guide covering diagnosis, repair, service restart, Firefox verification and undo steps.
+
+## [0.4.0] - 2026-10-27
+
+- Replace installed `finite-*` home helpers with `foundation home <action>`, including build-only `foundation home check`. Run the same interface through the native default flake app or `#foundation`; individual home apps remain available.
+
+- Make Foundation easier to configure with focused setup, profile, activation and recovery guides, a shorter README, and a single documentation index.
+- Keep application and role definitions together so contributors can add features without updating separate catalogs. Existing profiles, application providers and personal configuration files remain compatible.
+- Select affected CI evaluations and build checks from declared feature dependencies, with full validation when the base result or dependency graph cannot be verified. Check generated configuration and architecture files for drift.
+
+- Add opt-in `FOUNDATION_TIMINGS=1` observations for staged profile validation, Home Manager realization, Brew policy/bootstrap, activation and rollback, including failed stages. Preserve resource budgets, command order and one initialization; internal Nix fetch/build and Flatpak durations remain unresolved.
+
 ## [0.3.3] - 2026-10-23
 
 - Install the Home Manager CLI alongside NH in the shared base configuration so new Finite homes can run `home-manager switch`.
@@ -90,7 +145,9 @@ series, minor releases may change configuration interfaces.
 - Finite must adopt a reviewed release separately; this release does not change
   the consuming Finite repository.
 
-[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/closure-labs/foundation/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/closure-labs/foundation/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/closure-labs/foundation/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/closure-labs/foundation/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/closure-labs/foundation/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/closure-labs/foundation/compare/v0.3.0...v0.3.1
