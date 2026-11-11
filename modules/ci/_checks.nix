@@ -11,6 +11,12 @@ let
   };
 in
 {
+  check-tack-pins = pkgs.runCommand "foundation-tack-pins" {nativeBuildInputs = [pkgs.python3];} ''
+    cmp ${../../.tack/default.nix} ${inputs.tack-tool.outPath}/.tack/default.nix
+    python3 ${../../tests/check-tack-pins.py} \
+      ${../../flake.lock} ${../../.tack/pins.toml} ${../../.tack/pins.lock.json}
+    touch "$out"
+  '';
   home = home.activationPackage;
   password-managers = (import ../../tests/password-managers.nix {foundation = inputs.self;}).build;
   # Build the actual exported constructor. Fixture metadata keeps path:.

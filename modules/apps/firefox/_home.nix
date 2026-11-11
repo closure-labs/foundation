@@ -10,7 +10,7 @@ args@{
     inherit inputs;
     system = pkgs.stdenv.hostPlatform.system;
   });
-  weekly = packageSets.nixpkgs-weekly;
+  weekly = packageSets.browser-weekly;
   pipewireCameraPolicies =
     # Upstream Firefox keeps the PipeWire camera backend disabled because it
     # replaces V4L2 without a reliable fallback. Restrict it to the Dell IPU7

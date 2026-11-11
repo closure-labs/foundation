@@ -6,6 +6,7 @@
       "declaration" = "nix:nixpkgs-weekly:bitwarden-cli";
       "graphical" = false;
       "input" = "nixpkgs-weekly";
+      "pin" = "passwords-weekly";
       "provider" = "nix";
     };
   };

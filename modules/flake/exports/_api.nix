@@ -28,6 +28,7 @@
       sourceInfo = releaseInfo;
     };
 in {
+  inputs = builtins.removeAttrs inputs ["self"];
   ciPlans = import ../../ci/_plans.nix;
   ciGraph = import ../../ci/_graph.nix;
   inherit catalog homeCatalog homeCatalogForSchema sourceInfo mkApplications normalizeProfile;

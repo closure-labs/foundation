@@ -6,6 +6,7 @@
       "declaration" = "nix:nixpkgs-weekly:firefox";
       "graphical" = true;
       "input" = "nixpkgs-weekly";
+      "pin" = "browser-weekly";
       "provider" = "nix";
       "recipe" = "configured-firefox";
     };

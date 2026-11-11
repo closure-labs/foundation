@@ -1,0 +1,9 @@
+import ../../profiles/composition/_nix-application-feature.nix {
+  name = "zoom";
+  input = "nixpkgs-weekly";
+  pin = "office-weekly";
+  attribute = "zoom-us";
+  graphical = true;
+  recipe = "zoom-gnome-media-keys";
+  package = {label = "Zoom"; description = "Video meetings"; order = 80;};
+}

@@ -15,6 +15,7 @@ inputs: let
     packages.${system} = {
       foundation = applications.foundation;
       default = applications.foundation;
+      tack = inputs.tack-tool.packages.${system}.default;
       home-apply = applications.homeApply;
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
       home-profile-catalog = pkgs.writeText "home-profile-catalog.json" (builtins.toJSON api.homeCatalog);

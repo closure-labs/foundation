@@ -434,19 +434,14 @@ class ConsumerTests(unittest.TestCase):
             commit.assert_called_once()
             self.assertEqual(revalidate.call_count, 2)
 
-    def test_migration_rebases_personal_follows_without_changing_sources(self):
-        original = {"nixpkgs": {"url": "core"}, "nixpkgs-unstable": {"url": "unstable"}, "personal": {
-            "url": "github:example/personal/commit",
-            "inputs": {"nixpkgs": {"follows": "nixpkgs"}},
-        }, "alias": {"follows": "nixpkgs-weekly"}, "unstable-alias": {"follows": "nixpkgs-unstable"}}
-        extras = home.migrate_input_declarations(original)
-        self.assertNotIn("nixpkgs", extras)
-        self.assertNotIn("nixpkgs-unstable", extras)
-        self.assertEqual(extras["personal"]["inputs"]["nixpkgs"]["follows"], "foundation/nixpkgs")
-        self.assertEqual(extras["alias"]["follows"], "foundation/nixpkgs-weekly")
-        self.assertEqual(extras["unstable-alias"]["follows"], "foundation/nixpkgs-unstable")
-        self.assertEqual(original["personal"]["inputs"]["nixpkgs"]["follows"], "nixpkgs")
-        self.assertEqual(extras["personal"]["url"], original["personal"]["url"])
+    def test_migration_requires_personal_pins_for_core_follows(self):
+        personal = {"url": "github:example/personal/commit"}
+        original = {"nixpkgs": {"url": "core"}, "personal": personal}
+        self.assertEqual(home.migrate_input_declarations(original), {"personal": personal})
+        personal["inputs"] = {"nixpkgs": {"follows": "nixpkgs"}}
+        with self.assertRaisesRegex(ValueError, "follows nixpkgs"):
+            home.migrate_input_declarations(original)
+        self.assertEqual(personal["inputs"]["nixpkgs"]["follows"], "nixpkgs")
 
     def test_concurrent_edit_prevents_installation(self):
         digest = home.tree_digest(self.root)

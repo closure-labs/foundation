@@ -20,12 +20,11 @@ class LockAutoMergeTests(unittest.TestCase):
              {'context': 'CI gate', 'integration_id': 15368}]}}]
 
     def validate(self, files=None):
-        module.validate(self.pr, files or ['flake.lock'], self.rules,
+        module.validate(self.pr, files or ['.tack/pins.lock.json'], self.rules,
                         'ci-decider[bot]', 'closure-labs/foundation')
 
     def test_protected_update(self):
-        self.validate(['flake.nix', 'flake.lock', 'modules/flake/framework/default.nix',
-                       'modules/ci/_graph.json', 'docs/ARCHITECTURE.md'])
+        self.validate(['.tack/pins.toml', '.tack/pins.lock.json'])
 
     def test_wrong_author_or_fork(self):
         self.pr['user']['login'] = 'someone'
@@ -38,7 +37,7 @@ class LockAutoMergeTests(unittest.TestCase):
 
     def test_unexpected_file(self):
         with self.assertRaises(ValueError):
-            self.validate(['flake.lock', '.github/workflows/check.yml'])
+            self.validate(['.tack/pins.lock.json', '.github/workflows/check.yml'])
 
     def test_missing_protection(self):
         original = copy.deepcopy(self.rules)

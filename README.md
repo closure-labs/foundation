@@ -82,3 +82,23 @@ If Firefox cannot find an Intel IPU7 webcam, run `foundation home camera`. Found
 [All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. Use `foundation home <action>` to manage your configuration; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).
+
+### Updating Foundation's Tack pins
+
+Foundation commits `.tack/pins.toml` and `.tack/pins.lock.json`. Run Tack
+from the Foundation checkout to inspect or update one app group:
+
+```bash
+nix run path:.#tack -- look browser
+nix run path:.#tack -- update office
+```
+
+The app groups are `password-managers`, `office`, `browser`, and `ai`.
+Use `python3 scripts/update-locks.py` for a coordinated update that keeps
+Den and gen paired. Pick optional 1Password, Zoom, or AI apps through the
+profile's package selection.
+
+Consumer flakes continue to pin Foundation with their native `flake.lock`.
+Foundation exposes its resolved dependencies through `foundation.lib.inputs`
+and the `inputs` module argument. Personal native flake inputs need their own
+pins or follows within the consumer's native input graph.

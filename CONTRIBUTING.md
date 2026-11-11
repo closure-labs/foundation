@@ -10,7 +10,6 @@ Keep changes focused on reproducible Home Manager configurations for x86_64 Linu
 4. Regenerate artifacts when their sources change:
 
 ```sh
-nix run path:.#write-flake
 nix run path:.#write-ci-graph
 ```
 

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def evaluate(settings, check=True):
     expression = 'let f = builtins.getFlake ' + json.dumps("path:" + str(ROOT)) + ''';
-      lib = f.inputs.nixpkgs.lib;
+      lib = f.lib.inputs.nixpkgs.lib;
       result = lib.evalModules {
         modules = [
           (f.outPath + "/modules/home/construction/_config-root.nix")

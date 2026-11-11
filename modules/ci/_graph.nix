@@ -55,7 +55,7 @@ in
       }
     );
     profile-generation = check (builtins.attrNames features);
-    check-flake-file = check [ ];
+    check-tack-pins = check ["flake/framework"];
     ci-graph = check [ ];
     consumer-template = check [
       "flake/exports"

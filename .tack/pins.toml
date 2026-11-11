@@ -1,0 +1,77 @@
+# Tack pins are resolved by flake.nix. Update sources with tack update <group>.
+[tack]
+recomposable = true
+
+[inputs.core.den]
+url = "github:denful/den"
+
+[inputs.core.gen]
+url = "github:sini/gen/857e01c2b5830673dc13fdc07a3f77fb5cf62343"
+follows = { nixpkgs = "nixpkgs" }
+
+[inputs.core.determinate]
+url = "https://flakehub.com/f/DeterminateSystems/determinate/3"
+
+[inputs.core.flake-parts]
+url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1"
+follows = { nixpkgs-lib = "determinate/nix/nixpkgs" }
+
+[inputs.core.home-manager]
+url = "https://flakehub.com/f/nix-community/home-manager/0.2605"
+follows = { nixpkgs = "nixpkgs" }
+
+[inputs.core.import-tree]
+url = "github:denful/import-tree/a164a12202f58eb67559bd33b5592f20660d9baf"
+
+[inputs.core.nixpkgs]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
+
+[inputs.core.nixpkgs-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.development.devenv]
+url = "github:cachix/devenv/v2.2.2"
+
+[inputs.development.nixpkgs-unstable]
+url = "github:NixOS/nixpkgs/nixpkgs-unstable"
+
+[inputs.desktop-integration.nix-flatpak]
+url = "github:gmodena/nix-flatpak"
+
+[inputs.desktop-integration.nixGL]
+url = "github:nix-community/nixGL"
+follows = { nixpkgs = "nixpkgs" }
+
+[inputs.password-managers.passwords-stable]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
+
+[inputs.password-managers.passwords-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.office.office-stable]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
+
+[inputs.office.office-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.browser.browser-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.ai.chatgpt-desktop]
+url = "github:csoftware-arigpt/nixos-chatgpt"
+
+[inputs.ai.claude-desktop]
+url = "github:aaddrick/claude-desktop-debian"
+follows = { nixpkgs = "ai-weekly" }
+
+[inputs.ai.codex-cli-nix]
+url = "github:sadjow/codex-cli-nix"
+
+[inputs.ai.claude-code]
+url = "github:ryoppippi/nix-claude-code"
+
+[inputs.ai.ai-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.tooling.tack-tool]
+url = "github:manic-systems/tack/673997981720feebb3870645932b6cfe6657db9f"

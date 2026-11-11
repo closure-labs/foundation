@@ -2,18 +2,19 @@
   foundation,
   profile,
 }: let
-  inherit (foundation.inputs.nixpkgs) lib;
+  inherit (foundation.lib.inputs.nixpkgs) lib;
   home = foundation.lib.mkHomeConfiguration {inherit profile;};
   c = home.config;
   plan = foundation.lib.resolveProfile profile;
-  sources = {
+  sources = (import ../modules/providers/nixpkgs/_package-sets.nix {
+    inputs = foundation.lib.inputs;
+    system = "x86_64-linux";
+  }) // {
     nixpkgs = home.pkgs;
-    nixpkgs-weekly = foundation.inputs.nixpkgs-weekly.legacyPackages.x86_64-linux;
-    nixpkgs-unstable = foundation.inputs.nixpkgs-unstable.legacyPackages.x86_64-linux;
-    devenv = foundation.inputs.devenv.packages.x86_64-linux;
+    devenv = foundation.lib.inputs.devenv.packages.x86_64-linux;
   };
   installed = map (p: p.outPath) c.home.packages;
-  expectedFirefox = sources.nixpkgs-weekly.firefox.override {
+  expectedFirefox = sources.browser-weekly.firefox.override {
     extraPolicies = lib.optionalAttrs (plan.profile.host.model == "dell-xps-9350" && plan.profile.host.camera) {
       Preferences."media.webrtc.camera.allow-pipewire" = {
         Value = true;
@@ -27,7 +28,11 @@
       raw =
         if (app.recipe or null) == "finite-ghostty"
         then import ../modules/apps/ghostty/_package.nix {pkgs = home.pkgs;}
-        else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.input};
+        else if (app.recipe or null) == "zoom-gnome-media-keys"
+        then sources.office-weekly.zoom-us.override {targetPkgs = p: [p.gnome-settings-daemon];}
+        else if app.input == "ai"
+        then foundation.lib.inputs.${app.pin}.packages.x86_64-linux.${app.attribute}
+        else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.pin or app.input};
       expected =
         if app.graphical
         then

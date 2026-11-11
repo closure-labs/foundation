@@ -8,7 +8,8 @@ import tempfile
 from test_home import home, INFO
 
 ROOT = Path(__file__).resolve().parents[1]
-CHANNELS = ("nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable")
+CHANNELS = ("nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable",
+            "passwords-stable", "passwords-weekly", "office-stable", "office-weekly", "browser-weekly")
 PREFIX = 'let f = builtins.getFlake ' + json.dumps("path:" + str(ROOT)) + '; '
 
 
@@ -20,7 +21,7 @@ def evaluate(body, check=True, environment=None):
 
 def fixture(policy, channel, name="foundation-policy-fixture"):
     return '''sets = import (f.outPath + "/modules/providers/nixpkgs/_package-sets.nix") {
-      inputs = f.inputs; system = "x86_64-linux"; packagePolicy = POLICY;
+      inputs = f.lib.inputs; system = "x86_64-linux"; packagePolicy = POLICY;
     }; pkgs = sets.CHANNEL;
     in (pkgs.runCommand "NAME" { meta.license = pkgs.lib.licenses.unfree; } "touch $out").drvPath
     '''.replace("POLICY", policy).replace("CHANNEL", channel).replace("NAME", name)
@@ -39,10 +40,10 @@ def validate_generated_customization():
 
         def generated(policy, check=True):
             return evaluate('''sets = import (f.outPath + "/modules/providers/nixpkgs/_package-sets.nix") {
-                inputs = f.inputs; system = "x86_64-linux"; packagePolicy = POLICY;
+                inputs = f.lib.inputs; system = "x86_64-linux"; packagePolicy = POLICY;
               };
               custom = import (builtins.toPath CUSTOMIZATION) {
-                inputs = f.inputs; pkgs = sets.nixpkgs; foundationPackageSets = sets;
+                inputs = f.lib.inputs; pkgs = sets.nixpkgs; foundationPackageSets = sets;
               };
               in map (package: package.drvPath) custom.home.packages'''
                 .replace("POLICY", policy).replace("CUSTOMIZATION", home.nix_value(str(customization))), check=check)
@@ -61,7 +62,7 @@ def validate_generated_customization():
 def main():
     validate_generated_customization()
     defaults = json.loads(evaluate('''sets = import (f.outPath + "/modules/providers/nixpkgs/_package-sets.nix") {
-      inputs = f.inputs; system = "x86_64-linux";
+      inputs = f.lib.inputs; system = "x86_64-linux";
     }; in builtins.mapAttrs (_: pkgs: pkgs.config.allowUnfree) sets''').stdout)
     assert defaults == {channel: True for channel in CHANNELS}, defaults
     for channel in CHANNELS:
@@ -93,7 +94,7 @@ def main():
                   '{ allowedUnfreePackages = [42]; }', '{ unknown = true; }',
                   '{ unfree = "deny"; allowedUnfreePackages = ["steam"]; }',
                   '{ unfree = "allowlist"; allowedUnfreePackages = [""]; }'):
-        result = evaluate('policy = import (f.outPath + "/modules/providers/nixpkgs/_policy.nix") { lib = f.inputs.nixpkgs.lib; }; in policy ' + value, check=False)
+        result = evaluate('policy = import (f.outPath + "/modules/providers/nixpkgs/_policy.nix") { lib = f.lib.inputs.nixpkgs.lib; }; in policy ' + value, check=False)
         assert result.returncode != 0, value
         assert "packagePolicy" in result.stderr, result.stderr
     print("Package policy: default/explicit allow parity, deny and allowlist across all channels and generated customization; invalid policies rejected", flush=True)
