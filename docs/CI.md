@@ -62,3 +62,29 @@ nix run path:.#write-ci-graph
 The second command writes the manifest and [diagram](ARCHITECTURE.md). Drift fails CI. The gate recomputes the plan and rejects missing results, changed selections, failures, cancellations or an unexpected skipped Nix job.
 
 See [module conventions](MODULES.md) before changing dependency declarations. Record validation results in the pull request rather than adding temporary reports to the documentation tree.
+
+## Scheduled flake updates
+
+`lock-update.yml` checks every four hours (23 minutes past the hour, UTC), and
+supports manual dispatch. It refreshes all flake inputs and synchronizes `gen`
+with Den's tested revision. Unchanged pins skip validation and PR creation.
+Changed pins pass the existing fixture and Nix checks before opening or updating
+one PR on `automation/flake-lock`. The Decider App token allows normal PR CI to
+run. The separate weekly stable Home Manager release workflow is unchanged.
+
+Configure `DECIDER_CLIENT` as a repository variable, `DECIDER_KEY` as a secret,
+and `DECIDER_BOT_LOGIN` as the exact installed App bot login (for example,
+`ci-decider[bot]`; Maestro uses `cl-decider[bot]`). Install that App on Foundation
+with Contents and Pull requests write access. There is no personal-token fallback.
+Enable squash merging and Allow auto-merge in repository settings.
+
+An active main branch ruleset must require at least one approving review,
+dismiss stale approvals on new commits, and require `CI gate` from GitHub Actions
+(integration ID 15368). Do not give the Decider App a ruleset bypass. Keep Dale
+eligible to approve independently of the App. The merge helper verifies these
+review/check requirements, the PR author, source repository, branch, and file
+allowlist before enabling GitHub auto-merge against the observed head SHA.
+Missing settings fail closed, leaving the PR open for manual attention. Classic
+branch protection alone is insufficient for this helper; use an active ruleset.
+Approval plus passing required checks permits GitHub to merge; a subsequent pin
+refresh requires fresh approval. Scheduled execution can be delayed by GitHub.
