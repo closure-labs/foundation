@@ -16,7 +16,7 @@
     };
     gen = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:sini/gen/da9d09146df822f7d67ee6843475e471534cf041";
+      url = "github:sini/gen/857e01c2b5830673dc13fdc07a3f77fb5cf62343";
     };
     home-manager = {
       inputs.nixpkgs.follows = "nixpkgs";
