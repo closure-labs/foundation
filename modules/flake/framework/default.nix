@@ -8,7 +8,7 @@
     inputs = {
       den.url = "github:denful/den";
       # Match the repository's tested hub and deduplicate its sibling libraries.
-      gen.url = "github:sini/gen/da9d09146df822f7d67ee6843475e471534cf041";
+      gen.url = "github:sini/gen/857e01c2b5830673dc13fdc07a3f77fb5cf62343";
       gen.inputs.nixpkgs.follows = "nixpkgs";
 
       flake-parts.inputs.nixpkgs-lib.follows = "determinate/nix/nixpkgs";
