@@ -3,7 +3,7 @@
 
 ```mermaid
 flowchart LR
-  F["Feature descriptors: 150"] --> C["Pure catalogs and profile roots"]
+  F["Feature descriptors: 153"] --> C["Pure catalogs and profile roots"]
   F --> D["Ordered Den composition"]
   F --> G["Versioned CI graph"]
   C --> D
@@ -11,5 +11,5 @@ flowchart LR
   G --> CI["Affected cases and checks"]
 ```
 
-Discovered applications: 67; roles: 10; capabilities: 31.
+Discovered applications: 70; roles: 10; capabilities: 31.
 Discovery registers features. Profile roots activate them. Home evaluation checks actual Den membership against the graph.

@@ -9,7 +9,7 @@ from test_home import home, INFO
 
 ROOT = Path(__file__).resolve().parents[1]
 CHANNELS = ("nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable",
-            "passwords-stable", "passwords-weekly", "office-stable", "office-weekly", "browser-weekly")
+            "passwords-stable", "passwords-weekly", "office-stable", "office-weekly", "office-unstable", "browser-unstable")
 PREFIX = 'let f = builtins.getFlake ' + json.dumps("path:" + str(ROOT)) + '; '
 
 

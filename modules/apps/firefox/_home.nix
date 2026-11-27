@@ -10,7 +10,7 @@ args@{
     inherit inputs;
     system = pkgs.stdenv.hostPlatform.system;
   });
-  weekly = packageSets.browser-weekly;
+  browser = packageSets.browser-unstable;
   pipewireCameraPolicies =
     # Upstream Firefox keeps the PipeWire camera backend disabled because it
     # replaces V4L2 without a reliable fallback. Restrict it to the Dell IPU7
@@ -27,7 +27,7 @@ args@{
         Status = "locked";
       };
     };
-  finiteFirefox = weekly.firefox.override {
+  finiteFirefox = browser.firefox.override {
     extraPolicies = pipewireCameraPolicies;
   };
 in {
