@@ -5,7 +5,7 @@
   pkgs,
   ...
 }: let
-  chromium = config.lib.nixGL.wrap foundationPackageSets.browser-unstable.ungoogled-chromium;
+  chromium = config.lib.nixGL.wrap foundationPackageSets.nixpkgs-unstable.ungoogled-chromium;
   profileDirectory = config.xdg.configHome + "/ungoogled-chromium";
   launcher = pkgs.writeShellApplication {
     name = "ungoogled-chromium";

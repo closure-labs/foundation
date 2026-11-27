@@ -6,7 +6,6 @@
       "declaration" = "nix:nixpkgs:thunderbird";
       "graphical" = true;
       "input" = "nixpkgs";
-      "pin" = "office-stable";
       "provider" = "nix";
     };
   };

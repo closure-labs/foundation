@@ -9,10 +9,17 @@ native = json.loads(flake_lock.read_text())
 assert native["nodes"] == {native["root"]: {}}, "Foundation has native dependency pins"
 
 groups = tomllib.loads(declarations.read_text())["inputs"]
-assert {"password-managers", "office", "browser", "ai"} <= groups.keys()
+assert {"core", "development", "ai", "tooling"} <= groups.keys()
 pins = {name: pin["url"] for group in groups.values() for name, pin in group.items()}
 locked = json.loads(tack_lock.read_text())
 assert pins == locked.pop("$declared"), "Run Tack to lock the declared URLs"
 assert pins.keys() == locked.keys(), "Tack pin declarations and lock entries differ"
 assert all(pin.get("narHash") for pin in locked.values()), "Tack sources must be hash-pinned"
 assert all(pin["type"] != "path" for pin in locked.values()), "Local path pin in Tack lock"
+
+channels = {"nixpkgs", "nixpkgs-weekly", "nixpkgs-unstable"}
+assert channels <= pins.keys(), "The three shared Nixpkgs channels are required"
+assert all(
+    name in channels or url not in {pins[channel] for channel in channels}
+    for name, url in pins.items()
+), "Reuse shared Nixpkgs channels instead of pinning a second copy"

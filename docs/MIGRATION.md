@@ -28,6 +28,13 @@ Personal native inputs that follow a Foundation dependency need an explicit
 personal pin or a follow within their own consumer flake before migration.
 Foundation exposes its Tack dependencies to Home Manager modules as `inputs`.
 
+Foundation reads its own Tack files from the pinned Foundation source.
+The consumer flake does not need a local `.tack/`; a personal Tack directory,
+if present, is left alone. Run Home Manager as the workstation account, not
+with `sudo`. If the updater reports a permission error, check the reported
+path and any symlink target before changing permissions. Do not change
+ownership or permissions in `/nix/store`.
+
 ## Move an older consumer onto main
 
 New consumers use `github:closure-labs/foundation/main`. The former `latest-release` branch is no longer advanced by this repository's publishing workflow. Existing lock files still identify immutable sources; retiring the publisher does not change those builds. A current Foundation staged updater migrates a supported `latest-release` declaration to `main` when you explicitly apply an eligible update. Older installed helpers may still use the old release-only discovery, so use the manual route below to adopt this behavior.

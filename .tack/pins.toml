@@ -42,39 +42,18 @@ url = "github:gmodena/nix-flatpak"
 url = "github:nix-community/nixGL"
 follows = { nixpkgs = "nixpkgs" }
 
-[inputs.password-managers.passwords-stable]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
-
-[inputs.password-managers.passwords-weekly]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
-
-[inputs.office.office-stable]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
-
-[inputs.office.office-weekly]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
-
-[inputs.office.office-unstable]
-url = "github:NixOS/nixpkgs/nixpkgs-unstable"
-
-[inputs.browser.browser-unstable]
-url = "github:NixOS/nixpkgs/nixpkgs-unstable"
-
 [inputs.ai.chatgpt-desktop]
 url = "github:csoftware-arigpt/nixos-chatgpt"
 
 [inputs.ai.claude-desktop]
 url = "github:aaddrick/claude-desktop-debian"
-follows = { nixpkgs = "ai-weekly" }
+follows = { nixpkgs = "nixpkgs-weekly" }
 
 [inputs.ai.codex-cli-nix]
 url = "github:sadjow/codex-cli-nix"
 
 [inputs.ai.claude-code]
 url = "github:ryoppippi/nix-claude-code"
-
-[inputs.ai.ai-weekly]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
 
 [inputs.tooling.tack-tool]
 url = "github:manic-systems/tack/673997981720feebb3870645932b6cfe6657db9f"

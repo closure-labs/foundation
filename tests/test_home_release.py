@@ -27,11 +27,6 @@ url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
 [inputs.core.home-manager]
 url = "https://flakehub.com/f/nix-community/home-manager/0.2605"
 
-[inputs.office.office-stable]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
-
-[inputs.password-managers.passwords-stable]
-url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
 # personal comment
 """
         )
@@ -65,10 +60,10 @@ url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
         run.assert_not_called()
         self.assertEqual(self.snapshot(), self.before)
 
-    def test_advances_the_core_pair_and_stable_app_pins(self):
+    def test_advances_only_the_core_pair(self):
         def run(command, **kwargs):
             self.assertEqual(release.stable_pair(self.root), "26.11")
-            self.assertEqual(command[-4:], list(release.STABLE_PINS))
+            self.assertEqual(command[-2:], list(release.STABLE_PINS))
             self.assertEqual(kwargs, {"cwd": self.root, "check": True})
             (self.root / release.LOCK).write_text("new lock")
 

@@ -415,9 +415,16 @@ def locked(root):
 
 
 def copy_configuration(source, target):
-    shutil.copytree(source, target, symlinks=True, ignore=lambda _p, entries: [
-        name for name in entries if name in EXCLUDED or name.startswith("result-")
-    ])
+    try:
+        shutil.copytree(source, target, symlinks=True, ignore=lambda _p, entries: [
+            name for name in entries if name in EXCLUDED or name.startswith("result-")
+        ])
+    except (PermissionError, shutil.Error) as error:
+        raise ValueError(
+            f"Could not copy the Home Manager configuration as the current user: {error}. "
+            "Inspect the affected path and any symlink target. "
+            "Foundation's pinned .tack files can stay read-only; do not modify /nix/store."
+        ) from error
 
 
 def validate_runtime_profile(profile, catalog):

@@ -14,7 +14,7 @@
     devenv = foundation.lib.inputs.devenv.packages.x86_64-linux;
   };
   installed = map (p: p.outPath) c.home.packages;
-  expectedFirefox = sources.browser-unstable.firefox.override {
+  expectedFirefox = sources.nixpkgs-unstable.firefox.override {
     extraPolicies = lib.optionalAttrs (plan.profile.host.model == "dell-xps-9350" && plan.profile.host.camera) {
       Preferences."media.webrtc.camera.allow-pipewire" = {
         Value = true;
@@ -29,7 +29,7 @@
         if (app.recipe or null) == "finite-ghostty"
         then import ../modules/apps/ghostty/_package.nix {pkgs = home.pkgs;}
         else if (app.recipe or null) == "zoom-gnome-media-keys"
-        then sources.office-weekly.zoom-us.override {targetPkgs = p: [p.gnome-settings-daemon];}
+        then sources.nixpkgs-weekly.zoom-us.override {targetPkgs = p: [p.gnome-settings-daemon];}
         else if app.input == "ai"
         then foundation.lib.inputs.${app.pin}.packages.x86_64-linux.${app.attribute}
         else lib.getAttrFromPath (lib.splitString "." app.attribute) sources.${app.pin or app.input};

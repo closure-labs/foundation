@@ -6,7 +6,6 @@
       "declaration" = "nix:nixpkgs-unstable:firefox";
       "graphical" = true;
       "input" = "nixpkgs-unstable";
-      "pin" = "browser-unstable";
       "provider" = "nix";
       "recipe" = "configured-firefox";
     };

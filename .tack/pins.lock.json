@@ -1,7 +1,5 @@
 {
   "$declared": {
-    "ai-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
-    "browser-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
     "chatgpt-desktop": "github:csoftware-arigpt/nixos-chatgpt",
     "claude-code": "github:ryoppippi/nix-claude-code",
     "claude-desktop": "github:aaddrick/claude-desktop-debian",
@@ -18,28 +16,7 @@
     "nixpkgs": "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1",
     "nixpkgs-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
     "nixpkgs-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
-    "office-stable": "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1",
-    "office-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
-    "office-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
-    "passwords-stable": "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1",
-    "passwords-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
     "tack-tool": "github:manic-systems/tack/673997981720feebb3870645932b6cfe6657db9f"
-  },
-  "ai-weekly": {
-    "lastModified": 1792773339,
-    "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
-    "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
-    "revCount": 1100280,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-weekly/0.1.1100280%2Brev-3ec636362e1816bc2f0888fa0fa2c69f1bc9e504/01a19fe6-9a46-7d82-a5bd-b6aa9c96b635/source.tar.gz"
-  },
-  "browser-unstable": {
-    "lastModified": 1793977579,
-    "narHash": "sha256-WrSODdZFVIs/Hh2NzC0bY+ROByi0bATg8WfePX8dPj8=",
-    "owner": "NixOS",
-    "repo": "nixpkgs",
-    "rev": "4fe25e12eb9f4c744966dd3de5a05246cf098601",
-    "type": "github"
   },
   "chatgpt-desktop": {
     "lastModified": 1795554980,
@@ -162,46 +139,6 @@
     "type": "github"
   },
   "nixpkgs-weekly": {
-    "lastModified": 1792773339,
-    "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
-    "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
-    "revCount": 1100280,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-weekly/0.1.1100280%2Brev-3ec636362e1816bc2f0888fa0fa2c69f1bc9e504/01a19fe6-9a46-7d82-a5bd-b6aa9c96b635/source.tar.gz"
-  },
-  "office-stable": {
-    "lastModified": 1792898606,
-    "narHash": "sha256-Mg3rRjsbMqhSMxop5PYMXos8SwAjejrxSgVThTvP9eg=",
-    "rev": "1f607aa79b6356ed45d3cd3c8079c196e79efa2c",
-    "revCount": 1016949,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-26.05-chilled/0.1.1016949%2Brev-1f607aa79b6356ed45d3cd3c8079c196e79efa2c/01a19fe6-8199-71c2-a1ba-460f1e14c03e/source.tar.gz"
-  },
-  "office-unstable": {
-    "lastModified": 1793977579,
-    "narHash": "sha256-WrSODdZFVIs/Hh2NzC0bY+ROByi0bATg8WfePX8dPj8=",
-    "owner": "NixOS",
-    "repo": "nixpkgs",
-    "rev": "4fe25e12eb9f4c744966dd3de5a05246cf098601",
-    "type": "github"
-  },
-  "office-weekly": {
-    "lastModified": 1792773339,
-    "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
-    "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",
-    "revCount": 1100280,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-weekly/0.1.1100280%2Brev-3ec636362e1816bc2f0888fa0fa2c69f1bc9e504/01a19fe6-9a46-7d82-a5bd-b6aa9c96b635/source.tar.gz"
-  },
-  "passwords-stable": {
-    "lastModified": 1792898606,
-    "narHash": "sha256-Mg3rRjsbMqhSMxop5PYMXos8SwAjejrxSgVThTvP9eg=",
-    "rev": "1f607aa79b6356ed45d3cd3c8079c196e79efa2c",
-    "revCount": 1016949,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-26.05-chilled/0.1.1016949%2Brev-1f607aa79b6356ed45d3cd3c8079c196e79efa2c/01a19fe6-8199-71c2-a1ba-460f1e14c03e/source.tar.gz"
-  },
-  "passwords-weekly": {
     "lastModified": 1792773339,
     "narHash": "sha256-rZLrzrC6i+jnTAlvPZHogKDulY7WWDEv9hJeHieO7Zw=",
     "rev": "3ec636362e1816bc2f0888fa0fa2c69f1bc9e504",

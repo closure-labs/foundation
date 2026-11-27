@@ -10,11 +10,11 @@ import tomllib
 
 PINS = ".tack/pins.toml"
 LOCK = ".tack/pins.lock.json"
-STABLE_PINS = ("nixpkgs", "home-manager", "office-stable", "passwords-stable")
+STABLE_PINS = ("nixpkgs", "home-manager")
 
 
 def stable_pair(root):
-    """Read the core series and validate the other stable declarations."""
+    """Read the core series and verify Home Manager uses the same series."""
     groups = tomllib.loads((root / PINS).read_text())["inputs"]
     pkgs = re.fullmatch(
         r"https://flakehub\.com/f/DeterminateSystems/nixpkgs-(\d{2})\.(05|11)-chilled/0\.1",
@@ -26,9 +26,6 @@ def stable_pair(root):
     home = "https://flakehub.com/f/nix-community/home-manager/0." + version.replace(".", "")
     if groups["core"]["home-manager"]["url"] != home:
         raise ValueError("Stable Nixpkgs and Home Manager pins must use the same series")
-    for group, pin in (("office", "office-stable"), ("password-managers", "passwords-stable")):
-        if groups[group][pin]["url"] != pkgs[0]:
-            raise ValueError(f"{pin} must track the stable Nixpkgs series")
     return version
 
 

@@ -85,15 +85,27 @@ Foundation began as Finite’s Home Manager template and now owns its modules an
 
 ### Updating Foundation's Tack pins
 
-Foundation commits `.tack/pins.toml` and `.tack/pins.lock.json`. Run Tack
-from the Foundation checkout to inspect or update one app group:
+Foundation commits `.tack/pins.toml` and `.tack/pins.lock.json`. Stable,
+weekly, and unstable are shared Nixpkgs channels, not per-app copies. The
+`ai` group still tracks the separate upstream AI applications.
+
+In a writable Foundation checkout, try a newer Firefox without activating a
+Home Manager generation or opening your regular browser profile:
 
 ```bash
-nix run path:.#tack -- look browser
-nix run path:.#tack -- update office
+nix run path:.#tack -- update nixpkgs-unstable
+git diff -- .tack/pins.lock.json
+nix run path:.#firefox-preview
 ```
 
-The app groups are `password-managers`, `office`, `browser`, and `ai`.
+This tries the Firefox version available in the updated Nixpkgs channel,
+which may lag Mozilla's release. The preview launches stock Firefox with a
+temporary profile, not Foundation's configured browser. Don't sign into
+Firefox Sync if you want an isolated test. The update also changes the
+checkout's other unstable packages, but installs none into your home.
+Use a disposable checkout if you don't want to keep the lock change.
+Don't run Tack updates in the Home Manager config or the Nix store.
+
 Use `python3 scripts/update-locks.py` for a coordinated update that keeps
 Den and gen paired. Pick optional 1Password, Zoom, or AI apps through the
 profile's package selection. Firefox and Element use community Nixpkgs

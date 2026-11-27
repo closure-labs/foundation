@@ -18,9 +18,6 @@
 in
   builtins.deepSeq policy (lib.genAttrs [
     "nixpkgs" "nixpkgs-weekly" "nixpkgs-unstable"
-    "passwords-stable" "passwords-weekly"
-    "office-stable" "office-weekly" "office-unstable"
-    "browser-unstable"
   ] (name:
     import inputs.${name} { inherit system config; }
   ))

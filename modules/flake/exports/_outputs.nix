@@ -8,6 +8,7 @@ inputs: let
       modules = [../../../customize.nix ../../local.nix];
     };
     applications = api.mkApplications {inherit pkgs;};
+    tack = inputs.tack-tool.packages.${system}.default;
   in {
     lib = api;
     flakeModules.aspects = ../../home/construction/_aspects.nix;
@@ -15,7 +16,7 @@ inputs: let
     packages.${system} = {
       foundation = applications.foundation;
       default = applications.foundation;
-      tack = inputs.tack-tool.packages.${system}.default;
+      inherit tack;
       home-apply = applications.homeApply;
       home-manager-template = api.mkConsumerTemplate {inherit pkgs;};
       home-profile-catalog = pkgs.writeText "home-profile-catalog.json" (builtins.toJSON api.homeCatalog);
@@ -30,7 +31,18 @@ inputs: let
       app = package: { type = "app"; program = pkgs.lib.getExe package; };
     in {
       default = app applications.foundation;
+      tack = app tack;
       foundation = app applications.foundation;
+      firefox-preview = app (pkgs.writeShellApplication {
+        name = "foundation-firefox-preview";
+        runtimeInputs = [pkgs.coreutils];
+        text = ''
+          profile="$(mktemp -d -t foundation-firefox-preview.XXXXXXXX)"
+          trap 'rm -rf -- "$profile"' EXIT
+          ${pkgs.lib.getExe inputs.nixpkgs-unstable.legacyPackages.${system}.firefox} \
+            --no-remote --profile "$profile"
+        '';
+      });
       home-profile = app applications.homeProfile;
       home-init = app applications.homeInit;
       home-bootstrap = app applications.homeBootstrap;
