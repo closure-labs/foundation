@@ -89,6 +89,12 @@ Foundation commits `.tack/pins.toml` and `.tack/pins.lock.json`. Stable,
 weekly, and unstable are shared Nixpkgs channels, not per-app copies. The
 `ai` group still tracks the separate upstream AI applications.
 
+Tack's `[all_follow]` shares common inputs throughout the dependency graph.
+Tack also locks shared `flake-utils` and `systems` from upstream lockfiles.
+See `.tack/pins.toml` for channel overrides and inputs retained for upstream
+binary caches or toolchain compatibility. Run `nix run path:.#tack -- dedup`
+to audit remaining duplicates before adding follows.
+
 In a writable Foundation checkout, try a newer Firefox without activating a
 Home Manager generation or opening your regular browser profile:
 

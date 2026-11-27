@@ -82,6 +82,14 @@
     "type": "tarball",
     "url": "https://api.flakehub.com/f/pinned/hercules-ci/flake-parts/0.1.500%2Brev-ea2630b7470978622c7689a1ff75d2b389175399/01a19ac2-dfcb-7d80-9e19-b995afbc39ec/source.tar.gz"
   },
+  "flake-utils": {
+    "lastModified": 1794427683,
+    "narHash": "sha256-o7ey9gEilsxaifqJWnBDlYSKbNWYQYtKwDyXeZU2kaU=",
+    "owner": "numtide",
+    "repo": "flake-utils",
+    "rev": "cd489559845d81f673a12885576016c65cbe9363",
+    "type": "github"
+  },
   "gen": {
     "lastModified": 1795509907,
     "narHash": "sha256-YGUxlPIp0OoHVakGjntY6fKqRPF6pvQYR3+9Mq3ARU8=",
@@ -110,6 +118,14 @@
     "owner": "gmodena",
     "repo": "nix-flatpak",
     "rev": "02656785ab214fa1c9655f1beaaf0269eeeec2ca",
+    "type": "github"
+  },
+  "nix-systems-default": {
+    "lastModified": 1791244623,
+    "narHash": "sha256-uuanbkFk8a313Zfrxdcz8Us/yQtaxNnKJtX8v0ZPpd8=",
+    "owner": "nix-systems",
+    "repo": "default",
+    "rev": "d36eeed142f88b5a636f2e3856a53c61654cf29b",
     "type": "github"
   },
   "nixGL": {
