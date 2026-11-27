@@ -17,17 +17,18 @@ class ApplicationDescriptorTests(unittest.TestCase):
     def test_grouped_descriptors_preserve_application_identity(self):
         for name, attribute, pin in (
             ("bitwarden", "bitwarden-desktop", "passwords-weekly"),
-            ("element", "element-desktop", "office-weekly"),
+            ("element", "element-desktop", "office-unstable"),
             ("nextcloud", "nextcloud-client", "office-weekly"),
             ("libreoffice", "libreoffice", "office-weekly"),
         ):
             with self.subTest(name=name):
                 descriptor = evaluate(f'builtins.removeAttrs (import {ROOT}/modules/apps/{name}/_feature.nix) ["configuration"]')
+                source = "nixpkgs-unstable" if name == "element" else "nixpkgs-weekly"
                 self.assertEqual(descriptor, {
                     "id": f"apps/{name}",
-                    "metadata": {"application": {"attribute": attribute, "declaration": f"nix:nixpkgs-weekly:{attribute}",
-                                "graphical": True, "input": "nixpkgs-weekly", "pin": pin, "provider": "nix"}},
-                    "dependencies": ["providers/nixpkgs-weekly", "providers/graphics"],
+                    "metadata": {"application": {"attribute": attribute, "declaration": f"nix:{source}:{attribute}",
+                                "graphical": True, "input": source, "pin": pin, "provider": "nix"}},
+                    "dependencies": [f"providers/{source}", "providers/graphics"],
                     "schemaDependencies": {},
                 })
                 function = evaluate(f'builtins.isFunction ((import {ROOT}/modules/apps/{name}/_feature.nix).configuration 3)')

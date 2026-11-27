@@ -96,7 +96,9 @@ nix run path:.#tack -- update office
 The app groups are `password-managers`, `office`, `browser`, and `ai`.
 Use `python3 scripts/update-locks.py` for a coordinated update that keeps
 Den and gen paired. Pick optional 1Password, Zoom, or AI apps through the
-profile's package selection.
+profile's package selection. Firefox and Element use community Nixpkgs
+unstable. LazyGit, LazySSH and Ungoogled Chromium are available as optional
+packages. Ungoogled Chromium uses a separate browser profile.
 
 Consumer flakes continue to pin Foundation with their native `flake.lock`.
 Foundation exposes its resolved dependencies through `foundation.lib.inputs`

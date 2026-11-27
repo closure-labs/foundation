@@ -14,7 +14,7 @@
     devenv = foundation.lib.inputs.devenv.packages.x86_64-linux;
   };
   installed = map (p: p.outPath) c.home.packages;
-  expectedFirefox = sources.browser-weekly.firefox.override {
+  expectedFirefox = sources.browser-unstable.firefox.override {
     extraPolicies = lib.optionalAttrs (plan.profile.host.model == "dell-xps-9350" && plan.profile.host.camera) {
       Preferences."media.webrtc.camera.allow-pipewire" = {
         Value = true;

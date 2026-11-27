@@ -1,7 +1,7 @@
 {
   "$declared": {
     "ai-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
-    "browser-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
+    "browser-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
     "chatgpt-desktop": "github:csoftware-arigpt/nixos-chatgpt",
     "claude-code": "github:ryoppippi/nix-claude-code",
     "claude-desktop": "github:aaddrick/claude-desktop-debian",
@@ -19,6 +19,7 @@
     "nixpkgs-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
     "nixpkgs-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
     "office-stable": "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1",
+    "office-unstable": "github:NixOS/nixpkgs/nixpkgs-unstable",
     "office-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
     "passwords-stable": "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1",
     "passwords-weekly": "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1",
@@ -32,13 +33,13 @@
     "type": "tarball",
     "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-weekly/0.1.1100280%2Brev-3ec636362e1816bc2f0888fa0fa2c69f1bc9e504/01a19fe6-9a46-7d82-a5bd-b6aa9c96b635/source.tar.gz"
   },
-  "browser-weekly": {
-    "lastModified": 1794537146,
-    "narHash": "sha256-Wpz/7x/YWnDIBu7yj6ixe8j6fIMsidd9Y+o1PqPF3iM=",
-    "rev": "d5cc6833999746cffdfe0598f7bc801a57b887a9",
-    "revCount": 1119549,
-    "type": "tarball",
-    "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-weekly/0.1.1119549%2Brev-d5cc6833999746cffdfe0598f7bc801a57b887a9/01a20c0b-f466-73a3-a47a-6ecabb444d60/source.tar.gz"
+  "browser-unstable": {
+    "lastModified": 1795371335,
+    "narHash": "sha256-oa2P5WZer1A4wuhatl92JyHHEjrrOdIyuvTuI5LUi9Q=",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "619c39f6eac5d1ed6b8f073a9414baf7034b2356",
+    "type": "github"
   },
   "chatgpt-desktop": {
     "lastModified": 1795554980,
@@ -175,6 +176,14 @@
     "revCount": 1018852,
     "type": "tarball",
     "url": "https://api.flakehub.com/f/pinned/DeterminateSystems/nixpkgs-26.05-chilled/0.1.1018852%2Brev-b349185bb79c7cf7ad8ea8c097931730bf473c71/01a20c0c-3b43-7040-b2c8-80f62c4a6b8b/source.tar.gz"
+  },
+  "office-unstable": {
+    "lastModified": 1795371335,
+    "narHash": "sha256-oa2P5WZer1A4wuhatl92JyHHEjrrOdIyuvTuI5LUi9Q=",
+    "owner": "NixOS",
+    "repo": "nixpkgs",
+    "rev": "619c39f6eac5d1ed6b8f073a9414baf7034b2356",
+    "type": "github"
   },
   "office-weekly": {
     "lastModified": 1794537146,
