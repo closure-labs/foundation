@@ -16,11 +16,11 @@ from pathlib import Path
 
 lock = json.loads(Path('flake.lock').read_text())
 assert all(node.get('locked', {}).get('type') != 'path' for node in lock['nodes'].values()), 'Local path pin in flake.lock'
-assert 'finite' not in lock['nodes'][lock['root']]['inputs'], 'Flake depends on Finite'
 for file in ('profile.json', 'finite-template.json', 'modules/providers/homebrew/_assets/brew-packages.json'):
     json.loads(Path(file).read_text())
 PY
 
+python3 tests/check-tack-pins.py flake.lock .tack/pins.toml .tack/pins.lock.json
 bash tests/brew-providers.sh
 bash tests/dell-panel-policy.sh
 PYTHONDONTWRITEBYTECODE=1 python3 tests/test_dell_grub.py

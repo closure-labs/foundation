@@ -28,7 +28,7 @@ jobs:
       - name: Detect changed pins
         id: changes
         run: |
-          if ! git diff --quiet -- flake.nix flake.lock; then
+          if ! git diff --quiet -- .tack/pins.toml .tack/pins.lock.json; then
             echo 'changed=true' >> "$GITHUB_OUTPUT"
           fi
       - name: Validate the proposed dependency pins
@@ -63,17 +63,14 @@ jobs:
           token: ${{ steps.decider.outputs.token }}
           base: main
           add-paths: |
-            flake.nix
-            flake.lock
-            modules/flake/framework/default.nix
-            modules/ci/_graph.json
-            docs/ARCHITECTURE.md
+            .tack/pins.toml
+            .tack/pins.lock.json
           branch: automation/flake-lock
           delete-branch: true
-          commit-message: 'chore(deps): update Nix flake inputs'
-          title: 'chore(deps): update Nix flake inputs'
+          commit-message: 'chore(deps): update Nix dependencies'
+          title: 'chore(deps): update Nix dependencies'
           body: |
-            Refreshes flake.lock after fixture checks, workflow lint, default-profile
+            Refreshes Tack pins after fixture checks, workflow lint, default-profile
             build, and selectable-profile evaluation pass with the new pins.
 
             Auto-merge waits for a human approval and the required CI gate.

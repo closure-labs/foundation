@@ -1,6 +1,6 @@
 import ../../profiles/composition/_nix-application-feature.nix {
   name = "element";
-  input = "nixpkgs-weekly";
+  input = "nixpkgs-unstable";
   attribute = "element-desktop";
   graphical = true;
 }

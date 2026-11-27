@@ -6,6 +6,9 @@ series, minor releases may change configuration interfaces.
 
 ## [Unreleased]
 
+- Move Foundation inputs to Tack with independently updateable app groups and opt-in 1Password, Zoom, and AI packages.
+- Set overridable Wayland defaults on Bluefin and Bluefin DX.
+
 - Keep inherited `GDK_BACKEND` overrides out of Bluefin's GNOME portal service so file dialogs and screen sharing remain available. Applications retain their own environment settings.
 - Reject consumer `extraInputs` that replace Foundation-owned pins; unrelated personal inputs and Home Manager module overrides remain supported. Rename colliding personal inputs or stop forwarding them.
 

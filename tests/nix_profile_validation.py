@@ -154,7 +154,7 @@ def main():
               default = f.lib.homeCatalog;
               current = f.lib.homeCatalogForSchema 3;
               custom = f.lib.mkHomeCatalog { domainCatalog = withImages; };
-              applications = builtins.fromJSON (builtins.readFile (f.lib.mkApplications {pkgs = f.inputs.nixpkgs.legacyPackages.x86_64-linux;}).profileCatalog);
+              applications = builtins.fromJSON (builtins.readFile (f.lib.mkApplications {pkgs = f.lib.inputs.nixpkgs.legacyPackages.x86_64-linux;}).profileCatalog);
               packaged = builtins.fromJSON (builtins.readFile f.packages.x86_64-linux.home-profile-catalog);
             }'''
             catalogs = json.loads(home.capture(["nix", "eval", "--impure", "--json", "--no-update-lock-file", "--expr", expression]))

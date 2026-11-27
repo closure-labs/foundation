@@ -21,7 +21,7 @@ def evaluate(source, checks=True):
 def main():
     with tempfile.TemporaryDirectory(prefix="foundation-helper-source-") as temporary:
         source = Path(temporary)
-        for directory in ("lib", "scripts", "modules", "templates", "tests", "docs"):
+        for directory in (".tack", "lib", "scripts", "modules", "templates", "tests", "docs"):
             shutil.copytree(ROOT / directory, source / directory, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         for name in ("flake.nix", "flake.lock", "VERSION", "foundation.json", "profile.json", "customize.nix",
                      "finite-template.json", "legacy-managed.json", "LICENSE", "NOTICE", "ORIGIN.md", "README.md"):
@@ -32,7 +32,7 @@ def main():
                      "flake.lock", "profile.json", "customize.nix", "modules/local.nix", "legacy-managed.json", "VERSION",
                      "foundation.json", "LICENSE", "NOTICE", "ORIGIN.md", "templates/default/customize.nix"):
             assert (helper / name).is_file(), name
-        for name in ("flake.nix", "README.md", "tests", "templates/default/flake.nix",
+        for name in (".tack", "flake.nix", "README.md", "tests", "templates/default/flake.nix",
                      "templates/default/profile.json", "templates/default/modules", "scripts/ci_plan.py", "modules/ci"):
             assert not (helper / name).exists(), name
         source.joinpath("README.md").write_text("Documentation-only change.\n")
@@ -41,7 +41,7 @@ def main():
         source.joinpath("scripts/ci_plan.py").write_text("# CI-only change.\n")
         after = evaluate(source)
         assert after["helper"] == before["helper"]
-        assert {k:v for k,v in after["checks"].items() if k not in ("check-flake-file", "ci-graph", "consumer-template")} == {k:v for k,v in before["checks"].items() if k not in ("check-flake-file", "ci-graph", "consumer-template")}, (before["checks"], after["checks"])
+        assert {k:v for k,v in after["checks"].items() if k not in ("check-tack-pins", "ci-graph", "consumer-template")} == {k:v for k,v in before["checks"].items() if k not in ("check-tack-pins", "ci-graph", "consumer-template")}, (before["checks"], after["checks"])
         assert before["metadata"]["narHash"] == before["narHash"]
         assert after["metadata"]["narHash"] == after["narHash"]
         assert before["narHash"] != after["narHash"]

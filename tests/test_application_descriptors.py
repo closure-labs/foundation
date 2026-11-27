@@ -14,16 +14,20 @@ def evaluate(expression):
 
 
 class ApplicationDescriptorTests(unittest.TestCase):
-    def test_migrated_descriptors_are_exactly_equivalent(self):
-        for name, attribute in (("bitwarden", "bitwarden-desktop"), ("element", "element-desktop"),
-                                ("nextcloud", "nextcloud-client"), ("libreoffice", "libreoffice")):
+    def test_shared_channels_preserve_application_identity(self):
+        for name, attribute, source in (
+            ("bitwarden", "bitwarden-desktop", "nixpkgs-weekly"),
+            ("element", "element-desktop", "nixpkgs-unstable"),
+            ("nextcloud", "nextcloud-client", "nixpkgs-weekly"),
+            ("libreoffice", "libreoffice", "nixpkgs-weekly"),
+        ):
             with self.subTest(name=name):
                 descriptor = evaluate(f'builtins.removeAttrs (import {ROOT}/modules/apps/{name}/_feature.nix) ["configuration"]')
                 self.assertEqual(descriptor, {
                     "id": f"apps/{name}",
-                    "metadata": {"application": {"attribute": attribute, "declaration": f"nix:nixpkgs-weekly:{attribute}",
-                                "graphical": True, "input": "nixpkgs-weekly", "provider": "nix"}},
-                    "dependencies": ["providers/nixpkgs-weekly", "providers/graphics"],
+                    "metadata": {"application": {"attribute": attribute, "declaration": f"nix:{source}:{attribute}",
+                                "graphical": True, "input": source, "provider": "nix"}},
+                    "dependencies": [f"providers/{source}", "providers/graphics"],
                     "schemaDependencies": {},
                 })
                 function = evaluate(f'builtins.isFunction ((import {ROOT}/modules/apps/{name}/_feature.nix).configuration 3)')

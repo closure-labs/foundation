@@ -4,6 +4,12 @@
   ...
 }:
 let
+  waylandEnvironment = lib.mapAttrs (_: lib.mkDefault) {
+    NIXOS_OZONE_WL = "1";
+    MOZ_ENABLE_WAYLAND = "1";
+    QT_QPA_PLATFORM = "wayland;xcb";
+    GDK_BACKEND = "wayland,x11";
+  };
   source = pkgs.runCommand "foundation-bluefin-preparation-source" { } ''
     mkdir -p "$out"
     cp ${./_prepare.py} "$out/prepare.py"
@@ -16,6 +22,9 @@ let
   };
 in
 {
+  home.sessionVariables = waylandEnvironment;
+  systemd.user.sessionVariables = waylandEnvironment;
+
   # GNOME's portal rejects inherited GDK_BACKEND fallback lists and then
   # exports Settings alone, breaking Save As dialogs and screen sharing.
   # Scope the correction to the host portal; applications keep their own env.

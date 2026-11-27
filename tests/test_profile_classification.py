@@ -183,8 +183,12 @@ else:
         packages = events[1]
         start = packages.index("FALSE")
         rows = packages[start:]
-        self.assertEqual(rows[3::4], ["hack-font", "herdr", "jj", "opencode", "uv"])
-        self.assertEqual(rows[0::4], ["FALSE", "FALSE", "FALSE", "FALSE", "TRUE"])
+        self.assertEqual(rows[3::4], [
+            "hack-font", "herdr", "jj", "opencode", "uv", "1password", "1password-cli",
+            "zoom", "chatgpt-desktop", "claude-desktop", "codex-cli", "claude-code",
+            "lazygit", "lazyssh", "ungoogled-chromium",
+        ])
+        self.assertEqual(rows[0::4], ["FALSE"] * 4 + ["TRUE"] + ["FALSE"] * 10)
         self.assertEqual(events[-1], ["foundation-home-apply", "--roles", "developer,support", "--packages", "jj,uv", "--capabilities", "recording", "--approve-preview", "a" * 64])
 
     def test_cancel_either_dialog_never_applies(self):

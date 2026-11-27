@@ -178,7 +178,7 @@ def make_plan(paths, full=False, baseline=None, graph=None):
         checks = [name for name in FULL_CHECKS if affected & closure(
             graph, graph["checks"][name]["schema"], graph["checks"][name]["roots"])]
         if affected:
-            checks += [name for name in ("check-flake-file", "ci-graph") if name not in checks]
+            checks += [name for name in ("check-tack-pins", "ci-graph") if name not in checks]
         plan.update(mode="focused" if affected else "docs", contracts=bool(affected & CONTRACT_OWNERS), baseline=baseline,
                     graph=graph_digest(graph), checks=checks, **selections)
         return plan

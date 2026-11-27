@@ -1,35 +1,32 @@
 #!/usr/bin/env python3
-"""Advance the stable pair from its owners, regenerating artifacts as one change."""
+"""Advance the stable pair in Tack as one change."""
 from pathlib import Path
 import re
 import subprocess
 import urllib.error
 import urllib.request
+import tomllib
 
 
-NIXPKGS_OWNER = "modules/providers/nixpkgs/default.nix"
-HOME_MANAGER_OWNER = "modules/home/construction/default.nix"
-TRANSACTION_PATHS = (
-    NIXPKGS_OWNER,
-    HOME_MANAGER_OWNER,
-    "flake.nix",
-    "flake.lock",
-    "modules/ci/_graph.json",
-    "docs/ARCHITECTURE.md",
-)
+PINS = ".tack/pins.toml"
+LOCK = ".tack/pins.lock.json"
+STABLE_PINS = ("nixpkgs", "home-manager")
 
 
 def stable_pair(root):
-    """Read the declarations, never infer an input owner from generated flake.nix."""
-    nixpkgs = (root / NIXPKGS_OWNER).read_text()
-    home_manager = (root / HOME_MANAGER_OWNER).read_text()
-    versions = re.findall(r'https://flakehub\.com/f/DeterminateSystems/nixpkgs-(\d{2})\.(05|11)-chilled/0\.1"', nixpkgs)
-    homes = re.findall(r'https://flakehub\.com/f/nix-community/home-manager/0\.(\d{2})(05|11)"', home_manager)
-    if len(versions) != 1 or len(homes) != 1:
-        raise ValueError("Expected one stable input declaration in each owning module")
-    if versions[0] != homes[0]:
-        raise ValueError("Stable Nixpkgs and Home Manager owner declarations must use the same series")
-    return ".".join(versions[0])
+    """Read the core series and verify Home Manager uses the same series."""
+    groups = tomllib.loads((root / PINS).read_text())["inputs"]
+    pkgs = re.fullmatch(
+        r"https://flakehub\.com/f/DeterminateSystems/nixpkgs-(\d{2})\.(05|11)-chilled/0\.1",
+        groups["core"]["nixpkgs"]["url"],
+    )
+    if pkgs is None:
+        raise ValueError("Expected a stable Nixpkgs URL")
+    version = ".".join(pkgs.groups())
+    home = "https://flakehub.com/f/nix-community/home-manager/0." + version.replace(".", "")
+    if groups["core"]["home-manager"]["url"] != home:
+        raise ValueError("Stable Nixpkgs and Home Manager pins must use the same series")
+    return version
 
 
 def next_series(current):
@@ -63,23 +60,22 @@ def advance(root):
     if not available(candidate):
         return False
 
-    # Keep user edits and generated artifacts intact if any generation/update fails.
-    before = {relative: (root / relative).read_bytes() for relative in TRANSACTION_PATHS}
+    pins, lock = root / PINS, root / LOCK
+    before = {path: path.read_bytes() for path in (pins, lock)}
     try:
-        for relative, old, new in (
-            (NIXPKGS_OWNER, f"nixpkgs-{current}-chilled", f"nixpkgs-{candidate}-chilled"),
-            (HOME_MANAGER_OWNER, "home-manager/0." + current.replace(".", ""), "home-manager/0." + candidate.replace(".", "")),
-        ):
-            path = root / relative
-            path.write_text(path.read_text().replace(old, new))
-        subprocess.run(["nix", "run", "--no-update-lock-file", "path:.#write-flake"], cwd=root, check=True)
-        subprocess.run(["nix", "flake", "update", "nixpkgs", "home-manager"], cwd=root, check=True)
-        subprocess.run(["nix", "run", "--no-update-lock-file", "path:.#write-ci-graph"], cwd=root, check=True)
+        text = pins.read_text()
+        text = text.replace(f"nixpkgs-{current}-chilled", f"nixpkgs-{candidate}-chilled")
+        text = text.replace("home-manager/0." + current.replace(".", ""), "home-manager/0." + candidate.replace(".", ""))
+        pins.write_text(text)
+        subprocess.run(
+            ["nix", "run", "--no-update-lock-file", "path:.#tack", "--", "update", *STABLE_PINS],
+            cwd=root, check=True,
+        )
     except BaseException:
-        for relative, contents in before.items():
-            (root / relative).write_bytes(contents)
+        for path, contents in before.items():
+            path.write_bytes(contents)
         raise
-    print(f"Advanced stable owner declarations and generated artifacts from {current} to {candidate}")
+    print(f"Advanced the stable Tack pins from {current} to {candidate}")
     return True
 
 

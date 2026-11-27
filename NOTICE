@@ -8,4 +8,7 @@ modules/capabilities/devops/_assets/rootfs/usr/share/finite/zsh/
 includes work Copyright (c) 2026 Radley Sidwell-Lewis, distributed under
 the MIT License. Its original LICENSE is retained in that directory.
 
+The generated Tack resolver at .tack/default.nix is distributed under the
+European Union Public Licence 1.2. See .tack/LICENSE for the upstream licence.
+
 Dependency packages retain their respective licenses.

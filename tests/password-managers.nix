@@ -2,7 +2,7 @@
 # the real pinned native security wrapper. Physical browser integration is separate.
 { foundation }:
 let
-  pkgs = foundation.inputs.nixpkgs.legacyPackages.x86_64-linux;
+  pkgs = foundation.lib.inputs.nixpkgs.legacyPackages.x86_64-linux;
   inherit (pkgs) lib;
   fake =
     version:
@@ -26,7 +26,7 @@ let
     (lib.evalModules {
       specialArgs = {
         inherit pkgs;
-        inputs = foundation.inputs;
+        inputs = foundation.lib.inputs;
       };
       modules = [
         {

@@ -1,0 +1,74 @@
+# Tack pins are resolved by flake.nix. Update sources with tack update <group>.
+[tack]
+recomposable = true
+
+[all_follow]
+nixpkgs = "nixpkgs"
+import-tree = "import-tree"
+flake-parts = "flake-parts"
+# Tack locks these targets from the upstream lockfiles.
+flake-utils = "flake-utils"
+systems = "nix-systems-default"
+
+[inputs.core.den]
+url = "github:denful/den"
+
+[inputs.core.gen]
+url = "github:sini/gen/857e01c2b5830673dc13fdc07a3f77fb5cf62343"
+
+[inputs.core.determinate]
+url = "https://flakehub.com/f/DeterminateSystems/determinate/3"
+# Keep the Nix build's tested package and module inputs.
+exclude_follow = ["nixpkgs", "flake-parts"]
+
+[inputs.core.flake-parts]
+url = "https://flakehub.com/f/hercules-ci/flake-parts/0.1"
+follows = { nixpkgs-lib = "determinate/nix/nixpkgs" }
+
+[inputs.core.home-manager]
+url = "https://flakehub.com/f/nix-community/home-manager/0.2605"
+
+[inputs.core.import-tree]
+url = "github:denful/import-tree/a164a12202f58eb67559bd33b5592f20660d9baf"
+
+[inputs.core.nixpkgs]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
+
+[inputs.core.nixpkgs-weekly]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1"
+
+[inputs.development.devenv]
+url = "github:cachix/devenv/v2.2.2"
+# devenv uses its own Nixpkgs fork and publishes this dependency graph to Cachix.
+exclude_follow = ["nixpkgs", "flake-parts"]
+
+[inputs.development.nixpkgs-unstable]
+url = "github:NixOS/nixpkgs/nixpkgs-unstable"
+
+[inputs.desktop-integration.nix-flatpak]
+url = "github:gmodena/nix-flatpak"
+
+[inputs.desktop-integration.nixGL]
+url = "github:nix-community/nixGL"
+
+[inputs.ai.chatgpt-desktop]
+url = "github:csoftware-arigpt/nixos-chatgpt"
+
+[inputs.ai.claude-desktop]
+url = "github:aaddrick/claude-desktop-debian"
+follows = { nixpkgs = "nixpkgs-weekly" }
+
+[inputs.ai.codex-cli-nix]
+url = "github:sadjow/codex-cli-nix"
+# Preserve the upstream Cachix output when Foundation's channels advance.
+exclude_follow = ["nixpkgs", "flake-utils", "systems"]
+
+[inputs.ai.claude-code]
+url = "github:ryoppippi/nix-claude-code"
+# Preserve upstream package identity for binary substitution.
+exclude_follow = ["nixpkgs"]
+
+[inputs.tooling.tack-tool]
+url = "github:manic-systems/tack/673997981720feebb3870645932b6cfe6657db9f"
+# Keep Tack's tested Rust build and development toolchain.
+exclude_follow = ["nixpkgs"]

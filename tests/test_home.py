@@ -103,6 +103,47 @@ class ConsumerTests(unittest.TestCase):
         (self.activation / "activate").write_text("#!/bin/sh\nexit 0\n")
         (self.activation / "activate").chmod(0o755)
 
+    def test_tack_consumer_does_not_copy_foundation_pins(self):
+        self.assertFalse((self.root / ".tack").exists())
+        self.assertNotIn(".tack", (self.root / "flake.nix").read_text())
+
+    def test_staging_and_commit_preserve_personal_tack(self):
+        pins = self.root / ".tack"
+        pins.mkdir()
+        lock = pins / "pins.lock.json"
+        lock.write_text("personal lock")
+        lock.chmod(0o444)
+        link = pins / "resolver.nix"
+        link.symlink_to("pins.lock.json")
+        stage = self.base / "staged"
+        home.copy_configuration(self.root, stage)
+        copied = stage / ".tack" / lock.name
+        self.assertEqual(copied.read_text(), "personal lock")
+        self.assertEqual(copied.stat().st_mode & 0o777, 0o444)
+        self.assertEqual(copied.stat().st_uid, os.getuid())
+        self.assertEqual(os.readlink(stage / ".tack" / link.name), lock.name)
+        inode = lock.stat().st_ino
+        with patch.object(home, "previous_generation", return_value=None), \
+                patch.dict(os.environ, {"XDG_CONFIG_HOME": str(self.base / "config")}):
+            home.commit_stage(self.root, stage, home.tree_digest(self.root), self.activation)
+        self.assertEqual(lock.stat().st_ino, inode)
+        self.assertEqual(lock.read_text(), "personal lock")
+        self.assertEqual(os.readlink(link), lock.name)
+
+    @unittest.skipIf(os.geteuid() == 0, "requires an unprivileged account")
+    def test_unreadable_tack_file_reports_exact_path_without_changing_source(self):
+        pins = self.root / ".tack"
+        pins.mkdir()
+        lock = pins / "pins.lock.json"
+        lock.write_text("personal lock")
+        lock.chmod(0)
+        try:
+            with self.assertRaisesRegex(ValueError, r"\.tack/pins\.lock\.json"):
+                home.copy_configuration(self.root, self.base / "staged")
+            self.assertEqual(lock.stat().st_mode & 0o777, 0)
+        finally:
+            lock.chmod(0o600)
+
     def test_lock_re_roots_follows_and_keeps_exact_pins(self):
         lock = home.consumer_lock(LOCK, INFO)
         self.assertEqual(lock["nodes"]["foundation-gen"]["inputs"]["nixpkgs"], ["foundation", "nixpkgs"])
@@ -434,19 +475,14 @@ class ConsumerTests(unittest.TestCase):
             commit.assert_called_once()
             self.assertEqual(revalidate.call_count, 2)
 
-    def test_migration_rebases_personal_follows_without_changing_sources(self):
-        original = {"nixpkgs": {"url": "core"}, "nixpkgs-unstable": {"url": "unstable"}, "personal": {
-            "url": "github:example/personal/commit",
-            "inputs": {"nixpkgs": {"follows": "nixpkgs"}},
-        }, "alias": {"follows": "nixpkgs-weekly"}, "unstable-alias": {"follows": "nixpkgs-unstable"}}
-        extras = home.migrate_input_declarations(original)
-        self.assertNotIn("nixpkgs", extras)
-        self.assertNotIn("nixpkgs-unstable", extras)
-        self.assertEqual(extras["personal"]["inputs"]["nixpkgs"]["follows"], "foundation/nixpkgs")
-        self.assertEqual(extras["alias"]["follows"], "foundation/nixpkgs-weekly")
-        self.assertEqual(extras["unstable-alias"]["follows"], "foundation/nixpkgs-unstable")
-        self.assertEqual(original["personal"]["inputs"]["nixpkgs"]["follows"], "nixpkgs")
-        self.assertEqual(extras["personal"]["url"], original["personal"]["url"])
+    def test_migration_requires_personal_pins_for_core_follows(self):
+        personal = {"url": "github:example/personal/commit"}
+        original = {"nixpkgs": {"url": "core"}, "personal": personal}
+        self.assertEqual(home.migrate_input_declarations(original), {"personal": personal})
+        personal["inputs"] = {"nixpkgs": {"follows": "nixpkgs"}}
+        with self.assertRaisesRegex(ValueError, "follows nixpkgs"):
+            home.migrate_input_declarations(original)
+        self.assertEqual(personal["inputs"]["nixpkgs"]["follows"], "nixpkgs")
 
     def test_concurrent_edit_prevents_installation(self):
         digest = home.tree_digest(self.root)

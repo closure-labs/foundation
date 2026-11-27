@@ -7,13 +7,13 @@
     "nixgl-wrapper"
     "desktop-icons"
     "profile-generation"
-    "check-flake-file"
+    "check-tack-pins"
     "ci-graph"
     "consumer-template"
   ];
   automation.checks = [
     "profile-generation"
-    "check-flake-file"
+    "check-tack-pins"
     "ci-graph"
   ];
 }

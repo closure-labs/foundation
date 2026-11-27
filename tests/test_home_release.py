@@ -18,58 +18,39 @@ class HomeReleaseTests(unittest.TestCase):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
-        for relative in release.TRANSACTION_PATHS:
-            path = self.root / relative
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text("original fixture: " + relative + "\n")
-        (self.root / release.NIXPKGS_OWNER).write_text(
-            '{ ... }: { flake-file.inputs.nixpkgs.url = '
-            '"https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"; }\n'
+        (self.root / ".tack").mkdir()
+        (self.root / release.PINS).write_text(
+            """
+[inputs.core.nixpkgs]
+url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-26.05-chilled/0.1"
+
+[inputs.core.home-manager]
+url = "https://flakehub.com/f/nix-community/home-manager/0.2605"
+
+# personal comment
+"""
         )
-        (self.root / release.HOME_MANAGER_OWNER).write_text(
-            '{ ... }: { flake-file.inputs.home-manager.url = '
-            '"https://flakehub.com/f/nix-community/home-manager/0.2605"; }\n'
-        )
-        # An unrelated local edit must survive both successful and failed updates.
-        with (self.root / release.NIXPKGS_OWNER).open("a") as owner:
-            owner.write("\n# personal comment\n")
+        (self.root / release.LOCK).write_text("old lock")
         self.before = self.snapshot()
 
     def snapshot(self):
-        return {relative: (self.root / relative).read_bytes() for relative in release.TRANSACTION_PATHS}
-
-    def test_advanced_checkout_series_does_not_change_fixture_baseline(self):
-        # The workflow runs this suite AFTER advancing the real checkout. Reading
-        # live owner files in setUp would make the hardcoded fixture expectations
-        # fail exactly when a new stable release becomes available.
-        original_read = Path.read_bytes
-
-        def read(path):
-            if path in (ROOT / release.NIXPKGS_OWNER, ROOT / release.HOME_MANAGER_OWNER):
-                raise AssertionError("Tests must not read the checkout's current release owners")
-            return original_read(path)
-
-        fixture = HomeReleaseTests("test_owner_declarations_are_authoritative")
-        with patch.object(Path, "read_bytes", read):
-            fixture.setUp()
-        self.addCleanup(fixture.doCleanups)
-        self.assertEqual(release.stable_pair(fixture.root), "26.05")
+        return {relative: (self.root / relative).read_bytes() for relative in (release.PINS, release.LOCK)}
 
     def test_next_release_handles_both_boundaries(self):
         self.assertEqual(release.next_series("26.05"), "26.11")
         self.assertEqual(release.next_series("26.11"), "27.05")
 
-    def test_owner_declarations_are_authoritative(self):
+    def test_tack_declarations_are_authoritative(self):
         (self.root / "flake.nix").write_text("generated output is deliberately stale")
         self.assertEqual(release.stable_pair(self.root), "26.05")
 
     def test_malformed_duplicate_and_mismatched_owners_fail_before_network(self):
-        path = self.root / release.HOME_MANAGER_OWNER
+        path = self.root / release.PINS
         original = path.read_text()
         for text in ("", original * 2, original.replace("0.2605", "0.2611")):
             with self.subTest(text=text), patch.object(release, "available") as availability:
                 path.write_text(text)
-                with self.assertRaises(ValueError):
+                with self.assertRaises((ValueError, KeyError)):
                     release.advance(self.root)
                 availability.assert_not_called()
 
@@ -79,50 +60,27 @@ class HomeReleaseTests(unittest.TestCase):
         run.assert_not_called()
         self.assertEqual(self.snapshot(), self.before)
 
-    def test_updates_owners_then_generates_locks_and_graph(self):
-        commands = []
-
+    def test_advances_only_the_core_pair(self):
         def run(command, **kwargs):
-            commands.append(command)
-            self.assertEqual(kwargs, {"cwd": self.root, "check": True})
             self.assertEqual(release.stable_pair(self.root), "26.11")
-            if command[-1] == "path:.#write-flake":
-                self.assertEqual((self.root / "flake.nix").read_bytes(), self.before["flake.nix"])
-                (self.root / "flake.nix").write_text("generated from updated owners")
-            elif command[1:3] == ["flake", "update"]:
-                self.assertEqual((self.root / "flake.nix").read_text(), "generated from updated owners")
-                (self.root / "flake.lock").write_text("updated pair lock")
-            elif command[-1] == "path:.#write-ci-graph":
-                self.assertEqual((self.root / "flake.lock").read_text(), "updated pair lock")
-                (self.root / "modules/ci/_graph.json").write_text("updated graph")
-                (self.root / "docs/ARCHITECTURE.md").write_text("updated diagram")
+            self.assertEqual(command[-2:], list(release.STABLE_PINS))
+            self.assertEqual(kwargs, {"cwd": self.root, "check": True})
+            (self.root / release.LOCK).write_text("new lock")
 
         with patch.object(release, "available", return_value=True), patch.object(release.subprocess, "run", side_effect=run):
             self.assertTrue(release.advance(self.root))
-        self.assertEqual(commands, [
-            ["nix", "run", "--no-update-lock-file", "path:.#write-flake"],
-            ["nix", "flake", "update", "nixpkgs", "home-manager"],
-            ["nix", "run", "--no-update-lock-file", "path:.#write-ci-graph"],
-        ])
-        self.assertIn("# personal comment", (self.root / release.NIXPKGS_OWNER).read_text())
+        self.assertIn("# personal comment", (self.root / release.PINS).read_text())
+        self.assertEqual((self.root / release.LOCK).read_text(), "new lock")
 
-    def test_every_failed_stage_restores_all_original_bytes(self):
-        for failed_stage in range(3):
-            count = 0
+    def test_failed_tack_update_restores_both_files(self):
+        def run(command, **kwargs):
+            (self.root / release.LOCK).write_text("partial output")
+            raise subprocess.CalledProcessError(1, command)
 
-            def run(command, **kwargs):
-                nonlocal count
-                # Simulate partial output, including files changed by earlier stages.
-                for relative in release.TRANSACTION_PATHS[2:]:
-                    (self.root / relative).write_text("partial output")
-                if count == failed_stage:
-                    raise subprocess.CalledProcessError(1, command)
-                count += 1
-
-            with self.subTest(stage=failed_stage), patch.object(release, "available", return_value=True), patch.object(release.subprocess, "run", side_effect=run):
-                with self.assertRaises(subprocess.CalledProcessError):
-                    release.advance(self.root)
-                self.assertEqual(self.snapshot(), self.before)
+        with patch.object(release, "available", return_value=True), patch.object(release.subprocess, "run", side_effect=run):
+            with self.assertRaises(subprocess.CalledProcessError):
+                release.advance(self.root)
+        self.assertEqual(self.snapshot(), self.before)
 
     def test_branch_not_ready_is_not_a_network_failure(self):
         with patch.object(release.subprocess, "run", return_value=subprocess.CompletedProcess([], 2)), patch.object(release.urllib.request, "urlopen") as fetch:
@@ -154,7 +112,7 @@ class HomeReleaseTests(unittest.TestCase):
     def test_workflow_submits_every_transaction_path(self):
         workflow = (ROOT / ".github/workflows/home-release.yml").read_text()
         paths = workflow.split("          add-paths: |\n", 1)[1].split("          branch:", 1)[0]
-        self.assertEqual(set(paths.split()), set(release.TRANSACTION_PATHS))
+        self.assertEqual(set(paths.split()), {release.PINS, release.LOCK})
 
 
 if __name__ == "__main__":

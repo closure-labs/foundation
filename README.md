@@ -82,3 +82,43 @@ If Firefox cannot find an Intel IPU7 webcam, run `foundation home camera`. Found
 [All guides](docs/README.md) · [Module architecture](docs/MODULES.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 Foundation began as Finite’s Home Manager template and now owns its modules and release cycle independently. Use `foundation home <action>` to manage your configuration; a Finite checkout is not required. See [Origin](ORIGIN.md) for source provenance. Licensed under [Apache-2.0](LICENSE); bundled Zsh assets retain their MIT license. See [NOTICE](NOTICE) and the [security policy](SECURITY.md).
+
+### Updating Foundation's Tack pins
+
+Foundation commits `.tack/pins.toml` and `.tack/pins.lock.json`. Stable,
+weekly, and unstable are shared Nixpkgs channels, not per-app copies. The
+`ai` group still tracks the separate upstream AI applications.
+
+Tack's `[all_follow]` shares common inputs throughout the dependency graph.
+Tack also locks shared `flake-utils` and `systems` from upstream lockfiles.
+See `.tack/pins.toml` for channel overrides and inputs retained for upstream
+binary caches or toolchain compatibility. Run `nix run path:.#tack -- dedup`
+to audit remaining duplicates before adding follows.
+
+In a writable Foundation checkout, try a newer Firefox without activating a
+Home Manager generation or opening your regular browser profile:
+
+```bash
+nix run path:.#tack -- update nixpkgs-unstable
+git diff -- .tack/pins.lock.json
+nix run path:.#firefox-preview
+```
+
+This tries the Firefox version available in the updated Nixpkgs channel,
+which may lag Mozilla's release. The preview launches stock Firefox with a
+temporary profile, not Foundation's configured browser. Don't sign into
+Firefox Sync if you want an isolated test. The update also changes the
+checkout's other unstable packages, but installs none into your home.
+Use a disposable checkout if you don't want to keep the lock change.
+Don't run Tack updates in the Home Manager config or the Nix store.
+
+Use `python3 scripts/update-locks.py` for a coordinated update that keeps
+Den and gen paired. Pick optional 1Password, Zoom, or AI apps through the
+profile's package selection. Firefox and Element use community Nixpkgs
+unstable. LazyGit, LazySSH and Ungoogled Chromium are available as optional
+packages. Ungoogled Chromium uses a separate browser profile.
+
+Consumer flakes continue to pin Foundation with their native `flake.lock`.
+Foundation exposes its resolved dependencies through `foundation.lib.inputs`
+and the `inputs` module argument. Personal native flake inputs need their own
+pins or follows within the consumer's native input graph.

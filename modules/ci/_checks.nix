@@ -11,6 +11,19 @@ let
   };
 in
 {
+  check-tack-pins =
+    let
+      denLock = builtins.fromJSON (builtins.readFile (inputs.den.outPath + "/templates/ci/flake.lock"));
+      tackLock = builtins.fromJSON (builtins.readFile ../../.tack/pins.lock.json);
+    in
+    assert denLock.nodes.gen.locked.rev == tackLock.gen.rev
+      || throw "Use the gen revision tested by the pinned Den commit";
+    pkgs.runCommand "foundation-tack-pins" {nativeBuildInputs = [pkgs.python3];} ''
+    cmp ${../../.tack/default.nix} ${inputs.tack-tool.outPath}/.tack/default.nix
+    python3 ${../../tests/check-tack-pins.py} \
+      ${../../flake.lock} ${../../.tack/pins.toml} ${../../.tack/pins.lock.json}
+    touch "$out"
+  '';
   home = home.activationPackage;
   password-managers = (import ../../tests/password-managers.nix {foundation = inputs.self;}).build;
   # Build the actual exported constructor. Fixture metadata keeps path:.

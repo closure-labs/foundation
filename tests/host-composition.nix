@@ -29,8 +29,8 @@ in {
   firefox = c.programs.firefox.package.outPath;
   # Compare Firefox recipes to prove camera policy changes are model-scoped.
   expectedFirefox =
-    (c.lib.nixGL.wrap (foundation.inputs.nixpkgs-weekly.legacyPackages.x86_64-linux.firefox.override {
-      extraPolicies = foundation.inputs.nixpkgs.lib.optionalAttrs (c.home.sessionVariables.FINITE_HOST_MODEL == "dell-xps-9350" && c.home.sessionVariables.FINITE_HOST_CAMERA == "1") {
+    (c.lib.nixGL.wrap (foundation.lib.inputs.nixpkgs-unstable.legacyPackages.x86_64-linux.firefox.override {
+      extraPolicies = foundation.lib.inputs.nixpkgs.lib.optionalAttrs (c.home.sessionVariables.FINITE_HOST_MODEL == "dell-xps-9350" && c.home.sessionVariables.FINITE_HOST_CAMERA == "1") {
         Preferences."media.webrtc.camera.allow-pipewire" = {
           Value = true;
           Status = "locked";

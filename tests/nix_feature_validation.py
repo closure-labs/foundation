@@ -20,7 +20,7 @@ def main():
         (root/"_feature.nix").write_text('throw "private descriptor must not be imported"')
         (root/"_assets").mkdir()
         (root/"_assets/invalid.nix").write_text('not valid Nix syntax !')
-        body = '(f.inputs.nixpkgs.lib.evalModules { modules = [(f.inputs.import-tree ' + str(root) + ') ({lib,...}: { options.discovery = lib.mkOption {type=lib.types.bool;}; })]; }).config.discovery'
+        body = '(f.lib.inputs.nixpkgs.lib.evalModules { modules = [(f.lib.inputs.import-tree ' + str(root) + ') ({lib,...}: { options.discovery = lib.mkOption {type=lib.types.bool;}; })]; }).config.discovery'
         assert evaluate(body) is True
     print("Public discovery matches pure discovery; import-tree excludes private descriptors and assets",flush=True)
 

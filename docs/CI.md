@@ -48,25 +48,24 @@ Same-major GitHub Action pin updates use an `automation` plan when the exact bas
 
 [Flake-owned plan declarations](../modules/ci/_plans.nix), exported as `lib.ciPlans`, name the selected checks. The generated manifest carries the same declarations, and the graph check verifies those names against the actual flake check outputs.
 
-Automation plans run workflow lint, all fixtures and Python tests, plus the `profile-generation`, `check-flake-file` and `ci-graph` build checks. They skip the profile matrix and full home build. This exercises Nix setup and packaged helpers while retaining the strict required gate. Major action updates, workflow logic/permissions/runner changes, added or deleted workflows, mixed runtime changes and unavailable diff evidence use full validation.
+Automation plans run workflow lint, all fixtures and Python tests, plus the `profile-generation`, `check-tack-pins` and `ci-graph` build checks. They skip the profile matrix and full home build. This exercises Nix setup and packaged helpers while retaining the strict required gate. Major action updates, workflow logic/permissions/runner changes, added or deleted workflows, mixed runtime changes and unavailable diff evidence use full validation.
 
-A dependency label alone never selects this shortcut. In particular, `flake.lock` changes can update Den, Home Manager and shared package sources, affecting every profile; those still run full validation. Manual, release and merge-group runs remain full even for action-pin-only changes.
+A dependency label alone never selects this shortcut. In particular, Tack lock changes can update Den, Home Manager and shared package sources, affecting every profile; those still run full validation. Manual, release and merge-group runs remain full even for action-pin-only changes.
 
 ## Keep generated files current
 
 ```sh
-nix run path:.#write-flake
 nix run path:.#write-ci-graph
 ```
 
-The second command writes the manifest and [diagram](ARCHITECTURE.md). Drift fails CI. The gate recomputes the plan and rejects missing results, changed selections, failures, cancellations or an unexpected skipped Nix job.
+The command writes the manifest and [diagram](ARCHITECTURE.md). Drift fails CI. The gate recomputes the plan and rejects missing results, changed selections, failures, cancellations or an unexpected skipped Nix job.
 
 See [module conventions](MODULES.md) before changing dependency declarations. Record validation results in the pull request rather than adding temporary reports to the documentation tree.
 
-## Scheduled flake updates
+## Scheduled Tack updates
 
 `lock-update.yml` checks every four hours (23 minutes past the hour, UTC), and
-supports manual dispatch. It refreshes all flake inputs and synchronizes `gen`
+supports manual dispatch. It refreshes Tack pins and synchronizes `gen`
 with Den's tested revision. Unchanged pins skip validation and PR creation.
 Changed pins pass the existing fixture and Nix checks before opening or updating
 one PR on `automation/flake-lock`. The Decider App token allows normal PR CI to

@@ -31,7 +31,6 @@ See the [generated diagram](ARCHITECTURE.md) for the data flow.
 6. Regenerate and validate:
 
 ```sh
-nix run path:.#write-flake
 nix run path:.#write-ci-graph
 nix develop --no-update-lock-file path:.#ci --command bash tests/ci.sh
 bash tests/nix-check.sh
@@ -41,7 +40,7 @@ The pure [loader](../modules/flake/features/_loader.nix) rejects invalid IDs, mi
 
 ## Change an input
 
-Declare `flake-file.inputs` beside the feature or provider that owns it. Edit the declaration, run `write-flake`, then update the intended input in `flake.lock` and review both files. Do not edit generated `flake.nix` by hand.
+Declare source pins in `.tack/pins.toml` under the relevant group. Run `nix run path:.#tack -- update <pin-or-group>` and review the declarations and Tack lock together.
 
 Automatic lock pruning is disabled. The [dependency-update script](../scripts/update-locks.py) also keeps gen aligned with Den's tested revision and regenerates the flake and graph. Its workflow submits source declarations and generated artifacts together.
 

@@ -330,22 +330,22 @@ def nix_value(value):
 
 
 def migrate_input_declarations(inputs):
-    """Keep custom input pins while moving their core follows to Foundation."""
+    """Keep custom pins whose dependencies can resolve independently of Tack."""
     if "nixGL" in inputs:
         raise ValueError("A legacy input named nixGL requires manual migration to preserve its personal pin and followers")
     extras = {name: copy.deepcopy(value) for name, value in inputs.items() if name not in CORE}
     if "foundation" in extras:
         raise ValueError("A pre-existing personal input named foundation requires manual migration")
-    def rebase(value):
+    def check_follows(value):
         if not isinstance(value, dict):
             return
         follows = value.get("follows")
         if isinstance(follows, str) and follows.split("/")[0] in CORE:
-            value["follows"] = "foundation/" + follows
+            raise ValueError(f"Personal input follows {follows}; give it an explicit personal pin before migration")
         for child in value.values():
-            rebase(child)
+            check_follows(child)
     for value in extras.values():
-        rebase(value)
+        check_follows(value)
     return extras
 
 
@@ -415,9 +415,16 @@ def locked(root):
 
 
 def copy_configuration(source, target):
-    shutil.copytree(source, target, symlinks=True, ignore=lambda _p, entries: [
-        name for name in entries if name in EXCLUDED or name.startswith("result-")
-    ])
+    try:
+        shutil.copytree(source, target, symlinks=True, ignore=lambda _p, entries: [
+            name for name in entries if name in EXCLUDED or name.startswith("result-")
+        ])
+    except (PermissionError, shutil.Error) as error:
+        raise ValueError(
+            f"Could not copy the Home Manager configuration as the current user: {error}. "
+            "Inspect the affected path and any symlink target. "
+            "Foundation's pinned .tack files can stay read-only; do not modify /nix/store."
+        ) from error
 
 
 def validate_runtime_profile(profile, catalog):
@@ -954,15 +961,9 @@ def migrate(root, info, lock, check=False):
                     if name != old_lock["root"]:
                         if name in new_lock["nodes"]:
                             raise ValueError("Custom input lock-node collision requires manual migration")
-                        node = dict(node)
-                        if "inputs" in node:
-                            node["inputs"] = {key: ["foundation", *ref] if isinstance(ref, list) and ref and ref[0] in CORE else ref
-                                              for key, ref in node["inputs"].items()}
                         new_lock["nodes"][name] = node
                 old_inputs = old_lock["nodes"][old_lock["root"]]["inputs"]
-                new_lock["nodes"]["root"]["inputs"].update({
-                    name: ["foundation", *old_inputs[name]] if isinstance(old_inputs[name], list) and old_inputs[name] and old_inputs[name][0] in CORE else old_inputs[name]
-                    for name in extras})
+                new_lock["nodes"]["root"]["inputs"].update({name: old_inputs[name] for name in extras})
                 write_json(stage / "flake.lock", new_lock)
                 run(["nix", "flake", "lock", path_flake(stage)])
             activation = build(stage)

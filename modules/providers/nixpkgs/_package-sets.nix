@@ -16,6 +16,8 @@
       '';
   };
 in
-  builtins.deepSeq policy (lib.genAttrs ["nixpkgs" "nixpkgs-weekly" "nixpkgs-unstable"] (name:
+  builtins.deepSeq policy (lib.genAttrs [
+    "nixpkgs" "nixpkgs-weekly" "nixpkgs-unstable"
+  ] (name:
     import inputs.${name} { inherit system config; }
   ))

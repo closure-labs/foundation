@@ -23,7 +23,17 @@ foundation home migrate
 
 If the helpers are not installed, run `nix run github:closure-labs/foundation/main#home-migrate -- --check` first, then repeat without `--check` to migrate.
 
-Migration adopts Foundation's dependency pins while preserving your profile, personal modules and unrelated additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration. Other retained input names that collide with Foundation's inputs (for example `flake-parts`, `flake-file` or `import-tree`) also require the rename described below; migration does not rewrite personal module references.
+Migration adopts Foundation's dependency pins while preserving your profile, personal modules and unrelated additional inputs. Modified upstream modules, custom output functions, Git checkouts, symlink roots and conflicting personal `nixGL` inputs may require manual migration. Other retained input names that collide with Foundation's inputs (for example `flake-parts` or `import-tree`) also require the rename described below; migration does not rewrite personal module references.
+Personal native inputs that follow a Foundation dependency need an explicit
+personal pin or a follow within their own consumer flake before migration.
+Foundation exposes its Tack dependencies to Home Manager modules as `inputs`.
+
+Foundation reads its own Tack files from the pinned Foundation source.
+The consumer flake does not need a local `.tack/`; a personal Tack directory,
+if present, is left alone. Run Home Manager as the workstation account, not
+with `sudo`. If the updater reports a permission error, check the reported
+path and any symlink target before changing permissions. Do not change
+ownership or permissions in `/nix/store`.
 
 ## Move an older consumer onto main
 

@@ -94,7 +94,7 @@ class CiPlanTests(unittest.TestCase):
     def test_missing_proof_unknown_ownership_and_events_are_full(self):
         for paths in (None, [], ["README.md"], ["modules/apps/ghostty/_package.nix"]):
             self.assertEqual(ci.make_plan(paths)["mode"], "full")
-        for path in ("flake.nix", "flake.lock", "docs/ARCHITECTURE.md", "scripts/ci_plan.py", "new.nix", "modules/apps/new/_home.nix"):
+        for path in ("flake.nix", "flake.lock", ".tack/pins.toml", ".tack/pins.lock.json", "docs/ARCHITECTURE.md", "scripts/ci_plan.py", "new.nix", "modules/apps/new/_home.nix"):
             self.assertEqual(self.focused([path])["mode"], "full")
         for event in ("workflow_dispatch", "merge_group", "workflow_call", "unknown"):
             self.assertTrue(ci.requires_full(event, "refs/heads/main"))

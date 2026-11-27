@@ -14,7 +14,7 @@ def main():
                        "roles": [], "packages": [],
                        "identity": {"username": "alice", "homeDirectory": "/home/alice"}}
             expression = 'let f = builtins.getFlake ' + json.dumps("path:" + str(ROOT)) + ''';
-              lib = f.inputs.nixpkgs.lib;
+              lib = f.lib.inputs.nixpkgs.lib;
               profile = builtins.fromJSON PROFILE;
               home = f.lib.mkHomeConfiguration {
                 inherit profile;
